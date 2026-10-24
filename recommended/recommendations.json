@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "version": 7,
-  "generated": "2026-10-23",
+  "version": 8,
+  "generated": "2026-10-24",
   "rules": [
     {
       "id": "rdr2-steam",
@@ -2310,7 +2310,7 @@
     {
       "id": "resident-evil-requiem",
       "title": "Resident Evil Requiem",
-      "version": 1,
+      "version": 2,
       "match": {
         "steamAppIDs": [3764200],
         "steamFolders": ["resident evil requiem biohazard requiem"],
@@ -2725,7 +2725,7 @@
     {
       "id": "fallout-new-vegas",
       "title": "Fallout: New Vegas",
-      "version": 1,
+      "version": 2,
       "match": {
         "steamAppIDs": [22380],
         "steamFolders": ["fallout new vegas"],
