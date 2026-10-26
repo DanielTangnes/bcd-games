@@ -1040,10 +1040,13 @@ blk = bridge[bridge.index('const char *wineVcrt = getenv("MADEIRA_WINE_VCRT");')
 check("the session takes the folder once, right after MADEIRA_WINE_VCRT, for x64 (ARM64EC) sessions only",
       re.match(r'const char \*wineVcrt = getenv\("MADEIRA_WINE_VCRT"\);\n\s+NSString \*vcrtDir = use_arm64ec \? '
                r'madeira_vcruntime_dir\(bundlePath,[^\n]*\n\s+NSSearchPathForDirectoriesInDomains\(NSApplicationSupportDirectory, '
-               r'NSUserDomainMask, YES\)\.firstObject\) : nil;\n\s+if \(use_arm64ec && wineVcrt && wineVcrt\[0\] == \'1\'\) \{', blk) is not None)
+               r'NSUserDomainMask, YES\)\.firstObject\) : nil;\n\s+NSMutableDictionary<NSString \*, NSString \*> \*vcrtHome = '
+               r'\[NSMutableDictionary dictionary\];[^\n]*\n\s+NSUInteger vcrtFromDocs = 0;\n\s+NSArray<NSString \*> \*vcrtDlls = '
+               r'use_arm64ec \? madeira_vcruntime_dlls\(fm, vcrtDir,\n(?:.*\n)*?'
+               r'\s+if \(use_arm64ec && wineVcrt && wineVcrt\[0\] == \'1\'\) \{', blk) is not None)
 check("MADEIRA_WINE_VCRT=1 keeps the builtins for that folder's names; the overlay links from it",
-      "[fm contentsOfDirectoryAtPath:vcrtDir error:nil]" in blk and "NSString *vcrtSource = vcrtDir;" in blk
-      and "NSArray *vcrtDlls = [fm contentsOfDirectoryAtPath:vcrtSource error:nil];" in blk
+      "for (NSString *dll in vcrtDlls) {" in blk and "madeira_vcruntime_dlls(fm, vcrtDir," in blk and "vcrtHome, &vcrtFromDocs)" in blk
+      and "NSString *src = vcrtHome[[dll lowercaseString]];" in blk
       and "createSymbolicLinkAtPath:dst withDestinationPath:src" in blk)
 check("the bundle's x86_64-vcruntime is named only in madeira_vcruntime_dir",
       bridge.count('@"x86_64-vcruntime"') == 1 and '@"x86_64-vcruntime"' in (fn.group(0) if fn else ""))

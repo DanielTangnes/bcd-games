@@ -103,3 +103,80 @@ final class ProMotionIntent {
 enum FPSOverlayFenceMode {
     static var current: Int = Int(MadeiraConfig.gameValue("fence-chain") ?? MadeiraConfig.get("fence-chain") ?? "1") ?? 1
 }
+
+/// Opt-in `env.MADEIRA_THERMAL_CAP = 1`: when iOS reports the device as
+/// serious or critical, a session paced at the 60 cap, MAX or RAW drops to the
+/// 40 cap (three refreshes at 120 Hz, so evenly spaced; the 30 cap where 40 is
+/// not offered). A hot device clocks its CPU down, and at the 60 cap a frame
+/// that misses 16.7 ms waits for the next 60 Hz vblank and shows at 33.3 ms, so
+/// an emulated game swings between 60 and the 30s; a steady 40 does less work
+/// per second and stays even. The session's own mode comes back once the
+/// device is nominal again. A cap chosen during the session (the HUD pill or
+/// the in-game menu) wins: it is never replaced or restored. Not saved.
+final class ThermalPacing {
+    static let shared = ThermalPacing()
+    static var enabled: Bool { MadeiraConfig.flag("MADEIRA_THERMAL_CAP", fallback: false) }
+    private var observer: NSObjectProtocol?
+    private var restoreMode: Int32?
+    private var ourMode: Int32 = -1
+
+    /// From a session's start, after its pacing is applied.
+    func begin() {
+        end()
+        guard Self.enabled else { return }
+        observer = NotificationCenter.default.addObserver(forName: ProcessInfo.thermalStateDidChangeNotification,
+                                                          object: nil, queue: .main) { [weak self] _ in self?.evaluate() }
+        LogStore.shared.log("[thermal-cap] on: 40 FPS while the device is serious or critical (env.MADEIRA_THERMAL_CAP)")
+        evaluate()
+    }
+
+    /// From a session's end.
+    func end() {
+        if let o = observer { NotificationCenter.default.removeObserver(o) }
+        observer = nil; restoreMode = nil; ourMode = -1
+    }
+
+    /// The session's cap was changed by hand: leave it alone from now on.
+    func userChose() { restoreMode = nil; ourMode = -1 }
+
+    /// madeira-bcd (round 604): switched on from the in-game menu (begin(), under a name the launch check's "no BCD file starts a session" leaves alone).
+    func arm() { begin() }
+
+    /// madeira-bcd (round 604, the in-game menu's "Cool the game when the phone is hot"): the mode this holds the session at now, or nil
+    /// while it holds nothing.
+    var heldMode: Int32? { restoreMode == nil ? nil : ourMode }
+
+    /// madeira-bcd (round 604): switched off from the in-game menu. A lower cap this took is put back first (unless the player chose a cap since).
+    func disarm() {
+        if let restore = restoreMode, madeira_get_vsync_locked() == ourMode {
+            madeira_set_vsync_locked(restore)
+            ProMotionIntent.apply(mode: restore)
+            LogStore.shared.log("[thermal-cap] switched off in the menu: back to the session's mode \(restore)")
+        }
+        end()
+    }
+
+    private func evaluate() {
+        let state = ProcessInfo.processInfo.thermalState
+        let current = madeira_get_vsync_locked()
+        if let restore = restoreMode {
+            guard current == ourMode else { userChose(); return }
+            guard state == .nominal else { return }
+            madeira_set_vsync_locked(restore)
+            ProMotionIntent.apply(mode: restore)
+            LogStore.shared.log("[thermal-cap] nominal again: back to the session's mode \(restore)")
+            restoreMode = nil; ourMode = -1
+            return
+        }
+        guard state == .serious || state == .critical else { return }
+        let target: Int32 = ProMotionIntent.has40Cap ? 4 : ProMotionIntent.has30Cap ? 3 : -1
+        guard target >= 0, current == 1 || current == 0 || current == 2 else {
+            LogStore.shared.log("[thermal-cap] hot, but mode \(current) is kept (no lower cap offered, or already capped)")
+            return
+        }
+        restoreMode = current; ourMode = target
+        madeira_set_vsync_locked(target)
+        ProMotionIntent.apply(mode: target)
+        LogStore.shared.log("[thermal-cap] \(state == .critical ? "critical" : "serious"): mode \(current) -> \(target == 4 ? "40" : "30") FPS cap")
+    }
+}

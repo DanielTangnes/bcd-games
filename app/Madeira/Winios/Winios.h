@@ -43,6 +43,12 @@ void winios_post_touch_up(int x, int y);
  * down=1 press, down=0 release. */
 void winios_post_key(int vk, int down);
 
+/* Text-only paste: one Unicode scalar, optionally represented by a US-layout
+ * virtual key. Returns 0 when the queue is busy; retry without advancing.
+ * Cancel invalidates text already queued, without discarding physical input. */
+int winios_try_post_text(unsigned int scalar, int vk, int shift, int interval_ms);
+void winios_cancel_text(void);
+
 /* S2 desktop compositor placement. Called by the Swift presentation
  * placeholder (MetalBackedView) with its bounds in UIWindow coords —
  * the wine virtual desktop renders aspect-fit inside this frame, like
@@ -84,7 +90,7 @@ int winios_desktop_point_from_window(double wx, double wy, int *px, int *py);
  * user watched the Dock host's console window instead of the game. The app
  * keeps the starting screen until a window of the started game is up, and
  * needs to know, per top-level window: is it shown, how big, has it put a
- * frame on screen, and which program owns it.
+ * frame on screen, does it have a title bar, and which program owns it.
  *
  * Fed from the driver hooks on the window's own Wine thread (WindowPosChanged,
  * the GDI flush, DestroyWindow, the desktop-mode swapchain), so nothing polls
@@ -104,15 +110,49 @@ struct winios_census_window {
     unsigned char metal;          /* a D3D swapchain presents into it (DXMT) */
     unsigned char shown_once;     /* has been shown at least once */
     unsigned char restore_sent;   /* born minimized; SC_RESTORE posted */
+    unsigned char caption;        /* WS_CAPTION: a title bar (a message box or a dialog) */
     char image[WINIOS_CENSUS_IMAGE];
 };
 
 /* Main thread. on=1 starts an empty census (and forgets cached process paths,
- * whose ids a new session may reuse); on=0 stops and empties it. */
+ * whose ids a new session may reuse); on=0 stops and empties it. on=2 ends a
+ * running census but keeps the windows it knows and only goes on restoring a
+ * window first shown minimized, for the rest of the session. */
 void winios_window_census_enable(int on);
 
 /* Main thread. Copies up to `max` entries; returns how many were copied. */
 int winios_window_census(struct winios_census_window *out, int max);
+
+/* The in-game menu's window list (round 604, BCDWindowsLive.swift): what the Windows desktop has open, which window is in front, bring one to
+ * the front, and show the desktop (minimize every window) and bring the windows back. Costs nothing until the menu's Windows page is open:
+ * the app sets the "wanted" flag then, and the Wine threads' event pump (build/win32u-unix/driver_ios.c, ios_window_menu_poll) looks at one
+ * relaxed flag per poll. A refresh is answered by whichever Wine thread polls first: it lists the desktop's top-level windows (title, size,
+ * the owning program) and hands the list over. Commands are carried out by a Wine thread too: bring-to-front by the window's own thread (the
+ * only one allowed to take the foreground), minimize and restore by any. A command nobody takes within 3 s is dropped. */
+#define WINIOS_WINLIST_MAX 24
+#define WINIOS_WINLIST_TITLE 96
+struct winios_listed_window {
+    unsigned long long hwnd;
+    unsigned int pid;             /* owning Windows process id, 0 = unknown */
+    int x, y, w, h;               /* window rect, desktop pixels */
+    unsigned char visible;        /* WS_VISIBLE and not minimized */
+    unsigned char minimized;
+    unsigned char foreground;     /* the foreground window */
+    unsigned char metal;          /* a D3D swapchain presents into it */
+    char title[WINIOS_WINLIST_TITLE];   /* UTF-8, cut to fit */
+    char image[WINIOS_CENSUS_IMAGE];    /* the owning program's path as the server recorded it, lower case */
+};
+enum { WINIOS_WINCMD_FRONT = 1, WINIOS_WINCMD_MINIMIZE = 2, WINIOS_WINCMD_RESTORE = 3 };
+
+/* Main thread. */
+void winios_windows_set_wanted(int on);
+void winios_windows_refresh(void);
+int winios_windows_copy(struct winios_listed_window *out, int max);
+void winios_windows_command(unsigned long long hwnd, int kind);
+/* A small JPEG of a window's last picture (the GDI image the desktop compositor holds for it; a window a Direct3D swapchain draws has none),
+ * at most `max_edge` pixels on its long side, copied into `out`. Returns the byte count, 0 when there is no picture or it does not fit `cap`.
+ * Main thread. */
+size_t winios_window_thumbnail(unsigned long long hwnd, int max_edge, void *out, size_t cap);
 
 #ifdef __cplusplus
 }

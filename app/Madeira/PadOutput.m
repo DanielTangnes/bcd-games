@@ -35,6 +35,7 @@
 #include <string.h>
 #include "Winios/WiniosGamepad.h"
 #include "Winios/WiniosPadEffects.h"
+#include "BCDPhoneRumble.h"   // madeira-bcd (round 604): the phone shakes with the game's rumble when no physical pad is paired and the player turned it on
 
 #define PAD_SLOTS WINIOS_GAMEPAD_MAX
 #define PAD_LOG_LIMIT 8
@@ -318,6 +319,7 @@ static void on_main(dispatch_block_t block)
 
 static GCController *g_slot[PAD_SLOTS];
 static MadeiraRumble *g_rumble[PAD_SLOTS];
+static float g_scale[PAD_SLOTS] = { 1.0f, 1.0f, 1.0f, 1.0f };  /* madeira-bcd (round 604): per-player rumble strength */
 static struct winios_hidpad_output g_applied;   // the HID output last applied to slot 0
 static int g_applied_valid;                     // 0: apply everything again next pass
 static int g_triggers_set;                      // a trigger mode other than off is on the pad
@@ -471,11 +473,23 @@ static void pad_output_apply(void)
             low = fmaxf(low, winios_rumble_level(out.rumble_left, reduction));
             high = fmaxf(high, winios_rumble_level(out.rumble_right, reduction));
         }
+        low *= g_scale[i];      /* madeira-bcd (round 604): 1 unless the player chose a softer rumble for this player */
+        high *= g_scale[i];
         if ((low > 0 || high > 0) && g_logged_rumble++ < PAD_LOG_LIMIT)
             fprintf(stderr, "[hidpad-out] ml2107 slot %d rumble low %.2f high %.2f\n", i, low, high);
         [g_rumble[i] setLow:low high:high];
     }
     if (g_hid && g_slot[0]) apply_hid(g_slot[0], &out);
+
+    if (bcd_phone_rumble_enabled()) {   // madeira-bcd (round 604): player 1 is the on-screen controller; its rumble goes to the phone
+        struct winios_gamepad_vibration motors;
+        float low = 0, high = 0;
+        if (!g_rumble[0] && g_xinput && winios_gamepad_get_vibration(0, &motors)) {
+            low = winios_xinput_level(motors.left);
+            high = winios_xinput_level(motors.right);
+        }
+        bcd_phone_rumble_push(low, high);
+    }
 
     if (++g_passes == g_next_tally) {
         fprintf(stderr, "[hidpad-out] ml2107 %u passes applied (rumble lines %u, trigger modes %u, lightbar %u, "
@@ -518,6 +532,19 @@ void madeira_pad_output_set_slot(int slot, GCController *controller)
     });
 }
 
+void madeira_pad_output_set_scale(int slot, float scale)
+{
+    on_main(^{
+        float s = scale;        /* a block cannot assign to what it captured */
+        if (slot < 0 || slot >= PAD_SLOTS) return;
+        if (!(s >= 0.0f)) s = 0.0f;
+        if (s > 1.0f) s = 1.0f;
+        if (g_scale[slot] == s) return;
+        g_scale[slot] = s;
+        pad_output_apply();
+    });
+}
+
 void madeira_pad_output_set_active(int active)
 {
     on_main(^{
@@ -530,6 +557,7 @@ void madeira_pad_output_set_active(int active)
             return;
         }
         for (i = 0; i < PAD_SLOTS; i++) [g_rumble[i] stop];
+        bcd_phone_rumble_stop();   // madeira-bcd (round 604)
         if (g_hid && g_slot[0]) triggers_off(g_slot[0]);
     });
 }

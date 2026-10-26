@@ -28,6 +28,7 @@
  */
 
 #include <stdint.h>
+#include <stdatomic.h>   /* madeira-bcd (round 604): MADEIRA_AUDIO_GAIN, below, uses the atomics before the include further down */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +39,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <AudioToolbox/AudioToolbox.h>
+#include "bcd_midi_ios.h"   /* BCD (round 603): the MIDI output, bcd_midi_ios.c / bcd_midi_synth_ios.m */
 
 /* Struct/enum mirrors from wine/dlls/mmdevapi/unixlib.h. Repeating the
  * essential layout here avoids include-path drama with Wine's COM
@@ -429,6 +431,55 @@ static pthread_mutex_t g_dev_lock = PTHREAD_MUTEX_INITIALIZER;
 /* Published to the RT callback. Written with release, read with acquire. */
 static _Atomic(struct ios_stream *) g_mix[IOS_MAX_STREAMS];
 
+/* madeira-bcd (round 604, F6) MADEIRA_AUDIO_GAIN: the game's volume at the endpoint, in percent of what the game sends, for a game that is too
+ * loud or too quiet next to the rest of the phone's sound. Unset: 100, and the render callback does one comparison and nothing else. 10 to 200 is
+ * taken (200 is twice the game's level; the callback's clamp keeps the sum inside full scale); anything else is ignored, so a typing slip never
+ * mutes a game. Read once, when the endpoint is made. madeira_audio_set_gain_percent changes it while the game runs (the app's in-game menu may
+ * call it). Per game: env.MADEIRA_AUDIO_GAIN in its own file. The phone's volume buttons are iOS's own and stay in front of this. */
+static _Atomic int g_gain_permille = 1000;
+
+/* The environment text as per mille (1000 = unchanged): digits only, 10..200 percent, otherwise 1000. */
+static int ios_audio_gain_parse(const char *e)
+{
+    int v = 0, n = 0;
+
+    if (!e) return 1000;
+    for (; *e >= '0' && *e <= '9' && n < 4; e++, n++) v = v * 10 + (*e - '0');
+    if (n == 0 || *e != '\0' || v < 10 || v > 200) return 1000;
+    return v * 10;
+}
+
+/* Scales `total` samples of the mix by `permille`/1000. */
+static void ios_apply_gain(float *out, size_t total, int permille)
+{
+    const float g = (float)permille / 1000.0f;
+    size_t k;
+
+    for (k = 0; k < total; k++) out[k] *= g;
+}
+
+/* App side: percent of the game's level (10..200); anything else is ignored. */
+void madeira_audio_set_gain_percent(int percent)
+{
+    if (percent >= 10 && percent <= 200) atomic_store_explicit(&g_gain_permille, percent * 10, memory_order_relaxed);
+}
+
+/* Reads env MADEIRA_AUDIO_GAIN once (the first endpoint made; a rebuilt endpoint keeps what madeira_audio_set_gain_percent set). */
+static void ios_audio_gain_init(void)
+{
+    static int read_once;
+    const char *gain = getenv("MADEIRA_AUDIO_GAIN");   /* the game's volume at the output in percent, 10..200 (100 or unset: unchanged); read once; per game: env.MADEIRA_AUDIO_GAIN in its own file */
+
+    if (read_once) return;
+    read_once = 1;
+    if (gain && gain[0]) {
+        int permille = ios_audio_gain_parse(gain);
+        atomic_store_explicit(&g_gain_permille, permille, memory_order_relaxed);
+        fprintf(stderr, "[ios_audio] madeira-bcd MADEIRA_AUDIO_GAIN=%s: the game's volume is %s\n", gain,
+                permille == 1000 ? "unchanged (100, or not a value from 10 to 200)" : "scaled at the output");
+    }
+}
+
 static struct ios_stream *stream_from_handle(stream_handle h)
 {
     struct ios_stream *s = (struct ios_stream *)(uintptr_t)h;
@@ -744,6 +795,16 @@ static void ios_mix_stream(struct ios_stream *s, float *out, UInt32 nframes,
         atomic_store_explicit(&s->st_cb_max, nframes, memory_order_relaxed);
 }
 
+/* madeira-bcd (round 604, the in-game menu's Pause): while the game is paused the endpoint plays silence and mixes no stream, so no client's
+ * buffer drains and the game's audio clock stands still; the stream resumes where it stopped. One relaxed load per callback, set by the app
+ * (BCDPauseLive.swift) through madeira_audio_set_paused. Never set unless the player paused the game. */
+static _Atomic int g_ios_audio_paused;
+
+void madeira_audio_set_paused(int paused)
+{
+    atomic_store_explicit(&g_ios_audio_paused, paused ? 1 : 0, memory_order_relaxed);
+}
+
 /* Core Audio real-time thread. See ios_mix_stream for the constraints. */
 static OSStatus ios_audio_render_cb(void *refcon, AudioUnitRenderActionFlags *flags,
                                     const AudioTimeStamp *ts, UInt32 bus,
@@ -769,9 +830,17 @@ static OSStatus ios_audio_render_cb(void *refcon, AudioUnitRenderActionFlags *fl
     }
 
     memset(out, 0, total * sizeof(float));
+    if (atomic_load_explicit(&g_ios_audio_paused, memory_order_relaxed)) {   /* madeira-bcd (round 604): paused, silence */
+        atomic_fetch_add_explicit(&g_dev.cb_epoch, 1, memory_order_release);
+        return noErr;
+    }
     for (i = 0; i < IOS_MAX_STREAMS; i++) {
         struct ios_stream *s = atomic_load_explicit(&g_mix[i], memory_order_acquire);
         if (s) ios_mix_stream(s, out, nframes, dev_ch, dev_rate);
+    }
+    {   /* madeira-bcd MADEIRA_AUDIO_GAIN: the game's volume (100%: this is one comparison) */
+        int gain = atomic_load_explicit(&g_gain_permille, memory_order_relaxed);
+        if (gain != 1000) ios_apply_gain(out, total, gain);
     }
     /* Summing independent clients can exceed full scale; clamp rather than
      * letting it wrap into noise. */
@@ -812,6 +881,7 @@ static int ios_dev_create_locked(const struct ios_stream *s)
 
     g_dev.rate = s->sample_rate ? s->sample_rate : 48000;
     g_dev.channels = s->channels >= 2 ? 2 : 1;
+    ios_audio_gain_init();   /* madeira-bcd MADEIRA_AUDIO_GAIN: read once, when the first endpoint is made */
 
     desc.componentType = kAudioUnitType_Output;
     desc.componentSubType = kAudioUnitSubType_RemoteIO;
@@ -1799,10 +1869,37 @@ static NTSTATUS ios_get_mix_format(void *args) {
     return STATUS_SUCCESS;
 }
 
+/* The shared-mode engine period, in 100 ns units. A client that keeps one period queued (IAudioClient3, a Godot 4 game)
+ * must cover a whole RemoteIO slice, or every render callback empties its queue and plays silence for the rest (about 47 % of
+ * the audio reached the device in the log it was found in): at least two slices of the IOBufferDuration the app asked for
+ * and was granted (MADEIRA_AUDIO_IO_US, published by WineProcessBridge.m only when env.MADEIRA_AUDIO_IO_MS asks for a
+ * slice), and never under 10 ms. MADEIRA_AUDIO_PERIOD_MS sets it outright (10 = as before).
+ * madeira-bcd: with neither variable set (the default) this is the 10 ms it always was, and nothing is logged. */
+static REFERENCE_TIME ios_engine_period(void) {
+    static REFERENCE_TIME period = -1;
+    if (period < 0) {
+        const char *e = getenv( "MADEIRA_AUDIO_PERIOD_MS" );
+        REFERENCE_TIME hns = 100000;
+        double ms = e && *e ? atof( e ) : 0;
+        if (ms >= 1 && ms <= 200) hns = (REFERENCE_TIME)(ms * 10000);
+        else {
+            const char *io = getenv( "MADEIRA_AUDIO_IO_US" );
+            long long us = io ? atoll( io ) : 0;
+            if (us > 0 && us * 20 > hns) hns = us * 20;
+        }
+        period = hns;
+        if (period != 100000)
+            fprintf( stderr, "[audio] engine period %.2f ms (io slice %s us)\n", period / 10000.0,
+                     getenv( "MADEIRA_AUDIO_IO_US" ) ? getenv( "MADEIRA_AUDIO_IO_US" ) : "?" );
+    }
+    return period;
+}
+
 static NTSTATUS ios_get_device_period(void *args) {
     struct get_device_period_params *p = args;
-    if (p->def_period) *p->def_period = 100000; /* 10 ms in 100ns units */
-    if (p->min_period) *p->min_period = 50000;  /* 5 ms */
+    REFERENCE_TIME period = ios_engine_period();
+    if (p->def_period) *p->def_period = period; /* 10 ms in 100ns units unless asked otherwise */
+    if (p->min_period) *p->min_period = period > 100000 ? period : 50000;  /* 5 ms floor as before */
     p->result = S_OK;
     return STATUS_SUCCESS;
 }
@@ -1931,54 +2028,39 @@ static NTSTATUS ios_get_prop_value(void *args) {
 
 /* ---------------------------- MIDI and aux ----------------------------
  *
- * There is no MIDI backend on this port.  Saying so was NOT what this file
- * used to do: every one of the seven MIDI/aux slots pointed at one stub that
- * returned STATUS_SUCCESS and wrote nothing at all, which is not "no MIDI",
- * it is "success, and the answer is whatever was already on the caller's
- * stack".  That cost a whole core.
+ * BCD (round 603): MIDI output plays now.  bcd_midi_ios.c answers winmm's MIDI-out messages for one device,
+ * "BCD GM Synthesizer", and bcd_midi_synth_ios.m plays it through Apple's synthesizer and a General MIDI
+ * SoundFont.  env.MADEIRA_MIDI = 0, or no sound bank, brings back exactly what this file did before:
+ * midi_init says DRV_FAILURE and winmm lists no MIDI device.
  *
- * mmdevapi's DriverProc (wine/dlls/mmdevapi/main.c, DRV_LOAD) starts a
- * notify_thread whenever midi_init leaves its *err at DRV_SUCCESS, and that
- * thread is `while (1) { midi_notify_wait; if (quit) break; ... }`.
- * midi_notify_wait is defined to BLOCK until a notification arrives or the
- * driver is released -- winecoreaudio.drv and winealsa.drv both sit on a
- * condition variable in it.  A stub that returns instantly without setting
- * *quit turns that loop into a spin on an uninitialised `quit` and an
- * uninitialised `notify.send_notify`: on the device the thread named
- * "mmdevapi_midi_notify" held a whole core inside the dispatcher with a
- * garbage guest RIP, and the program it belonged to never left "starting".
+ * History, which still holds for that "off" answer: before this there was no MIDI backend on this port, and
+ * saying so was NOT what this file used to do: every one of the seven MIDI/aux slots pointed at one stub that
+ * returned STATUS_SUCCESS and wrote nothing at all, which is not "no MIDI", it is "success, and the answer is
+ * whatever was already on the caller's stack".  That cost a whole core.
  *
- * So each entry point now answers for itself:
- *   midi_init        -> DRV_FAILURE, so DRV_LOAD fails and the thread is
- *                       never created (winmm then reports no MIDI devices,
- *                       which is the truth; waveOut does not come through
- *                       here -- mmdevapi exports no wodMessage).
- *   midi_notify_wait -> quit = TRUE, so even a thread that does exist leaves
- *                       its loop on the first turn instead of spinning.
- *   mid/mod/aux msg  -> MMSYSERR_NOTSUPPORTED and send_notify = FALSE.
+ * mmdevapi's DriverProc (wine/dlls/mmdevapi/main.c, DRV_LOAD) starts a notify_thread whenever midi_init leaves
+ * its *err at DRV_SUCCESS, and that thread is `while (1) { midi_notify_wait; if (quit) break; ... }`.
+ * midi_notify_wait is defined to BLOCK until a notification arrives or the driver is released --
+ * winecoreaudio.drv and winealsa.drv both sit on a condition variable in it.  A stub that returns instantly
+ * without setting *quit turns that loop into a spin on an uninitialised `quit` and an uninitialised
+ * `notify.send_notify`: on the device the thread named "mmdevapi_midi_notify" held a whole core inside the
+ * dispatcher with a garbage guest RIP, and the program it belonged to never left "starting".
+ *
+ * So each entry point answers for itself:
+ *   midi_init        -> DRV_SUCCESS when MIDI is on and a sound bank exists (bcd_midi_init), else DRV_FAILURE, so
+ *                       DRV_LOAD fails and the thread is never created (winmm then reports no MIDI devices).
+ *   midi_notify_wait -> waits on a condition variable for at most half a second (bcd_midi_notify_wait) and
+ *                       answers quit=TRUE once the driver was released; the driver has no notification to
+ *                       deliver, so send_notify is always FALSE.
+ *   mid/mod/aux msg  -> bcd_midi_*_message64/32: the output device, no input devices, no auxiliary devices.
+ *                       winmm reads the answer of the *_GETNUMDEVS messages as the device COUNT, so those
+ *                       answer 0 for input and auxiliary, never an error code.
  */
+#define IOS_DRV_SUCCESS           1   /* mmddk.h DRV_SUCCESS */
 #define IOS_DRV_FAILURE           0   /* mmsystem.h DRV_FAILURE */
-#define IOS_MMSYSERR_NOTSUPPORTED 8   /* mmsystem.h MMSYSERR_NOTSUPPORTED */
 
 struct ios_midi_init_params { UINT *err; };
 struct ios_midi_notify_wait_params { BOOL *quit; void *notify; };
-struct ios_midi_message_params {
-    UINT dev_id;
-    UINT msg;
-    UINT_PTR user;
-    UINT_PTR param_1;
-    UINT_PTR param_2;
-    UINT *err;
-    void *notify;
-};
-struct ios_aux_message_params {
-    UINT dev_id;
-    UINT msg;
-    UINT_PTR user;
-    UINT_PTR param_1;
-    UINT_PTR param_2;
-    UINT *err;
-};
 
 /* notify_context's first field is `BOOL send_notify` at offset 0 in both the
  * 64-bit and the 32-bit layout, so clearing it needs no other knowledge of
@@ -1989,54 +2071,53 @@ static void ios_midi_clear_notify(void *notify)
 }
 
 static NTSTATUS ios_midi_stub(void *args) {
-    /* midi_get_driver and midi_release: nothing to report, nothing to free. */
+    /* midi_get_driver: nothing to report (the main driver also plays MIDI). */
     (void)args;
+    return STATUS_SUCCESS;
+}
+
+static NTSTATUS ios_midi_release(void *args) {
+    (void)args;
+    bcd_midi_release();
     return STATUS_SUCCESS;
 }
 
 static NTSTATUS ios_midi_init(void *args) {
     struct ios_midi_init_params *p = args;
     static int said;
+    if (bcd_midi_init()) {
+        if (p && p->err) *p->err = IOS_DRV_SUCCESS;
+        return STATUS_SUCCESS;
+    }
     if (p && p->err) *p->err = IOS_DRV_FAILURE;
     if (!said++)
-        fprintf(stderr, "[audio] midi_init -> DRV_FAILURE (no MIDI backend on this "
-                        "port; mmdevapi will not start its notify thread)\n");
+        fprintf(stderr, "[audio] midi_init -> DRV_FAILURE (MIDI is off or has no sound bank, see the [midi] line; "
+                        "mmdevapi will not start its notify thread)\n");
     return STATUS_SUCCESS;
 }
 
 static NTSTATUS ios_midi_notify_wait(void *args) {
     struct ios_midi_notify_wait_params *p = args;
-    static int said;
+    int quit = bcd_midi_notify_wait(500);
     if (p) {
-        if (p->quit) *p->quit = 1;
+        if (p->quit) *p->quit = quit;
         ios_midi_clear_notify(p->notify);
     }
-    if (!said++)
-        fprintf(stderr, "[audio] midi_notify_wait -> quit=TRUE (there is nothing to "
-                        "wait for; returning without this is a busy loop)\n");
     return STATUS_SUCCESS;
 }
 
-static NTSTATUS ios_midi_message(void *args) {
-    struct ios_midi_message_params *p = args;
-    static unsigned said;
-    if (p) {
-        if (p->err) *p->err = IOS_MMSYSERR_NOTSUPPORTED;
-        ios_midi_clear_notify(p->notify);
-    }
-    if (said++ < 8)
-        fprintf(stderr, "[audio] midi message msg=%u -> MMSYSERR_NOTSUPPORTED\n",
-                p ? p->msg : 0);
+static NTSTATUS ios_midi_out_message(void *args) {
+    bcd_midi_out_message64(args);
+    return STATUS_SUCCESS;
+}
+
+static NTSTATUS ios_midi_in_message(void *args) {
+    bcd_midi_in_message64(args);
     return STATUS_SUCCESS;
 }
 
 static NTSTATUS ios_aux_message(void *args) {
-    struct ios_aux_message_params *p = args;
-    static unsigned said;
-    if (p && p->err) *p->err = IOS_MMSYSERR_NOTSUPPORTED;
-    if (said++ < 8)
-        fprintf(stderr, "[audio] aux message msg=%u -> MMSYSERR_NOTSUPPORTED\n",
-                p ? p->msg : 0);
+    bcd_midi_aux_message64(args);
     return STATUS_SUCCESS;
 }
 
@@ -2075,9 +2156,9 @@ const void *audio_null_ios_unix_call_funcs[] = {
     ios_get_prop_value,                /* get_prop_value */
     ios_midi_stub,                     /* midi_get_driver */
     ios_midi_init,                     /* midi_init */
-    ios_midi_stub,                     /* midi_release   (args == NULL) */
-    ios_midi_message,                  /* midi_out_message */
-    ios_midi_message,                  /* midi_in_message */
+    ios_midi_release,                  /* midi_release   (args == NULL) */
+    ios_midi_out_message,              /* midi_out_message */
+    ios_midi_in_message,               /* midi_in_message */
     ios_midi_notify_wait,              /* midi_notify_wait */
     ios_aux_message,                   /* aux_message */
 };
@@ -2105,48 +2186,24 @@ static NTSTATUS ios_wow64_midi_notify_wait(void *args)
     return ios_midi_notify_wait(&params);
 }
 
-static NTSTATUS ios_wow64_midi_message(void *args)
+/* The block, the MIDIOPENDESC / MIDIHDR behind it and the notification are decoded in their 32-bit layout by
+ * bcd_midi_ios.c. */
+static NTSTATUS ios_wow64_midi_out_message(void *args)
 {
-    struct {
-        UINT dev_id;
-        UINT msg;
-        PTR32 user;
-        PTR32 param_1;
-        PTR32 param_2;
-        PTR32 err;
-        PTR32 notify;
-    } *params32 = args;
-    struct ios_midi_message_params params = {
-        .dev_id = params32->dev_id,
-        .msg = params32->msg,
-        .user = params32->user,
-        .param_1 = params32->param_1,
-        .param_2 = params32->param_2,
-        .err = ios_wow_host_ptr(params32->err),
-        .notify = ios_wow_host_ptr(params32->notify),
-    };
-    return ios_midi_message(&params);
+    bcd_midi_out_message32(args);
+    return STATUS_SUCCESS;
+}
+
+static NTSTATUS ios_wow64_midi_in_message(void *args)
+{
+    bcd_midi_in_message32(args);
+    return STATUS_SUCCESS;
 }
 
 static NTSTATUS ios_wow64_aux_message(void *args)
 {
-    struct {
-        UINT dev_id;
-        UINT msg;
-        PTR32 user;
-        PTR32 param_1;
-        PTR32 param_2;
-        PTR32 err;
-    } *params32 = args;
-    struct ios_aux_message_params params = {
-        .dev_id = params32->dev_id,
-        .msg = params32->msg,
-        .user = params32->user,
-        .param_1 = params32->param_1,
-        .param_2 = params32->param_2,
-        .err = ios_wow_host_ptr(params32->err),
-    };
-    return ios_aux_message(&params);
+    bcd_midi_aux_message32(args);
+    return STATUS_SUCCESS;
 }
 
 /* ================= the 32-bit (WoW64) table =================
@@ -2618,9 +2675,9 @@ const void *audio_null_ios_unix_call_wow64_funcs[] = {
     ios_wow64_get_prop_value,          /* get_prop_value */
     ios_midi_stub,                     /* midi_get_driver (ignores args) */
     ios_wow64_midi_init,               /* midi_init */
-    ios_midi_stub,                     /* midi_release    (args == NULL) */
-    ios_wow64_midi_message,            /* midi_out_message */
-    ios_wow64_midi_message,            /* midi_in_message */
+    ios_midi_release,                  /* midi_release    (args == NULL) */
+    ios_wow64_midi_out_message,        /* midi_out_message */
+    ios_wow64_midi_in_message,         /* midi_in_message */
     ios_wow64_midi_notify_wait,        /* midi_notify_wait */
     ios_wow64_aux_message,             /* aux_message */
 };

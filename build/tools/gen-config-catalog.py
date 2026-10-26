@@ -45,6 +45,10 @@ INT_READERS = {"madeira_cfg_int", "mad_cfg_int_pe"}
 # Titles, kinds and fixed choices for options with a dedicated Settings row.
 # "choices" are (value, label); the empty value means "remove the key".
 OVERLAY = {
+    "env.MADEIRA_PASTE_INTERVAL_MS": {"category": "Windows, display & input", "title": "Clipboard typing interval (ms)",
+                "kind": "int", "default": "10",
+                "note": "Default 10 ms between pasted characters. Range 5-100 ms; use a longer interval for games "
+                        "that miss fast text input. Enforced at delivery as well as queueing. Restart the session after changing it."},
     "env.MADEIRA_PIN_GRAPHICS_DLLS": {"category": "Memory & JIT pool", "title": "Keep graphics DLLs loaded",
                 "kind": "bool", "default": "0",
                 "note": "Default off. On a D3D12 device/probe call, pins already loaded D3D12, DXGI and Wine Metal "
@@ -569,6 +573,75 @@ OVERLAY = {
                 "note": "The smallest allocation the swap tier backs (ml1257): 8 MB in classic, 1 MB in blocks and wide, 4 MB in broad unless set. MADEIRA_SWAP_MIN_KB overrides it for blocks, wide and broad."},
     "inproc-sync": { "category": "Synchronisation","title": "Madsync (in-process sync)", "default": "0",
                 "note": "1 selects madsync (Settings > Sync engine > Madsync). Unset: fastsync, the default engine; 0 without env.MADEIRA_FASTSYNC: Wine standard sync."},
+    # Memory and process switches ported from Madeira (2026-10-25): every one is off unless set; the notes say what it does for a person.
+    "env.MADEIRA_ENV_LOCKED": {"category": "App & front end", "kind": "text", "default": "",
+                "note": "A comma-separated list of environment names that bcd.cfg's and a game's env.* lines may not replace (names the host set on purpose, e.g. MADEIRA_EXE). "
+                        "Each skipped line is logged. Nothing is locked unless a host sets this."},
+    "env.MADEIRA_IMAGE_LOW_ALIAS": {"category": "Memory & JIT pool", "kind": "bool", "default": "0", "title": "Low name for a narrowed image address",
+                "note": "Default off. 1: a 64-bit image whose preferred address is below 4 GB (mapped higher here) also answers at the low 32 bits of its address, for a program that "
+                        "narrows its module handle to 32 bits; the table of low names holds 48 entries instead of 16. Set it in the game's own file; read at session start."},
+    "env.MADEIRA_QUERY_CLIP": {"category": "Memory & JIT pool", "kind": "bool", "default": "0", "title": "VirtualQuery calls only allocatable memory free",
+                "note": "Default off. 1: VirtualQuery reports memory no allocation can land in (below the map floor, mappings of iOS itself, the JIT pool) as reserved, not free, "
+                        "for a program that looks for a free block near its exe. It asks the kernel about the host's mappings for it. Set it in the game's own file; read at session start."},
+    "env.MADEIRA_THIN_RESERVE": {"category": "Memory & JIT pool", "kind": "bool", "default": "0", "title": "Thin 1-2 GB reservations",
+                "note": "Default off. 1: after the first 8 GB of read-write reservations of 1 to 2 GB (no address given), each new one gets a real 63 MB head and the program is told it got "
+                        "the full size; a commit that grows past the head fails and is logged ([thin] OVERFLOW). For a game that reserves dozens of 1 GB blocks and commits little of "
+                        "each. Set it in the game's own file; read at session start."},
+    "env.MADEIRA_THIN_RESERVE_MB": {"category": "Memory & JIT pool", "kind": "int", "default": "64", "title": "Thin reservation: slot size (MB)",
+                "note": "With MADEIRA_THIN_RESERVE = 1: the stride of the thin heads, 16 to 512 MB; the real head is 1 MB less. 64 by default."},
+    "env.MADEIRA_THIN_RESERVE_AFTER_GB": {"category": "Memory & JIT pool", "kind": "int", "default": "8", "title": "Thin reservation: GB reserved normally first",
+                "note": "With MADEIRA_THIN_RESERVE = 1: how many GB of 1-2 GB read-write reservations are made normally before the thin ones start. 8 by default."},
+    "env.MADEIRA_EXE_WINDOW_HANDOFF": {"category": "Memory & JIT pool", "kind": "bool", "default": "0", "title": "Hand the fixed address to a relaunched copy",
+                "note": "Default off. 1: a program with stripped relocations that starts a copy of itself and exits (a launcher relaunching itself) hands its fixed address to the copy "
+                        "(the copy waits for the exit, up to MADEIRA_EXE_WINDOW_WAIT_MS), and the window's claim is matched with the image size rounded to memory pages. Set it in the game's own file."},
+    "env.MADEIRA_ARENA_GUARD": {"category": "Memory & JIT pool", "kind": "bool", "default": "0", "title": "Keep fixed reservations out of the emulator's arena",
+                "note": "Default off. 1: a reservation that names its own address (or a hint) and overlaps the emulator's arena is refused with STATUS_CONFLICTING_ADDRESSES, so the "
+                        "program places it elsewhere, and the steering valve skips its top slot while the arena lies in it (Red Dead Redemption 2: the emulator ran out of room when Social Club's "
+                        "browser took part of its arena). Set it in the game's own file; read at session start."},
+    "env.MADEIRA_KUSER_KEEP_REGS": {"category": "Wine core (ntdll)", "kind": "bool", "default": "0", "title": "Leave registers that only look like KUSER pointers alone",
+                "note": "Default off. 1: after BCD emulated a program's read of KUSER_SHARED_DATA (0x7ffe0000), it no longer rewrites the other registers that hold a value in that range to the "
+                        "real address. Off, it does, which makes the next read through those registers direct; on, a program that keeps a constant like 0x7ffe0283 in a register gets it back as it was "
+                        "(The Adventures of Elliot). Set it in the game's own file; read at session start."},
+    "env.MADEIRA_AUDIO_IO_MS": {"category": "Windows, display & input", "kind": "int", "default": "0", "title": "Audio: IO buffer the app asks iOS for (ms)",
+                "note": "Default 0: the system's slice (about 21 ms). N (1 to 100, 5 is the usual): the app asks the audio session for an N ms IO buffer, and the audio driver then reports an engine "
+                        "period of at least two slices. For a game that keeps only one 10 ms period queued (a Godot 4 game): with the default its audio is choppy and slow. Costs more render "
+                        "callbacks. Set it in the game's own file; read at session start."},
+    "env.MADEIRA_AUDIO_PERIOD_MS": {"category": "Windows, display & input", "kind": "int", "default": "0", "title": "Audio: engine period the driver reports (ms)",
+                "note": "Default 0: 10 ms, or twice the slice env.MADEIRA_AUDIO_IO_MS was granted when that is set. 1 to 200 sets the shared-mode engine period outright; 10 is the old value. "
+                        "Set it in the game's own file; read at session start."},
+    "env.MADEIRA_THREAD_QOS": {"category": "Exceptions & threads", "kind": "text", "default": "", "title": "QoS class per guest thread, by its name",
+                "note": "Default off. pattern=class;pattern=class: a thread whose name (SetThreadDescription) matches a pattern runs at that QoS class. First match wins; * and ? are wildcards; classes: "
+                        "user-interactive, user-initiated, default, utility, background. Unnamed and unmatched threads stay user-interactive, and eco still overrides everything. For a game whose worker "
+                        "pools take the performance cores from its main thread (Dark Souls III: GXWorker*=user-initiated;FD4JobWorker*=utility). Set it in the game's own file; read at session start."},
+    "env.DXMT_CENSUS_THROTTLE": {"category": "Direct3D 9/10/11 (DXMT)", "kind": "bool", "default": "1", "title": "Throttle DXMT's memory census",
+                "note": "On for every session (BCD sets it): DXMT's memory census writes one [mem-census] report every 10 s instead of four to nine a second in a 64-bit game; a memory warning and the "
+                        "first report of the process are always written. 0 restores the old cadence."},
+    "env.MADEIRA_RESTORE_BORN_MINIMIZED_LATE": {"category": "Windows, display & input", "kind": "bool", "default": "0", "title": "Restore a window shown minimized after the starting screen",
+                "note": "Default off. 1: after a BCD Dock start's starting screen has found the game's window, a window the game shows minimized for the first time is still restored (once), "
+                        "until the session ends; a game whose main window comes up minimized behind its splash screen then no longer sits there. Off, the restore ends with the starting screen. "
+                        "Set it in the game's own file; read at session start."},
+    "env.MADEIRA_PASTE_SHORTCUT": {"category": "Windows, display & input", "kind": "bool", "default": "0", "title": "Command-V pastes the clipboard as typed text",
+                "note": "Default off. 1: Command-V on a hardware keyboard types the iPad's clipboard text into the program (the keyboard bar's Paste button works without it). It makes the Command key "
+                        "wait for its partner key before the program sees it, so a Command tap or another Command chord reaches Windows a moment later. Set it in the game's own file; read at session start."},
+    "env.MADEIRA_FORCE_CONSOLE": {"category": "Wine core (ntdll)", "kind": "bool", "default": "0", "title": "Build a console for a program with pipes on its standard handles",
+                "note": "Default off. 1: a program whose standard input and output are pipes (env.MADEIRA_STDIN_PIPE, env.MADEIRA_STDOUT_PIPE) gets Wine's console host anyway, as it would on a "
+                        "terminal. Documents/bcd-console.txt sets it. Unproven in a 64-bit session."},
+    # Read by SteamLanguage (SwiftSteam/Library/SteamAppInfo.swift), which no call pattern below finds; the choices are
+    # SteamLanguage.all (tests/host/check-steam-language.py compares the two lists).
+    "env.MADEIRA_STEAM_LANGUAGE": {"category": "Steam & Dock", "title": "Steam game language", "kind": "choice", "default": "",
+                "note": "The language BCD downloads Steam games in, and the one it tells the game to start in. Unset: English, as BCD always did. "
+                        "Device language follows this device's language. A game without the chosen language gets English. A game's page can pick "
+                        "its own (Options, Steam). It applies to downloads, updates and repairs made from now on; an installed game keeps its language.",
+                "sources": ["app/Madeira/SwiftSteam/Library/SteamAppInfo.swift"],
+                "choices": [("", "English (default)"), ("device", "Device language"), ("arabic", "العربية"), ("bulgarian", "Български"),
+                            ("schinese", "简体中文"), ("tchinese", "繁體中文"), ("czech", "Čeština"), ("danish", "Dansk"),
+                            ("dutch", "Nederlands"), ("finnish", "Suomi"), ("french", "Français"), ("german", "Deutsch"),
+                            ("greek", "Ελληνικά"), ("hungarian", "Magyar"), ("indonesian", "Bahasa Indonesia"), ("italian", "Italiano"),
+                            ("japanese", "日本語"), ("koreana", "한국어"), ("norwegian", "Norsk"), ("polish", "Polski"),
+                            ("portuguese", "Português"), ("brazilian", "Português (Brasil)"), ("romanian", "Română"),
+                            ("russian", "Русский"), ("spanish", "Español (España)"), ("latam", "Español (Latinoamérica)"),
+                            ("swedish", "Svenska"), ("thai", "ไทย"), ("turkish", "Türkçe"), ("ukrainian", "Українська"),
+                            ("vietnamese", "Tiếng Việt")]},
     "env.MADEIRA_FASTSYNC": {"category": "Synchronisation", "title": "Fastsync (in-process sync, default)", "kind": "choice",
                 "note": "Fastsync is the default engine: with neither this nor inproc-sync set, the app exports auto. Settings > Sync engine > Fastsync removes both keys. Never runs while madsync is on. auto arms the fast wake path on heavy event traffic, 1 from the start, cells only answers polls, 0 is off.",
                 "choices": [("", "Default (auto)"), ("auto", "Auto"), ("1", "On"), ("cells", "Poll answers only"), ("0", "Off")]},
@@ -576,7 +649,17 @@ OVERLAY = {
     # build/win32u-unix/d3dkmt_ios.c; keep the DXMT category and note.
     "vram-mb": {"title": "Video memory budget (MB)", "category": "Direct3D 9/10/11 (DXMT)",
                 "note": "ml1095: bcd.cfg vram-mb = N"},
-    "pool": { "category": "Memory & JIT pool","title": "JIT pool size (MB)"},
+    "pool": { "category": "Memory & JIT pool","title": "JIT pool size (MB)",
+                "note": "The JIT pool size in MB (256 to 1152) for every launch; wins over the size the launch would pick. With pool-above-window = 1 a pool line in the game's own file counts too and wins."},
+    "pool-above-window": {"category": "Memory & JIT pool", "title": "Pool above a widened executable window", "kind": "bool", "default": "0",
+                "note": "Default off. 1, in the game's own file: (a) a pool line in the game's file sets its pool size, to fit a free run above its executable window; "
+                        "(b) with pool-split, the pool takes two runs above the window when together they are larger than the single run it would get, also when that run lies above the window "
+                        "in the higher of two (The Adventures of Elliot: 240 + 288 MB instead of 288 MB), and a run of 128 MB or more can be the first. Meant for a game with a large "
+                        "fixed-address program (exe-window-mb). Read at launch."},
+    "exe-window-auto": {"category": "Memory & JIT pool", "title": "Measure the executable window from the game's folder", "kind": "bool", "default": "0",
+                "note": "Default off. 1, in the game's own file or bcd.cfg: a BCD Dock launch reads the headers of the programs in the game's folder, and the largest "
+                        "fixed-address one (relocations stripped, based at 0x140000000) sets the executable window, in 16 MB steps, as exe-window-mb would. An exe-window-mb "
+                        "of the game's own wins. Off, the window is 128 MB or what exe-window-mb says. Read at launch."},
     "totalphys": { "category": "Memory & JIT pool","title": "Reported physical memory (MB)"},
     "eco": { "note": 'Runs guest threads at a lower iOS QoS class so the system favours efficiency and saves power; can cost speed. Class chosen by eco-qos.',"title": "Eco scheduling"},
     "eco-qos": {"title": "Eco QoS class", "kind": "choice", "note": "The QoS class guest threads run at while eco is on.",
@@ -699,6 +782,24 @@ OVERLAY = {
                         "Off (default): the sound stays off until the game is restarted, as before. Logged as "
                         "[audio] interruption began / ended, resumed=1. Read when the session starts.",
                 "sources": ["build/ntdll-unix/audio_null_ios.c", "app/Madeira/WineProcessBridge.m"]},
+    # BCD (round 603): MIDI music (build/ntdll-unix/bcd_midi_ios.c, bcd_midi_synth_ios.m).
+    "env.MADEIRA_MIDI": {"category": "Audio", "title": "MIDI music",
+                "kind": "bool", "default": "1",
+                "note": "On (default): a game's MIDI music plays. Windows programs see one MIDI output device, \"BCD GM "
+                        "Synthesizer\", played by Apple's synthesizer with a General MIDI SoundFont (TimGM6mb, 5.7 MB, "
+                        "carried in the app; a bank of your own in Files > BCD > SoundFonts is used instead). The "
+                        "synthesizer is built when a game opens the device and gone when the game closes it: about 17 to "
+                        "30 MB of memory while a game plays MIDI, nothing otherwise. 0: no MIDI device, as in every build "
+                        "before this one, so a game that plays its music as MIDI is silent. Read when the game starts; "
+                        "logged as [midi].",
+                "sources": ["build/ntdll-unix/bcd_midi_ios.c", "build/ntdll-unix/bcd_midi_synth_ios.m"]},
+    "env.MADEIRA_MIDI_SOUNDFONT": {"category": "Audio", "title": "MIDI sound bank",
+                "kind": "text", "default": "",
+                "note": "Empty: the first .sf2 or .dls in Files > BCD > SoundFonts, else the General MIDI bank the app "
+                        "carries. A file name inside that folder, or a full path, picks another bank. A bank over 64 MB "
+                        "is refused: the synthesizer unpacks the whole bank in memory (a 32 MB bank takes about 190 MB). "
+                        "Read when a game opens the MIDI device.",
+                "sources": ["build/ntdll-unix/bcd_midi_synth_ios.m"]},
     "env.MADEIRA_LUM_PROBE": {"category": "Direct3D 9/10/11 (DXMT)",
                 "title": "Log GPU readback values", "kind": "bool", "default": "1",
                 "note": "1 (default): the log names what the game reads back from the GPU ([rb-tex], [rb-buf], "
@@ -939,17 +1040,54 @@ OVERLAY = {
                         "Unset (default): exactly as before. Set it in the game's own file; auto-tune adds it after that error in an "
                         "Epic session."},
     # madeira-bcd: DXMT's Direct3D 9 frontend for 64-bit programs (tools/build-d3d9-x64-dll.sh, WineProcessBridge.m).
+    # Round 602: the default is DXMT for a game whose folder shows a 64-bit Direct3D 9 program and no Direct3D 11, DXGI or Direct3D 12
+    # (BCDGraphicsDefaults.swift); this key is the game's own word, which always wins.
     "env.MADEIRA_D3D9_X64": {"category": "Direct3D 9/10/11 (DXMT)", "title": "Direct3D 9 for 64-bit games",
                 "kind": "choice", "default": "",
-                "choices": [("", "Wine's (default; needs OpenGL, which BCD lacks)"), ("dxmt", "DXMT's Direct3D 9 (Metal)")],
-                "sources": ["app/Madeira/WineProcessBridge.m", "tools/build-d3d9-x64-dll.sh"],
+                "choices": [("", "Automatic (DXMT when the game's folder shows a 64-bit Direct3D 9 program and no Direct3D 11, DXGI or 12)"),
+                            ("dxmt", "DXMT's Direct3D 9 (Metal)"), ("wined3d", "Wine's (needs OpenGL, which BCD lacks)")],
+                "sources": ["app/Madeira/WineProcessBridge.m", "tools/build-d3d9-x64-dll.sh", "app/Madeira/BCDGraphicsDefaults.swift"],
                 "note": "dxmt: a 64-bit game's d3d9.dll is d3d9-dxmt.dll, DXMT's Direct3D 9 frontend compiled for ARM64EC (the frontend the "
                         "32-bit games already use) instead of Wine's, which draws through wined3d's OpenGL backend: BCD has no "
                         "OpenGL, so Direct3DCreate9 fails (\"wined3d_adapter_gl_init Failed to get a GL context\", \"d3d9_init FAILED\") "
-                        "and the game blames its resolution (Darksiders II Deathinitive Edition, PICO PARK). Unset (default): Wine's "
-                        "d3d9.dll, as before. Set it in the game's own file, not for every game; read at session start. A 32-bit "
+                        "and the game blames its resolution (Darksiders II Deathinitive Edition, PICO PARK). Unset (default, build 602): "
+                        "BCD looks at the game's folder and uses DXMT's only when a 64-bit program there shows Direct3D 9 and nothing in "
+                        "the folder shows Direct3D 11, DXGI or Direct3D 12 (Cult of the Lamb, Graveyard Keeper, Moonlighter, Counter-Strike 2 "
+                        "and the other games that go on to Direct3D 11 keep Wine's); the log says \"[d3d9-x64] default=dxmt because ...\" "
+                        "or \"default unchanged\". wined3d: Wine's d3d9.dll whatever the folder shows. Read at session start. A 32-bit "
                         "game is not affected. On success the log shows the [WineProc] link line and DXMT's [d3d9-modes] lines; auto-tune adds "
                         "the line after the OpenGL failure."},
+    # madeira-bcd (round 602): crosire's d3d8to9 as a 32-bit game's d3d8.dll (tools/build-d3d8to9-dll.sh, BCDGraphicsRoutes.c).
+    "env.MADEIRA_D3D8": {"category": "Direct3D 9/10/11 (DXMT)", "title": "Direct3D 8 for 32-bit games",
+                "kind": "choice", "default": "",
+                "choices": [("", "Wine's (default; needs OpenGL, which BCD lacks)"), ("d3d9", "d3d8to9: Direct3D 8 on Direct3D 9 (DXMT, Metal)")],
+                "sources": ["app/Madeira/BCDGraphicsRoutes.c", "tools/build-d3d8to9-dll.sh"],
+                "note": "d3d9: a 32-bit game's d3d8.dll is d3d8to9.dll (crosire's d3d8to9, BSD-2-Clause), which implements Direct3D 8 on "
+                        "Direct3D 9; in a 32-bit session Direct3D 9 is DXMT's, so the game draws through Metal. Wine's d3d8.dll draws "
+                        "through wined3d's OpenGL backend: BCD has no OpenGL, so Direct3DCreate8 returns nothing (\"wined3d_adapter_gl_init "
+                        "Failed to get a GL context\") and the game stops (GTA III, POSTAL 2, Hotline Miami, Max Payne 2). Unset (default): "
+                        "Wine's d3d8.dll, as before. Set it in the game's own file, not for every game; read at session start. A 64-bit "
+                        "game is not affected. The log shows the [WineProc] link line; auto-tune adds the line after the OpenGL failure of "
+                        "a Direct3D 8 game it knows."},
+    # madeira-bcd (round 602): FunkyFr3sh's cnc-ddraw as a 32-bit game's ddraw.dll (tools/build-cnc-ddraw-dll.sh, BCDGraphicsRoutes.c).
+    "env.MADEIRA_DDRAW": {"category": "Direct3D 9/10/11 (DXMT)", "title": "DirectDraw for 32-bit games",
+                "kind": "choice", "default": "",
+                "choices": [("", "Wine's (default; 2D only, no scaling)"), ("cnc", "cnc-ddraw: DirectDraw 2D drawn through Direct3D 9 (DXMT, Metal) or GDI")],
+                "sources": ["app/Madeira/BCDGraphicsRoutes.c", "tools/build-cnc-ddraw-dll.sh"],
+                "note": "cnc: a 32-bit game's ddraw.dll is cnc-ddraw.dll (FunkyFr3sh's cnc-ddraw, MIT), a DirectDraw replacement for old 2D "
+                        "games that draws their surfaces through Direct3D 9 (DXMT in a 32-bit session) or GDI, with scaling, a window or a "
+                        "borderless full screen. Wine's ddraw.dll falls back to wined3d's no-3D adapter by itself when OpenGL is missing "
+                        "(2D works, unscaled). Direct3D 7 (3D DirectDraw) is not covered by either. Unset (default): Wine's ddraw.dll, as "
+                        "before. cnc-ddraw keeps its settings in ddraw.ini next to its DLL (C:\\windows\\syswow64\\ddraw.ini, created at "
+                        "the first start); env.CNC_DDRAW_CONFIG_FILE = <path> names another. Set it in the game's own file, not for "
+                        "every game; read at session start."},
+    # madeira-bcd (round 602): the master switch of the default above.
+    "env.BCD_D3D9_X64_AUTO": {"category": "Direct3D 9/10/11 (DXMT)", "title": "Choose the 64-bit Direct3D 9 from the game's folder",
+                "kind": "bool", "default": "1",
+                "sources": ["app/Madeira/BCDGraphicsDefaults.swift"],
+                "note": "0: BCD never picks DXMT's Direct3D 9 for a 64-bit game by itself; only a game's own env.MADEIRA_D3D9_X64 = dxmt line does "
+                        "(the behaviour of builds 595 to 601). 1 (default): the default described at env.MADEIRA_D3D9_X64. Set it in bcd.cfg, "
+                        "not for one game."},
     # madeira-bcd: the wineserver names an opened file with F_GETPATH (build/wineserver/fd_ios.c).
     "env.MADEIRA_SRV_FGETPATH": {"category": "Wine core (ntdll)", "title": "Name opened files with one call (server)",
                 "kind": "bool", "default": "0",
@@ -1551,6 +1689,11 @@ OVERLAY = {
                         "is the line to try). Not for the Steam client, browser engines or 32-bit programs. Logged as [user-va]. "
                         "Read once per session.",
                 "sources": ["build/ntdll-unix/virtual_ios.c"]},
+    "env.MADEIRA_ANON_LDADDAL32": {"category": "Exceptions & threads", "title": "Runtime code-write workaround",
+                "kind": "bool", "default": "0",
+                "note": "Default off. Enables the validated atomic write workaround after the matching Slay the Spire 2 or Quaver "
+                        "startup failure. Auto-tune offers it only for that game's recorded failure; other games keep their existing path.",
+                "sources": ["build/ntdll-unix/signal_arm64_ios.c"]},
     "env.MADEIRA_ANON_CAS_FLUSH": {"category": "Exceptions & threads", "title": "Atomic code patches go through the emulator",
                 "kind": "bool", "default": "0",
                 "note": "Default off: a compare-and-swap the game does on its own executable memory (a .NET runtime patching a stub it "
@@ -1566,6 +1709,15 @@ OVERLAY = {
     "metalfx-upscale": {"title": "MetalFX upscaling factor", "kind": "choice",
              "note": "Scales the presented picture with Apple's MetalFX spatial scaler (Direct3D 11 and 12). Usually set per game in Game details > Display.",
              "choices": [("", "Off"), ("1.5", "1.5x"), ("2", "2x")]},
+    # Round 603: "Look like this GPU" (app/Madeira/BCDGPUCards.swift, BCDGPUCardsLive.swift). tests/host/check-gpu-cards.py keeps the choices equal to the app's table.
+    "env.MADEIRA_GPU_VENDOR": {"note": "Set by the app for a game's gpu-card choice (four hex digits of the PCI vendor id); win32u names that adapter in the registry, EnumDisplayDevices and D3DKMT. Not for typing: choose a card with gpu-card."},
+    "env.MADEIRA_GPU_DEVICE": {"note": "Set by the app for a game's gpu-card choice (four hex digits of the PCI device id). Not for typing: choose a card with gpu-card."},
+    "env.MADEIRA_GPU_NAME": {"note": "Set by the app for a game's gpu-card choice: the adapter name Windows reports. Not for typing: choose a card with gpu-card."},
+    "gpu-card": {"title": "Look like this GPU", "kind": "choice", "category": "Direct3D 9/10/11 (DXMT)",
+             "note": "The graphics card the game is told it has: name, maker and model, the same in Direct3D 9, 10, 11 and 12 (DXGI) and in Windows (EnumDisplayDevices, the registry, D3DKMT). Usually set per game in Game details > Direct3D. Empty: BCD's own Apple GPU, or the GeForce RTX 3060 of \"Show the game an NVIDIA card\". A card here wins over that switch. Nothing runs faster. Video memory is vram-mb.",
+             "choices": [("", "As BCD does by default"), ("nvidia", "NVIDIA GeForce RTX 3060"), ("amd", "AMD Radeon RX 6700 XT"),
+                         ("amd-rx580", "AMD Radeon RX 580"), ("intel", "Intel UHD Graphics 630"), ("intel-arc", "Intel Arc A770"),
+                         ("apple", "Apple GPU (this phone's own)")]},
 }
 
 

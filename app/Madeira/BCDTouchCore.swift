@@ -76,6 +76,8 @@ struct BCDTouchItem: Identifiable, Hashable {
     var action: BCDTouchAction
     /// In keyboard-and-mouse mode, the controller input that presses this control too.
     var padLink: String?
+    /// The editor cannot move, resize or remove it.
+    var locked = false
 }
 
 // MARK: - Size and where touches count
@@ -120,6 +122,26 @@ enum BCDTouchGeometry {
 
     static func clampPlace(_ v: Double) -> Double { min(max(v, placeRange.lowerBound), placeRange.upperBound) }
     static func clampScale(_ v: Double) -> Double { min(max(v, scaleRange.lowerBound), scaleRange.upperBound) }
+}
+
+// MARK: - Which control is in front
+
+/// The controls are drawn, and take touches where they overlap, in list order: the last one is in
+/// front. Bringing one forward or back only reorders the list the layout already stores.
+enum BCDTouchLayering {
+    /// `list` with the element `id` moved to the front (last) or to the back (first); the same list
+    /// when it is not there or already there.
+    static func moved<T: Identifiable>(_ list: [T], _ id: T.ID, toFront: Bool) -> [T] {
+        guard let i = list.firstIndex(where: { $0.id == id }) else { return list }
+        if toFront ? i == list.count - 1 : i == 0 { return list }
+        var out = list
+        let item = out.remove(at: i)
+        if toFront { out.append(item) } else { out.insert(item, at: 0) }
+        return out
+    }
+
+    static func isFront<T: Identifiable>(_ list: [T], _ id: T.ID) -> Bool { list.last?.id == id }
+    static func isBack<T: Identifiable>(_ list: [T], _ id: T.ID) -> Bool { list.first?.id == id }
 }
 
 // MARK: - What reaches the game

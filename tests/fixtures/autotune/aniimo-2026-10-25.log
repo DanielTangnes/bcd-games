@@ -1,0 +1,18 @@
+[09:05:39.443] [INFO] Checking entitlements...
+[09:05:39.444] [INFO] [build] v0.1.600 (600)
+[09:05:39.445] [INFO] [device] model=iPhone17,2 idiom=phone os=iOS Version 27.2.0 (Build 24C50) ram=7622MB available=6124MB cores=6
+[09:05:39.446] [INFO] [device] address-map=[0x100194000,0x8000000000) 512GB increased-memory=1 extended-va=0
+[09:05:39.447] [INFO] [device] gpu="Apple A18 Pro GPU" family=apple9 argument-buffers=tier2 mesh=1 bc=1 atomics64=1 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[09:07:05.100] [INFO] [bcd] library launch Aniimo: avx=0 wine-vcrt=0 nvidia=0 game-config=1 metalfx=off
+[09:07:06.900] [INFO] Running full Wine sequence...
+[phase] wine-start             t+  0.688s rev=ml526
+[phase] spawn:L"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Aniimo\\Aniimo.exe" t+ 12.100s rev=ml526
+00a4:err:module:load_dll [dll-missing] rev=ml336 #1 L"tdh.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+00a4:err:module:import_dll Library tdh.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Aniimo\\NEP2.dll") not found
+00a4:err:module:import_dll Library NEP2.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Aniimo\\Aniimo.exe") not found
+00a4:err:module:loader_init Importing dlls for L"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Aniimo\\Aniimo.exe" failed, status c0000135
+00a4:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0xc0000135) syscalls=0 unix_calls=625
+[WineProc] stopping wineserver...
+[09:07:22.409] [INFO] Wine finished after 15.4s
+[09:07:22.719] [INFO] [exit-report] status=0xc0000135
+[frontend] returned to library

@@ -391,6 +391,7 @@ enum SteamDirectStart {
                 var isDirectory: ObjCBool = false
                 guard fm.fileExists(atPath: child.path, isDirectory: &isDirectory) else { continue }
                 if isDirectory.boolValue {
+                    if ["_commonredist", "commonredist", "redist"].contains(name.lowercased()) { continue }
                     if (try? fm.destinationOfSymbolicLink(atPath: child.path)) == nil { walk(child, relative, depth + 1) }
                 } else if child.pathExtension.lowercased() == "exe" {
                     found.append(relative)
@@ -431,6 +432,10 @@ enum SteamDirectStart {
     @Published private(set) var games: [DockGame] = []
     /// `buildid` of each install in Madeira's own library folder, by App ID.
     @Published private(set) var builds: [Int: Int] = [:]
+    /// The language each of those install records names (`UserConfig.language`).
+    @Published private(set) var languages: [Int: String] = [:]
+    /// The depots each of those install records holds.
+    @Published private(set) var depots: [Int: Set<Int>] = [:]
     private var scanning = false
     /// A refresh was asked for while a scan ran (an install record was just
     /// written): scan again once it ends.
@@ -445,19 +450,24 @@ enum SteamDirectStart {
         let drive = MadeiraDock.drive
         Task.detached(priority: .utility) {
             let found = MadeiraDock.games(drive: drive)
-            var builds: [Int: Int] = [:]
+            var builds: [Int: Int] = [:], languages: [Int: String] = [:], depots: [Int: Set<Int>] = [:]
             for game in found where SteamInstallPaths.isManaged(library: game.library) && game.installed {
-                if let build = SteamInstallFiles.buildID(appID: game.id, steamApps: SteamInstallPaths.steamApps(drive: drive)) {
+                let steamApps = SteamInstallPaths.steamApps(drive: drive)
+                if let build = SteamInstallFiles.buildID(appID: game.id, steamApps: steamApps) {
                     builds[game.id] = build
                 }
+                languages[game.id] = SteamInstallFiles.language(appID: game.id, steamApps: steamApps)
+                depots[game.id] = SteamInstallFiles.depots(appID: game.id, steamApps: steamApps)
             }
-            let recorded = builds
+            let recorded = builds, recordedLanguages = languages, recordedDepots = depots
             await MainActor.run {
                 self.scanning = false
                 let again = self.rescan
                 self.rescan = false
                 if self.games != found { self.games = found }
                 if self.builds != recorded { self.builds = recorded }
+                if self.languages != recordedLanguages { self.languages = recordedLanguages }
+                if self.depots != recordedDepots { self.depots = recordedDepots }
                 if found.count != self.lastCount {
                     self.lastCount = found.count
                     LogStore.shared.log("[steam-games] installed=\(found.count) ready=\(found.filter(\.installed).count)")
@@ -512,7 +522,7 @@ enum SteamPlayCheck {
             guard on != oldValue else { return }
             MadeiraConfig.set("env.MADEIRA_STEAM_CLOUD", on ? nil : "0")
             SteamLog.event("[steam-cloud] setting on=\(on ? 1 : 0)")
-            if on { SteamOwnedLibrary.shared.cloudTurnedOn() } else { SteamOwnedLibrary.shared.objectWillChange.send() }
+            if on { SteamOwnedLibrary.shared.cloudTurnedOn() } else { SteamOwnedLibrary.shared.cloudTurnedOff() }
         }
     }
 }

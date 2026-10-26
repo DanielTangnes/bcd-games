@@ -62,6 +62,29 @@ Statically linked into the application binary:
   non-free component. Source tarball (the unmodified upstream release from
   ffmpeg.org) and its SHA-256: build/ffmpeg/src, built by build/ffmpeg/build.sh.
 
+Separate Windows DLLs built from unmodified third-party source (opt-in per game; Wine's own DLLs stay the default):
+- d3d8to9 v1.16.0 (https://github.com/crosire/d3d8to9), BSD-2-Clause, (C) 2015 Patrick Mours: i386-windows/d3d8to9.dll,
+  Direct3D 8 on Direct3D 9 (legal/LICENSES/BSD-2-d3d8to9.txt).
+- cnc-ddraw v7.1.0.0 (https://github.com/FunkyFr3sh/cnc-ddraw), MIT, (c) 2022 github.com/FunkyFr3sh: i386-windows/cnc-ddraw.dll,
+  a DirectDraw replacement (legal/LICENSES/MIT-cnc-ddraw.txt). It contains LodePNG (zlib licence, (c) 2005-2018 Lode
+  Vandevenne; legal/LICENSES/zlib-lodepng.txt) and DetourEnumerateModules from Microsoft Detours (MIT, (c) Microsoft
+  Corporation; legal/LICENSES/MIT-Detours.txt).
+
+Separate Windows programs built from unmodified third-party source (started from the Start menu; nothing of them is linked into BCD):
+- 7-Zip 26.05 (https://www.7-zip.org/, https://github.com/ip7z/7zip), (C) 1999-2026 Igor Pavlov: arm64ec-windows/7zFM.exe (the File
+  Manager) and 7z.exe (the command-line program). GNU LGPL-2.1-or-later (LGPL-2.1.txt); the LZFSE and Zstandard decoders are BSD
+  3-clause and Xxh64 is BSD 2-clause; the project's licence text is legal/LICENSES/7-Zip-License.txt. BCD builds 7-Zip WITHOUT its
+  RAR code (the part under the unRAR licence restriction), as the project's own DISABLE_RAR option does, so RAR archives are not
+  supported. Source (the unmodified release) and its SHA-256: third-party/7zip, built by tools/build-7zip.py. Statically linked
+  with llvm-mingw's runtime (LLVM-Apache-2.0-with-exception.txt; legal/LICENSES/MinGW-w64-runtime.txt).
+
+Bundled data file (not part of the source repository; the build downloads it, checks its SHA-256 and does not change it):
+- TimGM6mb.sf2 (soundfont/), the General MIDI sound bank games' MIDI music is played with by Apple's synthesizer:
+  GNU General Public License, version 2 (legal/LICENSES/GPL-2.0.txt), Copyright 2004 Tim Brechbill, 2010 David
+  Bolton; some samples are the author's own, the others public domain or under the GPL. It is a data file beside
+  BCD, not linked into it, and stays under its own licence. The file is its own source. Notice:
+  soundfont/NOTICE-TimGM6mb.txt. SHA-256 c5378b62028c920cb11e4803327983fee2f2cdff5dc89c708e39da417e51c854.
+
 Inside Wine's Windows modules, unmodified, from Wine's libs/ (licence files
 as Wine ships them in legal/LICENSES/wine-libs/): capstone (3-clause
 BSD-style), compiler-rt (University of Illinois/NCSA or MIT), FAudio (zlib),
@@ -86,6 +109,11 @@ Downloaded on the device when the user asks, never part of BCD's packages:
 - Microsoft Visual C++ runtime (x64): downloaded from Microsoft after the user
   accepts Microsoft's license terms for it, and kept unmodified in
   Library/Application Support/VCRuntime. BCD does not redistribute it.
+- The Start menu's "BCD Runtimes" (bcd-runtimes/, built into arm64ec-windows/bcd-runtimes-x64.exe): Microsoft's XNA Framework
+  Redistributable 4.0 and DirectX End-User Runtimes (June 2010), NVIDIA's PhysX System Software 9.21.0713 and the OpenAL
+  installer (Creative Technology, openal.org). Each is downloaded from its vendor's own site only when the user presses its button
+  in that window (which names the vendor's terms), is checked against a pinned SHA-256 and size and is deleted after installing.
+  They are never part of BCD's packages; the vendors' own licences apply to them.
 
 Dynamically loaded at runtime:
 - Apple Metal Shader Converter dynamic library: Apple proprietary, under the

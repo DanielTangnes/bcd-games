@@ -8,7 +8,8 @@ import UIKit
 /// The in-game layer on sample values, for the preview app's photographs (tools/ui-preview.py):
 ///   -BCDTab ingame-menu[-display|-controls|-tools|-binds|-quit|-cloud|-desk]
 ///   -BCDTab starting[-dock|-installs|-failed|-log|-home]
-///   -BCDTab overlay[-desk|-keyboard]
+///   -BCDTab overlay[-1|-2|-3|-4|-custom|-legacy|-edit|-warn|-desk|-keyboard]   (the performance HUD's layouts; -legacy is an old overlay carried over)
+///   -BCDTab ingame-menu-hud[-custom]   (the Display tab with the HUD's rows, or the Custom HUD's page)
 /// A picture of a game stands in for the running game. Only the preview app compiles this file.
 struct BCDPreviewSessionScreens: ViewModifier {
     let store: BCDStore
@@ -118,10 +119,10 @@ private struct BCDPreviewSessionStage: View {
             hud.starting = BCDStartingFeed(info)
             return
         }
-        hud.overlay = BCDPerformanceFeed(BCDPreviewSessionSamples.libraryReading)
+        hud.performance = BCDPreviewSessionSamples.hudFeed(spec)
         if spec == "overlay-keyboard" { keyboard.latched = ["ctrl"] }
         if spec.hasPrefix("ingame-menu") {
-            hud.overlay = nil
+            hud.performance = nil
             let desk = spec == "ingame-menu-desk"
             let source = BCDPreviewMenuSource(title: game.title, desk: desk)
             let parts = spec.split(separator: "-").map(String.init)
@@ -130,10 +131,14 @@ private struct BCDPreviewSessionStage: View {
             case "ingame-menu-binds": menu.initialTab = .controls; menu.initialPage = "binds"
             case "ingame-menu-quit": menu.initialQuestion = "quit"
             case "ingame-menu-cloud": source.cloud = "conflict"
+            case "ingame-menu-hud": menu.initialTab = .display
+            case "ingame-menu-hud-custom": menu.initialTab = .display; menu.initialPage = BCDHUDMenu.customPage; source.hudSetup = BCDHUDSetup(layout: .custom)
             default: break
             }
             source.menu = menu
             menu.custom["touch"] = { AnyView(BCDPreviewTouchSection()) }
+            menu.custom[BCDInputMenu.lookCustom] = { AnyView(BCDTouchLookSampleLive()) }
+            if spec == "ingame-menu-look" { menu.initialTab = .controls; menu.initialPage = BCDInputMenu.lookPage }
             hud.menu = menu
             hud.message = ""
         }
@@ -150,6 +155,7 @@ private struct BCDPreviewSessionStage: View {
         source.menu = menu
         source.onClose = { [weak hud] in hud?.menu = nil }
         menu.custom["touch"] = { AnyView(BCDPreviewTouchSection()) }
+        menu.custom[BCDInputMenu.lookCustom] = { AnyView(BCDTouchLookSampleLive()) }
         hud.menu = menu
     }
     func closeMenu() { hud?.menu = nil }
@@ -159,11 +165,56 @@ private struct BCDPreviewSessionStage: View {
 }
 
 enum BCDPreviewSessionSamples {
-    static let libraryReading = BCDPerformanceReading(readings: [
-        BCDReading(id: "fps", text: "58 FPS", tone: .good), BCDReading(id: "ms", text: "17.2 ms"),
-        BCDReading(id: "cpu", text: "CPU 41% (top 96%)"), BCDReading(id: "gpu", text: "GPU 63% (10.8 ms)"),
-        BCDReading(id: "ram", text: "2310 MB"), BCDReading(id: "battery", text: "82%"), BCDReading(id: "heat", text: "Warm", tone: .warm),
-    ])
+    /// A frame-time graph with a few slow frames: 30 seconds of quarter seconds.
+    static let hudGraph: [Float] = (0..<120).map { i in
+        if i == 40 || i == 41 { return 52 }
+        if i == 77 { return 38 }
+        if i < 6 { return 0 }
+        return 16.6 + Float((i * 7) % 5) * 0.4
+    }
+
+    /// What the HUD reads on a game running well on a warm phone.
+    static var hudData: BCDHUDData {
+        var d = BCDHUDData()
+        d.fps = 58; d.cap = 60; d.frameMs = 17.2; d.low1 = 48; d.low01 = 31; d.worstMs = 52; d.stutters = 3
+        d.limitWords = "cap 60 · 120 Hz"
+        d.cpuTotal = 41; d.cpuTop = 96; d.gpuPercent = 63; d.gpuMs = 10.8
+        d.footprintMB = 3174; d.limitMB = 5800; d.peakMB = 3410; d.compressedMB = 480; d.swapMB = 420; d.jitUsedMB = 410; d.jitTotalMB = 1024
+        d.thermal = 1; d.lowPower = false; d.batteryPercent = 82
+        d.api = "D3D11 64"; d.renderSize = "1408x648"; d.outputSize = "2816x1296"; d.upscale = "MetalFX 2x"
+        d.playSeconds = 2530; d.clock = "21:05"; d.build = "602"
+        d.graph = hudGraph
+        return d
+    }
+
+    /// The HUD feed of an `overlay` screen of the preview app.
+    @MainActor static func hudFeed(_ spec: String) -> BCDHUDFeed {
+        let variant = spec.hasPrefix("overlay-") ? String(spec.dropFirst("overlay-".count)) : ""
+        var data = hudData
+        var setup = BCDHUDSetup(layout: .strip)
+        switch variant {
+        case "1": setup.layout = .pulse
+        case "3": setup.layout = .tune
+        case "4": setup.layout = .report
+        case "custom":
+            setup.layout = .custom
+            setup.custom = BCDHUDCustom.startingFrom(.tune)
+            setup.custom.shape = .table
+            setup.custom.items = [.fps, .low1, .frameMs, .cpu, .gpu, .memory, .jit, .thermal, .frameGraph]
+        case "legacy":
+            setup = BCDHUDMigration.resolve(stored: nil, performance: true, fields: nil, everyGame: .off, legacyPlace: nil)
+            data.footprintMB = 2104
+        case "warn":
+            data.fps = 41; data.warning = .warm; data.thermal = 2
+        case "edit": break
+        default: break   // "" and "2": layout 2
+        }
+        let plan = BCDHUDRows.plan(layout: setup.layout, custom: setup.custom, data: data, width: 400)
+        let feed = BCDHUDFeed(plan: plan, places: setup.places, editing: variant == "edit")
+        feed.dimmed = false
+        return feed
+    }
+
     static let deskReading = BCDPerformanceReading(readings: [
         BCDReading(id: "fps", text: "59.8 FPS", tone: .good), BCDReading(id: "mem", text: "2310/6144 MB", tone: .good),
         BCDReading(id: "present", text: "#14822", tone: .soft), BCDReading(id: "heat", text: "Cool", tone: .good),
@@ -185,9 +236,12 @@ enum BCDPreviewSessionSamples {
     let title: String
     let desk: Bool
     var cloud: String?
-    private var fps = "1", scale = "fit", overlay = true, fields: Set<String> = ["FPS", "Frame time", "RAM", "Battery"]
+    private var fps = "1", scale = "fit", overlay = true
+    var hudSetup = BCDHUDSetup(layout: .strip)
     private var eco = false, padMode = "keys", padAPI = "xinput"
     private var pointer = "absolute", speed = 2.0, sync = "1"
+    /// Round 604's input choices (BCDInputMenu.swift): the look is the app's preferences, the rest is kept here.
+    var input = BCDInputProfile(lines: ["touchlook": BCDInputPrefs.shared.lines(BCDTouchLookModel.feature, game: BCDInputPrefs.everyone)])
 
     init(title: String, desk: Bool) {
         self.title = title
@@ -237,13 +291,13 @@ enum BCDPreviewSessionSamples {
                            kind: .choice([.init(id: "fit", title: "Fit"), .init(id: "fill", title: "Fill"), .init(id: "stretch", title: "Stretch"),
                                           .init(id: "aspect", title: "Game's shape")], selected: scale)),
             ]))
-            var rows = [BCDMenuRow(id: "overlay", title: "Performance overlay", detail: "Drag it where you want it.", kind: .toggle(overlay))]
-            if overlay && !desk {
-                rows.append(BCDMenuRow(id: "overlay.fields", title: "Shows", kind: .multi(
-                    [("FPS", "FPS"), ("Frame time", "Frame time"), ("CPU", "CPU"), ("GPU", "GPU"), ("RAM", "Memory"), ("Battery", "Battery"),
-                     ("Thermal", "Heat")].map { BCDChoice(id: $0.0, title: $0.1) }, selected: fields)))
+            if desk {
+                out.append(BCDMenuSection(id: "overlay", title: "Overlay", rows: [
+                    BCDMenuRow(id: "overlay", title: "Performance overlay", detail: "Drag it where you want it.", kind: .toggle(overlay)),
+                ]))
+            } else {
+                out += BCDHUDMenu.sections(hudSetup, screen: .landscape)
             }
-            out.append(BCDMenuSection(id: "overlay", title: "Overlay", rows: rows))
             out.append(BCDMenuSection(id: "eco", title: "Battery & heat", rows: [
                 BCDMenuRow(id: "eco", title: "Eco mode",
                            detail: "The game's threads run on the efficiency cores: the phone stays cooler, the game runs slower. Handy while a game loads; off again for play.",
@@ -260,11 +314,12 @@ enum BCDPreviewSessionSamples {
                         .init(id: "", title: "Its own support"), .init(id: "dinput", title: "XInput + DirectInput"), .init(id: "keys", title: "Keyboard & mouse"),
                     ], selected: padMode)),
                     BCDMenuRow(id: "binds", title: "Controller binds", symbol: "gamecontroller", kind: .page("binds", value: "2 changed")),
-                    BCDMenuRow(id: "pad.api", title: "Controller API", kind: .choice([.init(id: "xinput", title: "XInput"), .init(id: "hid", title: "DirectInput / HID")], selected: padAPI)),
+                    BCDMenuRow(id: "pad.api", title: "Controller API", kind: .choice(BCDPadModel.choices().map { .init(id: $0 == .xbox ? "xinput" : $0.line, title: $0.title) }, selected: padAPI)),
                     BCDMenuRow(id: "pad.api.status", title: padAPI == "xinput" ? "Live in this session" : "Needs a restart: quit BCD, then start this game again",
                                symbol: padAPI == "xinput" ? "checkmark.circle" : "arrow.clockwise.circle", kind: .note(padAPI == "xinput" ? .good : .warm)),
                 ]))
             }
+            out += BCDInputMenu.sections(input, players: BCDPlayersModel.shared.snapshot)   // round 604: turbo and macros, touch control look, ...
             out.append(BCDMenuSection(id: "pointer", title: "Mouse & pointer", rows: [
                 BCDMenuRow(id: "pointer", title: "A finger on the game", detail: "Drag to move the pointer, as on a trackpad. A tap clicks.",
                            kind: .choice([.init(id: "absolute", title: "Trackpad"), .init(id: "touch", title: "Tap to click"),
@@ -289,6 +344,8 @@ enum BCDPreviewSessionSamples {
     }
 
     func page(_ id: String) -> BCDMenuPage? {
+        if let inputPage = BCDInputMenu.page(id, input, players: BCDPlayersModel.shared.snapshot) { return inputPage }
+        if let hudPage = BCDHUDMenu.page(id, hudSetup) { return hudPage }
         switch id {
         case "binds":
             let groups: [(String, [(String, String)])] = [("Sticks", [("Left stick", "WASD"), ("Right stick", "The mouse")]),
@@ -318,7 +375,19 @@ enum BCDPreviewSessionSamples {
 
     func logLines() -> [BCDLogLine] { BCDPreviewSessionSamples.log }
     func act(_ row: String) { if row == "resume" { close() } }
+    private func changeInput(_ row: String, _ value: String) {
+        let current = input
+        guard let write = BCDInputLines.write(setting: BCDInputMenu.setting(of: row), value: value, current: { current.get($0, $1) }) else { return }
+        input.lines[write.feature, default: [:]][write.line] = write.value.isEmpty ? nil : write.value
+        if BCDInputLines.global.contains(write.feature) {
+            BCDInputPrefs.shared.set(write.feature, game: BCDInputPrefs.everyone, line: write.line, value: write.value)
+            BCDTouchLookModel.shared.reload()
+        }
+    }
+
     func toggle(_ row: String, _ on: Bool) {
+        if BCDInputMenu.handles(row) { return changeInput(row, on ? "1" : "0") }
+        if BCDHUDMenu.owns(row) { hudSetup = BCDHUDMenu.toggle(row, on, hudSetup).setup; return }
         switch row {
         case "overlay": overlay = on
         case "eco": eco = on
@@ -326,10 +395,11 @@ enum BCDPreviewSessionSamples {
         }
     }
     func choose(_ row: String, _ value: String) {
+        if BCDInputMenu.handles(row) { return changeInput(row, value) }
+        if BCDHUDMenu.owns(row) { hudSetup = BCDHUDMenu.choose(row, value, hudSetup, screen: .landscape).setup; return }
         switch row {
         case "fps": fps = value
         case "scale": scale = value
-        case "overlay.fields": if fields.contains(value) { fields.remove(value) } else { fields.insert(value) }
         case "pad.mode": padMode = value
         case "pad.api": padAPI = value
         case "pointer": pointer = value
@@ -338,12 +408,16 @@ enum BCDPreviewSessionSamples {
         }
     }
     func slide(_ row: String, _ value: Double) {
+        if BCDHUDMenu.owns(row) { hudSetup = BCDHUDMenu.slide(row, value, hudSetup).setup; return }
         switch row {
         case "speed": speed = value
         default: break
         }
     }
-    func answer(_ row: String, _ answer: String) { print("[preview] \(row): \(answer)") }
+    func answer(_ row: String, _ answer: String) {
+        if BCDHUDMenu.owns(row) { hudSetup = BCDHUDMenu.answer(row, answer, hudSetup).setup; return }
+        print("[preview] \(row): \(answer)")
+    }
     func pageShown(_ id: String?) {}
     func close() { onClose?() }
 }

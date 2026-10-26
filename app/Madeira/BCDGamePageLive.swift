@@ -47,7 +47,7 @@ import UniformTypeIdentifiers
     /// The game's library entry, which holds its settings: for an installed Steam game the one
     /// LibraryModel.steamEntry gives (made when it has none yet), for the Wine desktop its entry
     /// or, before its first start, the one the library makes then.
-    private func entry(for game: BCDGame) -> LibraryEntry? {
+    func entry(for game: BCDGame) -> LibraryEntry? {   // not private: the save backups' extension (BCDSaveBackups/) reads it
         let library = LibraryModel.shared
         switch BCDLiveID.parse(game.id) {
         case .steam(let appID)?:
@@ -106,6 +106,15 @@ import UniformTypeIdentifiers
         let advice = BCDLiveStore.shared.epicInstallAdvice(game.id)
         d.installBlocker = advice.blocker
         d.installWarning = advice.warning
+        // A Steam game before its install: what Steam says it downloads and takes (the selected depots), and its language.
+        if let id, !game.state.isInstalled, let owned = steam.game(id) {
+            d.downloadBytes = owned.downloadBytes.map { Int64(clamping: $0) }
+            d.installBytes = owned.installBytes.map { Int64(clamping: $0) }
+            if steam.downloads[id] == nil {
+                d.offersDownloadOptions = true
+                if settings { d.groups = [downloadGroup(id, owned)] }
+            }
+        }
         guard game.state.isInstalled, let entry = entry(for: game) else { return d }
         let desktop = entry.desktop == true
         let path = entry.windowsPath
@@ -114,15 +123,22 @@ import UniformTypeIdentifiers
         d.sizeOnDisk = entry.folderBytes
         if d.lastPlayed == nil { d.lastPlayed = entry.lastPlayed }
         d.blockers = blockers(entry, appID: id)
+        d.readiness = BCDReadinessLive.shared.note(for: entry) { [weak self] in self?.onChange?() }   // round 604: what the game's programs import that this device lacks
         // GOG's runtimes the game's build names that BCD does not install yet.
         d.storeNote = BCDLiveStore.shared.gogNote(game.id) ?? BCDLiveStore.shared.epicNote(game.id)
         // The sections only while Options is open: nothing is built for what is not on screen.
         if settings {
-            d.groups = [display(entry, profile), direct3D(entry, profile), compatibility(entry), controls(entry, profile)]
+            d.groups = [display(entry, profile), direct3D(entry, profile), compatibility(entry), controls(entry, profile), gyro(entry)]
+            d.groups.insert(contentsOf: setupGroups(game, entry, profile), at: 3)   // round 604: BCDGameSetup/BCDGamePageLiveSetup.swift (Windows, Components, CPU translation, Game fixes, Wine desktop)
             if let binds = binds(entry) { d.groups.append(binds) }
+            if !desktop { d.groups += inputGroups(entry) }   // round 604: BCDInputPage.swift (turbo and macros, ...)
             if let launch = launch(entry) { d.groups.append(launch) }
             if let id { d.groups.append(steamGroup(entry, id)) }
             if let dlc = dlcGroup(game) { d.groups.append(dlc) }
+            if !desktop { d.groups.append(midiGroup(entry)) }   // round 603: BCDMidi/BCDGamePageLiveMidi.swift
+            if !desktop, let sound = d.groups.lastIndex(where: { $0.id == "sound" }) { d.groups[sound].settings += soundSettings(entry) }   // round 604: BCDGamePageLiveSound.swift (audio delay, volume, resume)
+            if !desktop { d.groups.append(saveBackupsGroup(game, entry)) }   // round 603: BCDSaveBackups/BCDGamePageLiveSaves.swift
+            if !desktop { d.groups.append(helpGroup(game, entry)) }   // round 604: BCDGamePageLiveHelp.swift (debug run, game feedback, launch check)
             if !desktop { d.groups.append(libraryGroup(entry, gog: game.store == .gog || game.store == .epic)) }
         }
         if let id {
@@ -293,6 +309,11 @@ import UniformTypeIdentifiers
                       note: "Where barriers allow lets the GPU run passes side by side wherever the game's barriers permit; one after another is the safe default."),
             Self.toggle("nvidia", "Show the game an NVIDIA card", LibraryPrefs.nvidia(entry.windowsPath),
                         note: "For games that stop with \"no graphics card\" or \"failed to get GPU driver info\": Windows then reports an NVIDIA card and driver."),
+            // madeira-bcd (2026-10-25, round 603): the same, for any maker (BCDGPUCards.swift), and the video memory a game is told it has.
+            Self.line(BCDGPUCards.key, "Look like this GPU", profile, BCDGPUCards.choices,
+                      note: "The graphics card the game is told it has: its name, maker and model, the same in Direct3D 9, 10, 11 and 12 and in Windows. For a game that quits with \"unsupported GPU\" or only knows some makers. Nothing runs faster: the phone's GPU does the drawing. NVIDIA GeForce RTX 3060 is the card the switch above reports, and a card chosen here wins over that switch. A game may then load the maker's own helper libraries. From the next start."),
+            Self.line(BCDGPUCards.memoryKey, "Video memory", profile, BCDGPUCards.memoryChoices(RuntimeMemorySyncSettings.vramChoices),
+                      note: "The video memory the game is told it has. Games size their texture pools from it, so more than this phone can hold can end with iOS closing the game; Automatic follows what the phone can afford. Settings › Memory sets it for every game. From the next start."),
         ])
     }
 
@@ -336,9 +357,8 @@ import UniformTypeIdentifiers
                            value: String(format: "%.2f", opacity), defaultValue: "0.70"),
             BCDGameSetting(id: "size", title: "Touch controls' size", kind: .choice(percent([0.5, 0.75, 1, 1.25, 1.5, 2], size)),
                            value: String(format: "%.2f", size), defaultValue: "1.00"),
-            Self.line(GamepadInput.padModeKey, "Controller API", profile,
-                      Self.named(GameProfile.padModeChoices, ["": "XInput: an Xbox pad", "hid": "DirectInput / HID: the controller itself"]),
-                      note: "How player 1's controller reaches the game. Nearly every game reads XInput. DirectInput / HID shows a DualSense as a DualSense to Sony's PC games, and it is then no Xbox pad. From the next start."),
+            // Round 604: what the game sees as the controller (BCDPadModel.swift): an Xbox pad through XInput, a DualSense, a generic gamepad.
+            Self.line(GamepadInput.padModeKey, "Controller API", profile, BCDPadModel.choices().map { ($0.line, $0.title) }, note: BCDPadModel.pageNote),
         ]
         if GamepadInput.keyboardMouseAvailable {
             settings.append(BCDGameSetting(id: "controller", title: "Controller mode", kind: .choice([
@@ -355,11 +375,54 @@ import UniformTypeIdentifiers
             }
         }
         settings += [
-            Self.toggle("overlay", "Performance overlay", entry.performance,
-                        note: "Frame rate, frame time, memory and battery in a corner while you play."),
+            BCDGameSetting(id: "hud", title: "Performance HUD", kind: .choice(BCDHUDLayout.allCases.map { BCDGameChoice(value: $0.rawValue, label: $0.title) }),
+                           value: BCDHUDState.setup(for: entry).layout.rawValue, defaultValue: BCDHUDState.everyGame.rawValue,
+                           note: "What shows over the game while you play: 1 the frame rate, 2 one line, 3 adds the load and a graph, 4 everything for a bug report, Custom your own readings. Its position and the Custom readings are set in the in-game menu, under Display. Settings has the choice for every game."),
             Self.toggle("livelogs", "Log over the game", entry.liveLogs, note: "BCD's log on top of the game while it runs, for finding a problem."),
         ]
         return BCDGameSettingGroup(id: "controls", title: "Controls", symbol: "gamecontroller", settings: settings)
+    }
+
+    // MARK: Gyro aim
+
+    /// Turning the phone aims the game (BCDGyroAim.swift, BCDGyroLive.swift). Kept for the game by its path in the app's
+    /// own preferences, not in the game's config file: how a phone is held is no compatibility setting.
+    private func gyro(_ entry: LibraryEntry) -> BCDGameSettingGroup {
+        let s = BCDGyroStore.settings(entry.windowsPath)
+        let number = BCDGyroMenu.number
+        var settings = [
+            BCDGameSetting(id: "gyro-aim", title: "Turn the phone to aim",
+                           kind: .choice([BCDGameChoice(value: "", label: "Off"), BCDGameChoice(value: "mouse", label: "Moves the mouse"),
+                                          BCDGameChoice(value: "stick", label: "Pushes the right stick")]),
+                           value: s.target.rawValue, defaultValue: "",
+                           note: "The phone's gyroscope aims the game while it runs: as the mouse, or as the controller's right stick (the on-screen controller or a paired one). Off until you turn it on, and nothing runs while it is off."),
+        ]
+        if s.isOn {
+            settings += [
+                BCDGameSetting(id: "gyro-sens", title: "Sensitivity",
+                               kind: .choice(BCDGyroSettings.sensitivityChoices.map { BCDGameChoice(value: number($0), label: number($0) + "×") }),
+                               value: number(s.sensitivity), defaultValue: "1",
+                               note: "1× is 8 mouse counts a degree, or a full push of the stick at 90 degrees a second."),
+                BCDGameSetting(id: "gyro-hold", title: "Only while this is held",
+                               kind: .choice(BCDGyroHold.choices.map { BCDGameChoice(value: $0.0, label: $0.1) }), value: s.hold, defaultValue: "",
+                               note: "A button of the controller, on screen or paired: the gyro aims only while you hold it, as a trigger that steadies a shot does."),
+                BCDGameSetting(id: "gyro-invert", title: "Invert",
+                               kind: .choice([BCDGameChoice(value: "", label: "None"), BCDGameChoice(value: "x", label: "Left-right"),
+                                              BCDGameChoice(value: "y", label: "Up-down"), BCDGameChoice(value: "xy", label: "Both")]),
+                               value: s.invertWord, defaultValue: ""),
+                BCDGameSetting(id: "gyro-deadzone", title: "Still below",
+                               kind: .choice(BCDGyroSettings.deadzoneChoices.map { BCDGameChoice(value: number($0), label: number($0) + "°/s") }),
+                               value: number(s.deadzone), defaultValue: "0.5",
+                               note: "Turning slower than this, in degrees a second, is taken as the phone being still."),
+                BCDGameSetting(id: "gyro-turn", title: "Turn around",
+                               kind: .choice([BCDGameChoice(value: "", label: "The world's vertical"), BCDGameChoice(value: "screen", label: "The screen's vertical")]),
+                               value: s.turn.rawValue, defaultValue: "",
+                               note: "The world's vertical follows gravity, so a phone tilted back still turns the view as your arms turn. The screen's vertical is the phone's own axis."),
+            ]
+        }
+        let headline = !s.isOn ? "Off" : (s.target == .mouse ? "Mouse" : "Right stick") + " · " + number(s.sensitivity) + "×"
+            + (s.hold.isEmpty ? "" : " · while " + s.hold.uppercased())
+        return BCDGameSettingGroup(id: "gyro", title: "Gyro aim", symbol: "gyroscope", settings: settings, headline: headline)
     }
 
     // MARK: Controller binds
@@ -453,7 +516,8 @@ import UniformTypeIdentifiers
         }
         if entry.desktop != true && entry.steamAppID == nil {
             settings.append(BCDGameSetting(id: "arguments", title: "Launch arguments", kind: .text(prompt: "-windowed -nosplash"),
-                                           value: entry.arguments, note: "Handed to the program each time it starts."))
+                                           value: entry.arguments, note: "Handed to the program each time it starts.",
+                                           chips: BCDLaunchFlags.quick))
             let words = ["-dx12": "Ask for Direct3D 12", "-dx11": "Ask for Direct3D 11", "-dx10": "Ask for Direct3D 10",
                          "-dx9": "Ask for Direct3D 9", "-windowed": "Ask for a window", "-fullscreen": "Ask for full screen",
                          "-nosplash": "Skip the splash screen"]
@@ -471,6 +535,33 @@ import UniformTypeIdentifiers
     }
 
     // MARK: Steam
+
+    /// The Game language of a Steam download (SteamLanguage): Follow Settings, or one of the languages the game
+    /// supports (every language while the cached library does not say). A game's own choice is kept in the app's defaults.
+    private func languageSetting(_ appID: Int, _ owned: SteamOwnedGame?) -> BCDGameSetting {
+        let current = SteamLanguage.gameChoice(UInt32(appID)) ?? ""
+        let supported = Set((owned?.languages ?? []) + (owned?.depotLanguages ?? []))
+        var list = [BCDGameChoice(value: "", label: "Follow Settings (\(SteamLanguage.name(SteamLanguage.download)))")]
+        for item in SteamLanguage.all where supported.isEmpty || supported.contains(item.code) || item.code == current {
+            list.append(BCDGameChoice(value: item.code, label: item.name))
+        }
+        return BCDGameSetting(id: "language", title: "Game language", kind: .choice(list), value: current, defaultValue: "",
+                              note: "The language Steam installs for this game, and the one it is told to start in. Follow Settings is Settings › All settings › Steam game language, English unless you changed it. A game without the language gets English. It applies to the next download, update or repair.")
+    }
+
+    /// Before the install of a Steam game: the language, and what the download takes.
+    private func downloadGroup(_ appID: Int, _ owned: SteamOwnedGame) -> BCDGameSettingGroup {
+        var settings = [languageSetting(appID, owned)]
+        if let bytes = owned.downloadBytes {
+            settings.append(BCDGameSetting(id: "downloadsize", title: "Download size", kind: .info, value: "About " + BCDFormat.bytes(Int64(clamping: bytes)),
+                                           note: "Steam's figure for the depots this install takes. Depots shared from another game count nothing here."))
+        }
+        if let bytes = owned.installBytes {
+            settings.append(BCDGameSetting(id: "installsize", title: "Size on this device", kind: .info, value: "About " + BCDFormat.bytes(Int64(clamping: bytes))))
+        }
+        return BCDGameSettingGroup(id: "download", title: "Download", symbol: "arrow.down.circle", settings: settings,
+                                   headline: SteamLanguage.name(SteamLanguage.download(for: UInt32(appID))))
+    }
 
     private func steamGroup(_ entry: LibraryEntry, _ appID: Int) -> BCDGameSettingGroup {
         let dock = MadeiraDockModel.shared
@@ -558,6 +649,22 @@ import UniformTypeIdentifiers
         if let status = dock.status, !direct {
             settings.append(BCDGameSetting(id: "dockstatus", title: "Last start through BCD Dock", kind: .info, value: status))
         }
+        // The language of a download BCD made (Valve's client installs have none of this): the game's choice, the language
+        // the install record names, and Repair in another language.
+        let steam = SteamOwnedLibrary.shared
+        if let installed = SteamGamesModel.shared.games.first(where: { $0.id == appID }), SteamInstallPaths.isManaged(library: installed.library) {
+            let owned = steam.game(appID)
+            settings.append(languageSetting(appID, owned))
+            let recorded = SteamGamesModel.shared.languages[appID]
+            if let recorded {
+                settings.append(BCDGameSetting(id: "langinstalled", title: "Installed language", kind: .info, value: SteamLanguage.name(recorded)))
+            }
+            if steam.downloads[appID] == nil, steam.signedIn,
+               let wanted = owned?.languageToDownload(recorded: recorded, installedDepots: SteamGamesModel.shared.depots[appID] ?? []) {
+                settings.append(BCDGameSetting(id: "langdownload", title: "Download in \(SteamLanguage.name(wanted))", kind: .action,
+                                               note: "Adds the game's \(SteamLanguage.name(wanted)) content and tells Steam to start it in that language. The files of the current language stay."))
+            }
+        }
         settings.append(BCDGameSetting(id: "appid", title: "App ID", kind: .info, value: String(appID)))
         let free = (try? URL.documentsDirectory.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]))?
             .volumeAvailableCapacityForImportantUsage
@@ -601,6 +708,7 @@ import UniformTypeIdentifiers
             settings.append(BCDGameSetting(id: "storeart", title: store ? "Use the store's pictures again" : "Remove your cover picture",
                                            kind: .action, note: store ? "Shows the store's pictures in place of yours." : "The game's own colours stand in."))
         }
+        if !gog { settings += exeIconRows(entry) }   // round 604: the program's icon as the cover (BCDGameSetup/BCDGamePageLiveSetup.swift)
         var path = steamGame ? entry.launchWindowsPath : entry.windowsPath
         if entry.startsSteamGameDirectly, !entry.launchArguments.isEmpty { path += "\n" + entry.launchArguments }
         let how: String? = steamGame ? (entry.startsSteamGameDirectly ? "BCD starts this program itself, without Steam."
@@ -794,7 +902,13 @@ import UniformTypeIdentifiers
     }
 
     func set(_ setting: String, to value: String, for game: BCDGame) {
+        if helpSet(setting, to: value, for: game) { return }   // round 604: the "Help with this game" section's rows (BCDGamePageLiveHelp.swift)
+        if soundSet(setting, to: value, for: game) { return }   // round 604: the Sound section's audio delay, volume and resume rows (BCDGamePageLiveSound.swift)
         if dlcSet(setting, to: value, for: game) { return }
+        if saveBackupsSet(setting, to: value, for: game) { return }   // round 603: the "Save backups" section's rows
+        if midiSet(setting, to: value, for: game) { return }   // round 603: the Sound section's MIDI music row
+        if inputSet(setting, to: value, for: game) { return }   // round 604: BCDInputPage.swift's rows (turbo and macros, ...)
+        if setupSet(setting, to: value, for: game) { return }   // round 604: the setup sections' rows (BCDGameSetup/BCDGamePageLiveSetup.swift)
         let on = value == "1"
         switch setting {
         case "resolution": change(game) { $0.resolution = value }
@@ -805,11 +919,17 @@ import UniformTypeIdentifiers
         case "orientation":
             guard value.isEmpty || BCDOrientationChoice(rawValue: value) != nil else { return }
             change(game) { $0.orientationLock = value.isEmpty ? nil : value }
-        case "metalfx-upscale", "dxil-tess-max-factor", "async-submit", "fence-chain", GamepadInput.padModeKey:
+        case "metalfx-upscale", "dxil-tess-max-factor", "async-submit", "fence-chain", GamepadInput.padModeKey, BCDGPUCards.key, BCDGPUCards.memoryKey:
             setLine(game, setting, value)
         case "framegen":
             if #available(iOS 26.0, *) {
                 setLine(game, "env.MADEIRA_FRAMEGEN", on ? "1" : "")
+            }
+        case "gyro-aim", "gyro-sens", "gyro-hold", "gyro-invert", "gyro-deadzone", "gyro-turn":
+            // madeira-bcd (2026-10-25, round 603): gyro aim, kept for the game by its path (BCDGyroStore).
+            if let entry = entry(for: game) {
+                BCDGyroStore.set(entry.windowsPath, setting, value)
+                BCDGyroLive.shared.refresh()
             }
         case "anisotropy": change(game) { $0.anisotropyLimit = Int(value).flatMap { $0 == 0 ? nil : $0 } }
         case "nvidia": entry(for: game).map { LibraryPrefs.setNvidia(on, for: $0.windowsPath) }
@@ -820,7 +940,9 @@ import UniformTypeIdentifiers
         case "fastsync": change(game) { $0.fastSync = on }
         case "semaphores": change(game) { $0.semaphoreFastPath = on }
         case "touch": change(game) { $0.touchControls = on }
-        case "overlay": change(game) { $0.performance = on }
+        case "hud":
+            guard let layout = BCDHUDLayout(rawValue: value) else { return }
+            change(game) { BCDHUDState.apply(layout, to: &$0) }
         case "livelogs": change(game) { $0.liveLogs = on }
         case "opacity": if let level = Double(value) { change(game) { $0.controlOpacity = min(max(level, 0.15), 1) } }
         case "size": if let level = Double(value) { change(game) { $0.controlSize = min(max(level, 0.5), 2) } }
@@ -873,6 +995,11 @@ import UniformTypeIdentifiers
             guard value.isEmpty || (key != nil && key! >= 0), let id = appID(game) else { return }
             change(game) { $0.steamLaunchOption = key }
             LogStore.shared.log("[steam-start] app=\(id) launch-option=\(key == nil ? "default" : "choice")")
+        case "language":
+            guard let id = appID(game), value.isEmpty || SteamLanguage.all.contains(where: { $0.code == value }) else { return }
+            SteamLanguage.chooseForGame(UInt32(id), value.isEmpty ? nil : value)
+        case "langdownload":
+            if let id = appID(game), SteamOwnedLibrary.shared.downloads[id] == nil { SteamOwnedLibrary.shared.repair(id) }
         case "smallpool": MadeiraDockModel.shared.compactPool = on
         case "installs": if let id = appID(game) { MadeiraDockModel.shared.setRunsInstallers(id, on) }
         case "installrequest": if let id = appID(game) { MadeiraDockModel.shared.setInstallRequest(id, DockInstallRequest(rawValue: value)) }
@@ -1051,9 +1178,13 @@ import UniformTypeIdentifiers
         return BCDGameLog(file: found, name: found.lastPathComponent, date: LogUpload.modified(found), bytes: LogUpload.size(found))
     }
 
-    func logComment() async -> String? {
+    func logComment() async -> String? { await logComment(for: nil) }
+
+    func logComment(for log: BCDGameLog) async -> String? { await logComment(for: log.file) }
+
+    private func logComment(for file: URL?) async -> String? {
         await withCheckedContinuation { continuation in
-            BCDLogComment.ask({ continuation.resume(returning: $0) }, cancelled: { continuation.resume(returning: nil) })
+            BCDLogComment.ask(for: file, { continuation.resume(returning: $0) }, cancelled: { continuation.resume(returning: nil) })
         }
     }
 
@@ -1061,7 +1192,8 @@ import UniformTypeIdentifiers
     func send(_ log: BCDGameLog, of game: BCDGame, comment: String, progress: @escaping (String) -> Void) async throws -> String {
         try await withCheckedThrowingContinuation { continuation in
             LogUpload.send(log.file, game: LogUpload.game(of: log.file), comment: comment, progress: progress) { result in
-                continuation.resume(with: result)
+                // A screenshot that went along says so after the code (LogUpload.lastShotNote).
+                continuation.resume(with: result.map { code in LogUpload.lastShotNote.map { code + ". " + $0 } ?? code })
             }
         }
     }

@@ -51,7 +51,17 @@ check("every place that writes env.MADEIRA_FRAMEGEN from a control is that one",
       and not any("MADEIRA_FRAMEGEN" in p.read_text() for p in app.glob("*.swift")
                   if p.name not in ("BCDGamePageLive.swift", "ConfigCatalog.generated.swift", "GameRecommendationsApply.swift",
                                     "GameRecommendations.swift", "GameRecommendationsList.swift", "GameProfiles.swift",
-                                    "LibraryBCD.swift", "Library.swift")))
+                                    "LibraryBCD.swift", "Library.swift", "BCDHUDLive.swift", "BCDMenuMore.swift")))
+# Round 604: the in-game menu's Display row writes the same line, for the next start, and only from iOS 26 (it neither shows nor writes below).
+menu_more = (app / "BCDMenuMore.swift").read_text()
+check("the in-game menu's frame generation row: shown and written only from iOS 26, and it writes the game's own line only",
+      guarded(menu_more, '.set("env.MADEIRA_FRAMEGEN"', 2) and "guard #available(iOS 26.0, *), let entry = model.activeEntry, entry.desktop != true else { return nil }" in menu_more
+      and menu_more.count("MADEIRA_FRAMEGEN") == menu_more.count('"env.MADEIRA_FRAMEGEN"') + menu_more.count('environment["MADEIRA_FRAMEGEN"]')
+      and "setenv" not in "\n".join(l for l in menu_more.split("\n") if "FRAMEGEN" in l))
+# Round 603: the HUD (BCDHUDLive.swift) shows "frame gen" when the game's file or bcd.cfg has the line; it only reads it.
+_hud = (app / "BCDHUDLive.swift").read_text()
+check("the HUD only reads env.MADEIRA_FRAMEGEN (no set, setLine or setenv of it)",
+      "MADEIRA_FRAMEGEN" in _hud and not re.search(r'(set|setLine|setenv)\([^)]*MADEIRA_FRAMEGEN', _hud))
 # The developer interface's "arm64 DX11 cube" button (the only start of ARM64-native Direct3D 11 below the
 # games' own programs) and its iOS 26 refusal are deleted with that interface.
 check("no 'arm64 DX11 cube' button or test start is left", "arm64 DX11 cube" not in (app / "ContentView.swift").read_text()

@@ -80,9 +80,15 @@ static BOOL process_exiting;
 static pthread_mutex_t virtual_mutex;
 ''' + block + r'''
 static double now(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return t.tv_sec + t.tv_nsec / 1e9; }
+/* The holder says when it has the mutex and keeps it for `ms` only after the waiter is about to take it: under a
+ * busy build machine a fixed 20 ms head start was not always enough (build 601: the holder had not locked yet, the
+ * trylock succeeded and no line was printed). */
+static volatile int held, go;
 static void *holder(void *arg)
 {
     pthread_mutex_lock(&virtual_mutex);
+    held = 1;
+    while (!go) usleep(1000);
     usleep((useconds_t)(long)arg * 1000);
     pthread_mutex_unlock(&virtual_mutex);
     return NULL;
@@ -90,9 +96,11 @@ static void *holder(void *arg)
 static double wait_for_busy(long ms, unsigned long err, TEB *teb, void *addr)
 {
     pthread_t t;
+    held = 0; go = 0;
     pthread_create(&t, NULL, holder, (void *)ms);
-    usleep(20000);                                  /* the holder has the mutex */
+    while (!held) usleep(1000);                     /* the holder has the mutex */
     double t0 = now();
+    go = 1;
     ios_vm_fault_lock(addr, err, teb);
     double dt = now() - t0;
     pthread_mutex_unlock(&virtual_mutex);
@@ -133,8 +141,9 @@ int main(int argc, char **argv)
     {
         pthread_t t;
         process_exiting = 1;
+        held = 0; go = 1;                           /* the holder keeps the mutex 300 ms from the start */
         pthread_create(&t, NULL, holder, (void *)300L);
-        usleep(20000);
+        while (!held) usleep(1000);
         double t0 = now();
         ios_vm_fault_lock((void *)0x1000, EXCEPTION_WRITE_FAULT, &teb);
         double dt = now() - t0;

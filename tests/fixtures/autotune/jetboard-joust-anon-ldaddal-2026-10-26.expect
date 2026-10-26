@@ -1,0 +1,10 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [],
+ "next": [],
+ "note": "7PCQ8V, build 600: secondary LDADDAL W25,W6,[X27] after repeated deliberate CAS handoff faults. Root cause of terminal .NET illegal block is unproven: do NOT claim fixedIn 607 merely because the write family is now handled. Real negative control for overbroad Slay/Quaver build-fix recognition.",
+ "outcome": "crashed",
+ "stage": 2,
+ "status": "stuck"
+}

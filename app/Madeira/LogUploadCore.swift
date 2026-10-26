@@ -136,7 +136,9 @@ enum LogUploadCore {
         }
     }
 
-    static func pack(_ source: URL, to dest: URL, comment: String? = nil,
+    /// `trailer`: lines that follow the log's last line (the performance trace, BCDPerfTraceCore.swift): after it, so no line number of the
+    /// log moves. Scrubbed like every other line. Empty: nothing is added.
+    static func pack(_ source: URL, to dest: URL, comment: String? = nil, trailer: [String] = [],
                      progress: ((Double) -> Void)? = nil) throws -> (raw: Int, packed: Int) {
         guard let input = try? FileHandle(forReadingFrom: source) else { throw PackError.read }
         defer { try? input.close() }
@@ -216,8 +218,9 @@ enum LogUploadCore {
         }
         if !carry.isEmpty {
             carry.withUnsafeBytes { emit($0) }
-            pending.removeLast()         // the source did not end with a newline
+            if trailer.isEmpty { pending.removeLast() }   // the source did not end with a newline (with a trailer, that line is ended here and the trailer follows)
         }
+        for line in trailer { Data(line.utf8).withUnsafeBytes { emit($0) } }
         try pending.withUnsafeBytes { try deflateChunk($0, flush: Z_FINISH) }
         progress?(1)
         return (read, packed)

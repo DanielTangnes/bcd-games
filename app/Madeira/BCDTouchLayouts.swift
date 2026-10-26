@@ -399,7 +399,10 @@ struct BCDTouchPressStyle: ButtonStyle {
 /// The light tick a touch control or a chrome button gives.
 enum BCDTouchHaptic {
     private static let generator = UIImpactFeedbackGenerator(style: .light)
-    static func tap() { generator.impactOccurred() }
+    static func tap() {
+        guard BCDTouchFeel.haptics else { return }   // the in-game menu's Touch controls › Tick switch (BCDSessionFeel.swift); on, as always
+        generator.impactOccurred()
+    }
 }
 
 /// A panel over the game: an opaque BCD surface (no blur behind it), hairline rim.

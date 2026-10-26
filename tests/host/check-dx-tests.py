@@ -223,7 +223,11 @@ for key, (api, dll, entry, title, calls) in programs.items():
     check("%s: loads %s at run time and takes %s from it" % (key, dll, entry),
           'LoadLibraryA("%s")' % dll in src and 'GetProcAddress(dll, "%s")' % entry in src)
     check("%s: a missing DLL gets a message, not a loader failure" % key, "dxt_fail(API" in src and "is not available" in src)
-    check("%s: opens the window titled %r" % (key, title), 'dxt_window("%s")' % title in src and 'dxt_clock_start(&clock, hwnd, "%s")' % title in src)
+    if key == "d3d9":   # round 602: one source for the 64-bit and the 32-bit test, the title says which (the string is built from the bits)
+        check("%s: opens the window titled %r with the bitness added" % (key, title),
+              'snprintf(title, sizeof title, "%s (%%d-bit)", DXT_BITS)' % title in src and "dxt_window(title)" in src and "dxt_clock_start(&clock, hwnd, title)" in src)
+    else:
+        check("%s: opens the window titled %r" % (key, title), 'dxt_window("%s")' % title in src and 'dxt_clock_start(&clock, hwnd, "%s")' % title in src)
     check("%s: draws every frame through %s" % (key, api), all(c in src for c in calls), [c for c in calls if c not in src])
     check("%s: runs while the window is open and releases what it made when it is closed" % key,
           "while (dxt_pump())" in src and src.index("while (dxt_pump())") < src.rindex("_Release(") and src.rstrip().endswith("return 0;\n}"))

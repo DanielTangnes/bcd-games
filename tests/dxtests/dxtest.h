@@ -26,10 +26,17 @@
 
 #define DXT_W 640   /* the client area */
 #define DXT_H 480
+#define DXT_BITS ((int)(sizeof(void *) * 8))   /* 64 or 32: the 32-bit and 64-bit Direct3D 9 tests are one source */
 
 /* ------------------------------------------------------------------ log */
 
-/* One line to stderr in one WriteFile, so lines from other threads do not interleave. */
+/* One line to stderr in one WriteFile, so lines from other threads do not interleave. From the Start menu a program has no standard
+ * error (shell32 starts it with CREATE_NEW_CONSOLE, kernelbase then passes no standard handles on and a GUI program gets no console), so
+ * the same line goes to <temp>\bcd-test.log too: the session log's [guest-log] mirror copies the lines of a *.log file that say error,
+ * fail, exception, gpu, driver, adapter, display and a few more words (tools/patch-wine-guest-log.py), and the verdict lines below say
+ * "failed" and name the adapter for that reason. See bcdtest.h. */
+static HANDLE dxt_logfile;
+
 static void dxt_log(const char *fmt, ...)
 {
     char line[512];
@@ -44,7 +51,38 @@ static void dxt_log(const char *fmt, ...)
     if (n > (int)sizeof line - 2) n = (int)sizeof line - 2;
     line[n++] = '\n';
     WriteFile(GetStdHandle(STD_ERROR_HANDLE), line, (DWORD)n, &written, NULL);
+    if (!dxt_logfile) {   /* the first line opens <temp>\bcd-test.log (a run replaces the last one's) */
+        char path[MAX_PATH + 16];
+        DWORD len = GetTempPathA(MAX_PATH, path);
+        dxt_logfile = INVALID_HANDLE_VALUE;
+        if (len > 0 && len < MAX_PATH) {
+            strcat(path, "bcd-test.log");
+            dxt_logfile = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+        }
+    }
+    if (dxt_logfile != INVALID_HANDLE_VALUE) WriteFile(dxt_logfile, line, (DWORD)n, &written, NULL);
 }
+
+/* A crash is a log line before Wine's own handling goes on (round 602: the Direct3D 8 and 9 tests install it; the exception is not
+ * handled here, so nothing about what happens to the process changes). */
+static inline LONG WINAPI dxt_crash_filter(EXCEPTION_POINTERS *ep)
+{
+    char where[160] = "";
+    HMODULE m = NULL;
+    const void *addr = ep->ExceptionRecord->ExceptionAddress;
+
+    if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)addr, &m) && m) {
+        char path[MAX_PATH];
+        if (GetModuleFileNameA(m, path, sizeof path)) {
+            const char *base = strrchr(path, '\\');
+            snprintf(where, sizeof where, " in %s+0x%lx", base ? base + 1 : path, (unsigned long)((const char *)addr - (const char *)m));
+        }
+    }
+    dxt_log("CRASH: exception %#lx at %p%s", (unsigned long)ep->ExceptionRecord->ExceptionCode, addr, where);
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+static inline void dxt_crash_log(void) { SetUnhandledExceptionFilter(dxt_crash_filter); }
 
 /* A failure the person can read: logged, and shown in a message box (the program ends right after). */
 static void dxt_fail(const char *api, const char *what)
@@ -152,6 +190,20 @@ static void dxt_clock_frame(dxt_clock *c)
         c->frames = 0;
         c->last = t;
     }
+}
+
+/* The verdict of a cube test (round 602), after its first seconds of drawing: PASS when at least 5 frames were presented and no more
+ * than a tenth of the Present calls failed (it works; how fast is a number in the line, with a note under 20 fps). One log line with
+ * the numbers, the adapter's name and "failed" (so that the [guest-log] mirror takes it); `title` becomes "PASS" or "FAIL" for the
+ * window title's prefix. Returns 1 for PASS. (Unused in a program that does not call it, and then not in its binary.) */
+static inline int dxt_verdict(const char *api, unsigned frames, unsigned failed, double seconds, const char *adapter, char *title, size_t cap)
+{
+    double fps = seconds > 0 ? frames / seconds : 0;
+    int ok = frames >= 5 && failed * 10 <= frames;
+    dxt_log("%s (%d-bit): %s drawing: %u frames in %.1f s (%.0f fps), %u Present calls failed, adapter \"%s\"%s", api, DXT_BITS, ok ? "PASS" : "FAIL", frames,
+            seconds, fps, failed, adapter && adapter[0] ? adapter : "?", ok && fps < 20.0 ? " (slow: under 20 fps)" : "");
+    snprintf(title, cap, "%s", ok ? "PASS" : "FAIL");
+    return ok;
 }
 
 /* ------------------------------------------------------------------ matrices */

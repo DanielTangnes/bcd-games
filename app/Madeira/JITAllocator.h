@@ -197,5 +197,11 @@ int bcd_pool_rw_rx_selftest(const void *rx, void *rw, unsigned long size, char *
 #ifdef __cplusplus
 }
 #endif
+/* The same two facts, as functions. A C global `var` is shared mutable state
+ * under Swift 6 strict concurrency and cannot be read at all from Swift; these
+ * can. Both are written once by the constructor before main and are constant
+ * thereafter, so no synchronisation is implied or needed. */
+void madeira_early_pool_placeholder(unsigned long *base, unsigned long *size);
+void madeira_early_pool_intruder(unsigned long *base, unsigned long *size, unsigned *tag);
 
 #endif // JIT_ALLOCATOR_H

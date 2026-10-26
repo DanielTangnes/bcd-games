@@ -162,6 +162,7 @@ enum SteamSignIn {
     static func flag(_ name: String, default fallback: Bool) -> Bool { getenv(name).map { String(cString: $0) != "0" } ?? fallback }
 }
 enum SteamLog { static func event(_ m: String) {}; static func trace(_ m: @autoclosure () -> String) {} }
+enum MadeiraConfig { static func get(_ key: String) -> String? { nil }; static func set(_ key: String, _ value: String?) {} }   // SteamLanguage (SteamAppInfo.swift)
 enum SteamRuntimeFiles {
     static let relativeRoot = "Program Files (x86)/Steam"
     static let windowsRoot = "C:\\Program Files (x86)\\Steam"
@@ -390,9 +391,12 @@ func record(_ appID: Int, _ name: String, _ folder: String, flags: Int) -> Strin
                 "a program is found through a link that stays inside the install folder")
         require(D.onDisk("..", in: install, directory: true) == nil && D.onDisk("x/../../escape.exe", in: install, directory: false) == nil,
                 "never outside the install folder")
+        try write(install.appendingPathComponent("_CommonRedist/DirectX/Jun2010/DXSETUP.exe"), "x")
         let programs = D.programs(in: install)
         require(programs == ["beta/game.exe", "server/srv.exe", "tools/launcher.exe"],
                 "the Program picker lists the folder's .exe files, sorted, not through linked folders or deeper than six: \(programs)")
+        require(!programs.contains("_CommonRedist/DirectX/Jun2010/DXSETUP.exe"),
+                "_CommonRedist/DirectX/Jun2010/DXSETUP.exe is ignored by SteamDirectStart.programs(in:)")
         // The card's bits and graphics API describe the program "The game" would start.
         require(D.program(picked: "SERVER/srv.EXE", options: options, installFolder: install) == "server/srv.exe",
                 "pills: the user's picked program first, spelt as on disk")
@@ -409,6 +413,12 @@ func record(_ appID: Int, _ name: String, _ folder: String, flags: Int) -> Strin
         require(D.program(picked: nil, options: nil, installFolder: single) == "bin/only.exe", "pills: else the install folder's only program")
         require(D.program(picked: "../Direct/tools/launcher.exe", options: nil, installFolder: single) == "bin/only.exe",
                 "pills: a picked program never leaves the install folder")
+        let redistOnly = drive.appendingPathComponent("Program Files (x86)/Steam/steamapps/common/RedistOnly")
+        try write(redistOnly.appendingPathComponent("_CommonRedist/DirectX/Jun2010/DXSETUP.exe"), "x")
+        require(D.programs(in: redistOnly).isEmpty,
+                "_CommonRedist/DirectX/Jun2010/DXSETUP.exe is ignored by SteamDirectStart.programs(in:) when redist only")
+        require(D.program(picked: nil, options: nil, installFolder: redistOnly) == nil,
+                "pills: no program picked when only redistributables are present")
         require(D.blocker(installed: false, program: "a.exe")?.contains("partly installed") == true &&
                 D.blocker(installed: true, program: "a.exe", updating: true)?.contains("still downloading") == true &&
                 D.blocker(installed: true, program: nil)?.contains("Program") == true &&

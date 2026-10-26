@@ -306,6 +306,8 @@ static pthread_t g_wine_thread;
 static volatile int g_wine_running = 0;
 volatile int g_madeira_srv_fgetpath = 0, g_madeira_srv_eco_follow = 0, g_madeira_srv_direct = 0, g_madeira_srv_idle_us = 0, g_madeira_srv_log_all = 0;
 static int g_stops;
+static int g_wine_exit_code = 0;   /* wine_process_exit_code()'s plain global (the boot thread copies the thread-local status into it) */
+_Thread_local volatile int wine_ios_exit_code = 0;
 static uint64_t g_launch_exit = 0;   /* the status word defined above the section (wine_session_dock_game_ended, round 579, records into it) */
 void wineserver_stop(void) { g_stops++; }
 void wine_session_note_launch_exit(int status);

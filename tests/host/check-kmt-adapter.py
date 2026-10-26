@@ -109,11 +109,12 @@ reg = func(sp, "static void ios_register_virtual_gpu(void)")
 check("registry GPU: switch LUID, else a fresh one; switch size, else 4096 MB",
       "kmt = madeira_kmt_adapter_enabled() && madeira_kmt_adapter_luid( &gpu.luid );" in reg
       and "if (!kmt) NtAllocateLocallyUniqueId( &gpu.luid );" in reg
-      and "kmt ? madeira_kmt_dedicated_bytes() : (ULONGLONG)4096 * 1024 * 1024" in reg
+      and "ULONGLONG memory = (ULONGLONG)4096 * 1024 * 1024;" in reg   # round 603: a picked card (gpu-card) takes the size too
+      and "if (kmt || ios_gpu_pick( &picked_vendor, &picked_device )) memory = madeira_kmt_dedicated_bytes();" in reg
       and "if (kmt)\n    {" in reg and "madeira_kmt_driver_version_qword( driver_vendor_to_version( pci.vendor ) )" in reg)
 ident = func(sp, "void madeira_kmt_identity( struct madeira_kmt_identity *id )")
 check("identity = the registry GPU (ids, name, DriverVersion, path)",
-      "ios_virtual_gpu_ids( &pci.vendor, &pci.device );" in ident and "gpu_device_name( pci.vendor, pci.device" in ident
+      "ios_virtual_gpu_ids( &pci.vendor, &pci.device );" in ident and "ios_virtual_gpu_name( pci.vendor, pci.device )" in ident
       and "driver_vendor_to_version( pci.vendor )" in ident
       and 'PCI\\\\VEN_%04X&DEV_%04X&SUBSYS_00000000&REV_00\\\\%08X' in ident)
 

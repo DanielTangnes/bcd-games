@@ -156,6 +156,12 @@ final class GamepadInput: @unchecked Sendable {
         (MadeiraConfig.get("env.\(name)") ?? ProcessInfo.processInfo.environment[name]) == "1"
     }
 
+    /// madeira-bcd (2026-10-25, round 603): the gyro's right stick changed (BCDGyroLive.swift); player 1 is published again.
+    func gyroChanged() { queue.async { [self] in sample() } }
+
+    /// madeira-bcd (2026-10-25, round 604): turbo, macros or a press BCD makes itself changed (BCDTurboLive.swift); player 1 is published again.
+    func inputExtrasChanged() { queue.async { [self] in sample() } }
+
     @MainActor func touch(owner: UUID, control: UUID, value: GamepadSample?) {
         guard Self.touchEnabled else { return }
         queue.async { [self] in
@@ -195,8 +201,8 @@ final class GamepadInput: @unchecked Sendable {
     }
 
     private let queue = DispatchQueue(label: "madeira.gamepad", qos: .userInteractive)
-    private var controllers = [GCController?](repeating: nil, count: 4)
-    private var profiles = [GCExtendedGamepad?](repeating: nil, count: 4)
+    var controllers = [GCController?](repeating: nil, count: 4)   // madeira-bcd (round 604): not private, BCDPlayersLive.swift changes players' places
+    var profiles = [GCExtendedGamepad?](repeating: nil, count: 4)
     private var timer: DispatchSourceTimer?
     private var active = false
     /// ml2100: player 1 goes to the HID controller (beginPadSession); queue-owned.
@@ -244,6 +250,7 @@ final class GamepadInput: @unchecked Sendable {
             return (controller, profile)
         }
         SystemGestures.apply(live.map { $0.0 })   // madeira-bcd: env.MADEIRA_PAD_SYSTEM_GESTURES; without it nothing is touched
+        let playerKeys = BCDPlayersLive.keys(for: live.map { $0.0 })   // madeira-bcd (round 604): the key each controller is remembered by for its player
         queue.async { [self] in
             for i in controllers.indices {
                 guard let old = controllers[i], !live.contains(where: { $0.0 === old }) else { continue }
@@ -256,8 +263,9 @@ final class GamepadInput: @unchecked Sendable {
                 fputs("[xinput] ml1920 slot=\(i) disconnected\n", stderr)
             }
             for (controller, profile) in live {
+                // madeira-bcd (round 604): the slot the player chose for this controller when it is free, else the first free one as always.
                 guard !controllers.contains(where: { $0 === controller }),
-                      let i = controllers.firstIndex(where: { $0 == nil }) else { continue }
+                      let i = BCDPlayersLive.slot(forKey: playerKeys[ObjectIdentifier(controller)], occupied: controllers.map { $0 != nil }) else { continue }
                 controllers[i] = controller
                 profiles[i] = profile
                 // A pad joining a slot starts still, before sample() publishes it,
@@ -275,6 +283,7 @@ final class GamepadInput: @unchecked Sendable {
             for i in controllers.indices { madeira_pad_output_set_slot(Int32(i), controllers[i]) }
             updateTimer()
             sample()
+            BCDPlayersLive.report(controllers)   // madeira-bcd (round 604): the players' card shows who is in which slot
         }
     }
 
@@ -293,7 +302,7 @@ final class GamepadInput: @unchecked Sendable {
         }
     }
 
-    private func updateTimer() {
+    func updateTimer() {
         let needed = active && profiles.contains(where: { $0 != nil })
         if !needed { timer?.cancel(); timer = nil; return }
         guard timer == nil else { return }
@@ -316,16 +325,19 @@ final class GamepadInput: @unchecked Sendable {
     }
 
     private func sample() {
+        // madeira-bcd (round 604): "Player N: press a button on the controller" (BCDPlayersLive.swift); one static flag, -1, while nobody is choosing.
+        if BCDPlayersLive.listening >= 0, let hit = BCDPlayersLive.pressed(in: profiles) { assignListened(hit) }
         for i in profiles.indices {
             let pad = profiles[i]
-            let touchConnected = i == 0 && touchState.connected
+            let touchConnected = i == BCDPlayersLive.touchSlot && touchState.connected   // madeira-bcd (round 604): the touch controls play as the player chosen, Player 1 unless changed
+            let gyroConnected = i == 0 && BCDGyroLive.stickActive   // madeira-bcd (2026-10-25, round 603): gyro aim on the right stick (opt-in per game)
             // Player 1's pad went away mid-press: nothing feeds the driver now, so
             // release the keys and buttons it holds.
             if i == 0, pad == nil, keyboardMouse != nil, PadKeyboardMouse.shared.holding {
                 PadKeyboardMouse.shared.releaseAll("controller disconnected")
             }
             let hid = i == 0 && hidActive
-            guard pad != nil || touchConnected else {
+            guard pad != nil || touchConnected || gyroConnected else {
                 winios_gamepad_set_state(Int32(i), nil)
                 if hid { winios_hidpad_set_state(nil) }
                 continue
@@ -393,6 +405,16 @@ final class GamepadInput: @unchecked Sendable {
                 state.buttons = merged.buttons
                 state.left_trigger = merged.lt; state.right_trigger = merged.rt
                 state.lx = merged.lx; state.ly = merged.ly; state.rx = merged.rx; state.ry = merged.ry
+            }
+            // madeira-bcd (2026-10-25, round 603): gyro aim (BCDGyroLive.swift): notes the button the gyro waits for and puts the gyro on the right
+            // stick. One static flag when it is off; not while the library's menu owns the controller or the pad is keys and mouse.
+            if i == 0, BCDGyroLive.padNeeded, active, keyboardMouse == nil, !LibraryController.shared.ownsInput {
+                BCDGyroLive.shared.padSample(&state)
+            }
+            // madeira-bcd (2026-10-25, round 604): turbo and macros (BCDTurboLive.swift) change what player 1's merged state presses. One
+            // static flag when they are off; not while the library's menu owns the controller or the pad is keys and mouse.
+            if i == 0, BCDTurboLive.padNeeded, active, keyboardMouse == nil, !LibraryController.shared.ownsInput {
+                BCDTurboLive.shared.padSample(&state)
             }
             if hid {
                 publishHID(state, live: hidLive, pad: pad)

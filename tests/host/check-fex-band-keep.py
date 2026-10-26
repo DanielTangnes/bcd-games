@@ -53,6 +53,10 @@ check("the slot is still 0x7C00000000", "static const ULONG_PTR ios_steer_slot =
 valve = src[src.index("ULONG_PTR steer_lo = ios_steer_floor();"):src.index("if (!sst && ios_steer_n < IOS_STEER_MAX)")]
 check("the first attempt starts at the bound",
       "ULONG_PTR steer_lo = ios_steer_floor();\n"
+      "                /* madeira-bcd: [arena-guard] (off unless env.MADEIRA_ARENA_GUARD = 1; ios_steer_top_slot_usable): the FEX arena\n"
+      "                 * lies in the valve's top slot, so the bound is the host ceiling and the valve goes straight to its second\n"
+      "                 * range, as a MADEIRA_FEX_BAND_KEEP_MB bound at the ceiling already does. */\n"
+      "                if (!ios_steer_top_slot_usable()) steer_lo = (ULONG_PTR)host_addr_space_limit;\n"
       "                NTSTATUS sst = (steer_lo != ios_steer_slot && steer_lo >= (ULONG_PTR)host_addr_space_limit)\n"
       "                               ? STATUS_NO_MEMORY\n"
       "                               : allocate_virtual_memory( ret, size_ptr, type, protect,\n"

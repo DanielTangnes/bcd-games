@@ -164,7 +164,7 @@ fi
 # RstrtMgr.dll; the 64-bit set has neither, the loader stopped with c0000135, services.exe answered 1053 and the MSI rolled back
 # (1627, "INST-14-1627"). msi.dll in turn imports mspatcha, odbccp32 and sxs, the three others the 64-bit set lacks; all
 # their own imports ship. Only the EA app's launcher entry names them.
-OPTIN_WANT="dxva2 evr xpsprint sfc sfc_os tbs twinapi.appcore mfasfsrcsnk wmvdecod wmadmod oledlg fwpuclnt sensapi ddraw msi mspatcha odbccp32 sxs rstrtmgr"
+OPTIN_WANT="dxva2 evr xpsprint sfc sfc_os tbs twinapi.appcore mfasfsrcsnk wmvdecod wmadmod oledlg fwpuclnt sensapi ddraw msi mspatcha odbccp32 sxs rstrtmgr glu32 tdh"
 OPT=""
 if [ "${MADEIRA_OPTIN_BUILD:-1}" != 0 ]; then
     for d in $OPTIN_WANT; do

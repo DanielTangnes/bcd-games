@@ -145,6 +145,10 @@ check(files["BCDLaunchers.swift"].count("--in-process-gpu") == 1 and "NetworkSer
       "... no other launcher gets them, and the switch that did nothing is left out")
 check('sessionConfig: Self.commonSessionConfig + ["env.LC_ALL = en_US.UTF-8", "env.MADEIRA_APC_BUSY_QUEUE = 1",\n'
       '                                                   "env.MADEIRA_OPTIN_DLLS = msi,mspatcha,odbccp32,sxs,rstrtmgr,dxva2",\n'
+      '                                                   "env.MADEIRA_WOW_MIN_FREE_GB = 2",\n'
+      '                                                   "env.MADEIRA_TLS_CLEAR_OWN_PROCESS = 1",\n'
+      '                                                   "env.MADEIRA_SPAWN_BLOCK = vc_redist-",\n'
+      '                                                   "env.MADEIRA_EA_CEF_FLAGS = --disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows",\n'
       '                                                   "env.MADEIRA_X64_IMAGE_NOCOPY = 1", "pool-split = 1"]' in files["BCDLaunchers.swift"]
       and files["BCDLaunchers.swift"].count('"env.LC_ALL = en_US.UTF-8"') == 1
       and files["BCDLaunchers.swift"].count('"env.MADEIRA_APC_BUSY_QUEUE = 1"') == 1,

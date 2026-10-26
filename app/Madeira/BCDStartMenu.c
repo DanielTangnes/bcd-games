@@ -25,26 +25,152 @@
 
 #include "BCDStartMenu.h"
 
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 /* ---------------------------------------------------------------- the entries */
 
-#define BCD_TESTS "Programs/BCD"
+#define BCD_TESTS "Programs/BCD Tests"
+#define BCD_TOOLS "Programs/BCD Tools"
+#define BCD_RUNTIMES "Programs/BCD Runtimes"     /* round 603 */
+#define BCD_7ZIP "Programs/7-Zip"                /* round 603 */
+
+/* The entries may leave out the last two fields (arguments, flags): they are NULL and 0 then, on purpose. */
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#endif
 
 const bcd_start_entry bcd_start_entries[] = {
     { "",         "Explorer",        "explorer.exe",        "Opens Wine's file manager" },
-    { BCD_TESTS,  "DirectX 9 test",  "d3d9-cube-x64.exe",   "A spinning cube drawn with Direct3D 9 (64-bit)" },
+    /* The graphics, sound, video and input tests (round 602, tests/dxtests). The 32-bit programs (*-x86.exe) are found in the 32-bit
+     * set (syswow64) by where the app carries them: most Direct3D 9 games are 32-bit, and Direct3D 8 and DirectDraw games all are.
+     * "DirectX 9 test" is the 32-bit one; the 64-bit one keeps the old program and is called "DirectX 9 test (64-bit)". */
+    { BCD_TESTS,  "DirectX 8 test",  "d3d8-test-x86.exe",   "A spinning cube drawn with Direct3D 8 (32-bit)" },
+    { BCD_TESTS,  "DirectX 9 test",  "d3d9-test-x86.exe",   "A spinning cube drawn with Direct3D 9 (32-bit)" },
+    { BCD_TESTS,  "DirectX 9 test (64-bit)", "d3d9-cube-x64.exe", "A spinning cube drawn with Direct3D 9 (64-bit)" },
     { BCD_TESTS,  "DirectX 10 test", "d3d10-cube-x64.exe",  "A spinning cube drawn with Direct3D 10 (64-bit)" },
     { BCD_TESTS,  "DirectX 11 test", "d3d11-cube-x64.exe",  "A spinning cube drawn with Direct3D 11 (64-bit)" },
     { BCD_TESTS,  "DirectX 12 test", "d3d12-cube-x64.exe",  "A spinning cube drawn with Direct3D 12 (64-bit)" },
+    { BCD_TESTS,  "DirectDraw test", "ddraw-test-x86.exe",  "2D surfaces, blits, colour key, palette and a full-screen flip with DirectDraw (32-bit)" },
+    { BCD_TESTS,  "Frame time test", "frametime-test-x64.exe", "A Direct3D 11 scene with a frame-time graph: FPS, stutters, 60 or 120 Hz (64-bit)" },
+    { BCD_TESTS,  "Resolution and full-screen test", "resolution-test-x64.exe", "Display modes, window resizing, a mode change and back, DXGI full screen (64-bit)" },
+    { BCD_TESTS,  "Sound test",      "sound-test-x64.exe",  "A left, a right and a centre tone through XAudio2 and DirectSound (64-bit)" },
+    { BCD_TESTS,  "Sound test (32-bit)", "sound-test-x86.exe", "A left, a right and a centre tone through XAudio2 and DirectSound (32-bit)" },
+    { BCD_TESTS,  "MIDI test",       "midi-test-x86.exe",   "A scale, a chord, five instruments, drums and a tune played through MIDI, as games play music (32-bit)" },
+    { BCD_TESTS,  "MIDI test (64-bit)", "midi-test-x64.exe", "A scale, a chord, five instruments, drums and a tune played through MIDI, as games play music (64-bit)" },
+    { BCD_TESTS,  "Video test",      "video-test-x86.exe",  "Media Foundation playing two short clips, MP4 (H.264) and WMV (32-bit)" },
+    { BCD_TESTS,  "Video test (64-bit)", "video-test-x64.exe", "Media Foundation playing two short clips, MP4 (H.264) and WMV (64-bit)" },
+    { BCD_TESTS,  "Controller test", "controller-test-x64.exe", "XInput pad picture with rumble, and the DirectInput game controllers (64-bit)" },
+    { BCD_TESTS,  "Keyboard, mouse and touch test", "input-test-x64.exe", "Keys, mouse buttons, wheel and position, raw input and touch (64-bit)" },
 };
 const size_t bcd_start_entry_count = sizeof(bcd_start_entries) / sizeof(bcd_start_entries[0]);
+
+/* The system tests and Windows' own tools (round 602). The tests are ONE program, bcd-systest-<arch>.exe (tests/systests), told
+ * what to do by its first argument; each also writes its result to the session log, which "Send Log" carries. The x64 build is
+ * in arm64ec-windows (system32), the 32-bit build in i386-windows (syswow64). */
+#define SYSTEST     "bcd-systest-x64.exe"
+#define SYSTEST_X86 "bcd-systest-x86.exe"
+
+const bcd_start_entry bcd_start_system_entries[] = {
+    { BCD_TESTS,  "Run all tests",       SYSTEST,     "Runs the quick system tests one after the other and writes one report", "all" },
+    { BCD_TESTS,  "System info",         SYSTEST,     "Device, Windows version, graphics, memory and BCD build as a game sees them", "sysinfo" },
+    { BCD_TESTS,  "CPU test",            SYSTEST,     "The processor features a game sees (SSE, AVX, BMI...) and a short speed test", "cpu" },
+    { BCD_TESTS,  "RAM test 2 GB",       SYSTEST,     "Takes up to 2 GB and stops before iOS would close BCD", "ram 2" },
+    { BCD_TESTS,  "RAM test 4 GB",       SYSTEST,     "Takes up to 4 GB and stops before iOS would close BCD", "ram 4" },
+    { BCD_TESTS,  "RAM test 6 GB",       SYSTEST,     "Takes up to 6 GB and stops before iOS would close BCD", "ram 6" },
+    { BCD_TESTS,  "RAM test 8 GB",       SYSTEST,     "Takes up to 8 GB and stops before iOS would close BCD", "ram 8" },
+    { BCD_TESTS,  "RAM test 12 GB",      SYSTEST,     "Takes up to 12 GB and stops before iOS would close BCD", "ram 12" },
+    { BCD_TESTS,  "RAM test (32-bit)",   SYSTEST_X86, "How much of its 4 GB address space a 32-bit game gets", "ram32" },
+    { BCD_TESTS,  "JIT pool test",       SYSTEST,     "The size of this session's JIT pool and how full it is", "jit" },
+    { BCD_TESTS,  "VC++ and .NET check", SYSTEST,     "Which Visual C++ runtimes and .NET or Mono parts a game finds", "vcrt" },
+    { BCD_TESTS,  "Disk speed test",     SYSTEST,     "Write and read speed of C: and of the external drive when there is one", "disk" },
+    { BCD_TESTS,  "Network test",        SYSTEST,     "DNS and HTTPS to Steam, Epic, GOG, Battle.net and EA", "net" },
+
+    /* Windows' own tools. Game Controllers is control.exe with joy.cpl, which only the 32-bit set carries (syswow64). */
+    { BCD_TOOLS,  "Task Manager",        "taskmgr.exe", "Lists the running programs" },
+    { BCD_TOOLS,  "Command Prompt",      "cmd.exe",     "A Windows command line" },
+    { BCD_TOOLS,  "Notepad",             "notepad.exe", "A plain text editor" },
+    { BCD_TOOLS,  "Registry Editor",     "regedit.exe", "Shows and changes the registry of this Windows" },
+    { BCD_TOOLS,  "Game Controllers",    "control.exe", "Lists the game controllers and tests them", "joy.cpl" },
+};
+const size_t bcd_start_system_entry_count = sizeof(bcd_start_system_entries) / sizeof(bcd_start_system_entries[0]);
+
+/* Round 603: the runtimes folder, 7-Zip and three more of Windows' own tools, a table of their own so that the tables above can grow
+ * without touching these lines.
+ * BCD Runtimes: one program, bcd-runtimes-x64.exe (bcd-runtimes/runtimes.c), told what to do by its first argument. Each entry shows what it
+ * will download, from where and how big, and downloads the vendor's own file only when the person presses its button (SHA-256 checked,
+ * never part of BCD's package).
+ * 7-Zip: 7zFM.exe, built from the project's source without its RAR code (tools/build-7zip.py), a separate Windows program; its
+ * command-line twin 7z.exe is in the same folder of the app but has no entry (it needs a Command Prompt).
+ * winecfg.exe is in the aarch64 set (system32); control.exe and its .cpl files only in the 32-bit set (syswow64), like joy.cpl above. */
+#define RUNTIMES "bcd-runtimes-x64.exe"
+
+const bcd_start_entry bcd_start_extra_entries[] = {
+    { BCD_RUNTIMES, "Installed runtimes",  RUNTIMES, "Shows which of these runtimes are installed", "status" },
+    { BCD_RUNTIMES, "XNA Framework 4.0",   RUNTIMES, "Installs Microsoft's XNA Framework 4.0 for XNA games (downloaded from Microsoft when you press the button)", "xna" },
+    { BCD_RUNTIMES, "PhysX (legacy)",      RUNTIMES, "Installs NVIDIA's older PhysX System Software for older games (downloaded from NVIDIA when you press the button)", "physx" },
+    { BCD_RUNTIMES, "OpenAL",              RUNTIMES, "Installs OpenAL for games that expect it in Windows (downloaded from openal.org when you press the button)", "openal" },
+    { BCD_RUNTIMES, "DirectX June 2010",   RUNTIMES, "Adds the older DirectX files BCD does not carry, never replacing one it has (downloaded from Microsoft when you press the button)", "dx2010" },
+
+    { BCD_7ZIP,     "7-Zip File Manager",  "7zFM.exe", "Opens and makes 7z, zip, tar, iso, cab and many other archives (RAR is not supported)" },
+
+    { BCD_TOOLS,    "Wine Configuration",  "winecfg.exe", "Windows version, DLL overrides, drives and audio of this Windows" },
+    { BCD_TOOLS,    "Control Panel",       "control.exe", "The Control Panel of this Windows" },
+    { BCD_TOOLS,    "Uninstall a program", "control.exe", "Lists the programs installed in this Windows and removes them", "appwiz.cpl" },
+};
+const size_t bcd_start_extra_entry_count = sizeof(bcd_start_extra_entries) / sizeof(bcd_start_extra_entries[0]);
+
+/* Round 604: more of Wine's own programs, a fourth table so that the three above are not touched by these lines. They are in the 32-bit set
+ * of the app (WordPad, Winefile, control.exe with its panels, Internet Explorer) or in both (WineMine: the native one is found first).
+ * Wine has no intl.cpl, main.cpl or mmsys.cpl (its Control Panel's applets are appwiz, desk, inetcpl, irprops, bthprops and joy, and winecfg
+ * has the audio and drive pages), so the panels here are Display and Internet options. Internet Explorer is the 32-bit one and is written only
+ * when Wine Gecko is there (BCD_START_GECKO): the 64-bit Gecko cannot be loaded by a native ARM64 iexplore.exe, the 32-bit one is the same
+ * route the installers take. */
+const bcd_start_entry bcd_start_more_entries[] = {
+    { BCD_TOOLS,    "WordPad",                  "wordpad.exe",  "Writes and reads rich text (.rtf) and plain text documents" },
+    { BCD_TOOLS,    "File Manager (Winefile)",  "winefile.exe", "A classic two-pane file manager (Wine's own)" },
+    { BCD_TOOLS,    "Display settings",         "control.exe",  "Wine's display settings panel", "desk.cpl" },
+    { BCD_TOOLS,    "Internet options",         "control.exe",  "Wine's Internet options: certificates, proxy and history", "inetcpl.cpl" },
+    { BCD_TOOLS,    "Internet Explorer",        "iexplore.exe", "Wine's web browser; it needs Wine Gecko (Settings: HTML engine for installers)", NULL, BCD_START_X86 | BCD_START_GECKO },
+    { BCD_TESTS,    "Minesweeper (WineMine)",   "winemine.exe", "A small game that tests mouse, touch and window handling" },
+};
+const size_t bcd_start_more_entry_count = sizeof(bcd_start_more_entries) / sizeof(bcd_start_more_entries[0]);
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
+/* Build 601 (the first with a Start menu) put the DirectX tests in "Programs/BCD". They live in "Programs/BCD Tests" now. */
+const bcd_start_retired_entry bcd_start_retired[] = {
+    { "Programs/BCD", "DirectX 9 test" },
+    { "Programs/BCD", "DirectX 10 test" },
+    { "Programs/BCD", "DirectX 11 test" },
+    { "Programs/BCD", "DirectX 12 test" },
+};
+const size_t bcd_start_retired_count = sizeof(bcd_start_retired) / sizeof(bcd_start_retired[0]);
+
+size_t bcd_start_all_count(void)
+{
+    return bcd_start_entry_count + bcd_start_system_entry_count + bcd_start_extra_entry_count + bcd_start_more_entry_count;
+}
+
+const bcd_start_entry *bcd_start_all_entry(size_t i)
+{
+    if (i < bcd_start_entry_count) return &bcd_start_entries[i];
+    i -= bcd_start_entry_count;
+    if (i < bcd_start_system_entry_count) return &bcd_start_system_entries[i];
+    i -= bcd_start_system_entry_count;
+    if (i < bcd_start_extra_entry_count) return &bcd_start_extra_entries[i];
+    i -= bcd_start_extra_entry_count;
+    return i < bcd_start_more_entry_count ? &bcd_start_more_entries[i] : NULL;
+}
 
 /* ---------------------------------------------------------------- bytes */
 
@@ -256,10 +382,83 @@ static int write_file(const char *path, const uint8_t *data, size_t len)
     return 1;
 }
 
+/* Where the entry's program is: 0 in the 64-bit farms (system32), 1 in the 32-bit set (syswow64), -1 when the app does not
+ * carry it or the name is not a plain file name. */
+static int program_farm(const char *bundle, const bcd_start_entry *e)
+{
+    static const char *const farms64[] = { "arm64ec-windows", "aarch64-windows" };
+    char probe[PATH_MAX];
+    size_t i;
+
+    if (!e->program[0] || strpbrk(e->program, "/\\") || !strcmp(e->program, ".") || !strcmp(e->program, "..")) return -1;
+    if (!(e->flags & BCD_START_X86))
+        for (i = 0; i < sizeof(farms64) / sizeof(farms64[0]); i++)
+            if (snprintf(probe, sizeof(probe), "%s/%s/%s", bundle, farms64[i], e->program) < (int)sizeof(probe) && exists(probe)) return 0;
+    /* the 32-bit set counts only when it is a set: the session links syswow64 once the bundle has the i386 ntdll.dll
+     * (madeira_bundle_has_i386 in WineProcessBridge.m); a lone tracked 32-bit test program is no set */
+    if (snprintf(probe, sizeof(probe), "%s/i386-windows/ntdll.dll", bundle) < (int)sizeof(probe) && exists(probe) &&
+        snprintf(probe, sizeof(probe), "%s/i386-windows/%s", bundle, e->program) < (int)sizeof(probe) && exists(probe)) return 1;
+    return -1;
+}
+
+/* Whether Wine Gecko is available in this session (BCD_START_GECKO): in the prefix, or as BCD's downloaded files that XDG_CACHE_HOME names. */
+static int gecko_available(const char *prefix)
+{
+    static const char *const homes[] = { "system32", "syswow64" };
+    char probe[PATH_MAX];
+    const char *cache = getenv("XDG_CACHE_HOME");
+    size_t i;
+
+    for (i = 0; i < sizeof(homes) / sizeof(homes[0]); i++)
+        if (snprintf(probe, sizeof(probe), "%s/drive_c/windows/%s/gecko", prefix, homes[i]) < (int)sizeof(probe) && is_dir(probe)) return 1;
+    if (cache && cache[0] && snprintf(probe, sizeof(probe), "%s/wine", cache) < (int)sizeof(probe)) {
+        DIR *d = opendir(probe);
+        struct dirent *de;
+        int found = 0;
+        if (d) {
+            while (!found && (de = readdir(d)) != NULL) {
+                size_t n = strlen(de->d_name);
+                if (!strncmp(de->d_name, "wine-gecko-", 11) && n > 15 && !strcmp(de->d_name + n - 4, ".msi")) found = 1;
+            }
+            closedir(d);
+        }
+        return found;
+    }
+    return 0;
+}
+
+/* An earlier build's shortcut that this build no longer has (bcd_start_retired): removed when it is a plain file that is
+ * BCD's own and not an entry of today's tables, and its folder with it when that is empty afterwards. */
+static void retire_old(const char *menu, bcd_start_result *r)
+{
+    char file[PATH_MAX], dir[PATH_MAX];
+    uint8_t current[LNK_FILE_MAX + 1];
+    size_t i, k;
+
+    for (i = 0; i < bcd_start_retired_count; i++) {
+        const bcd_start_retired_entry *old = &bcd_start_retired[i];
+        long have;
+        int still_used = 0;
+
+        for (k = 0; k < bcd_start_all_count(); k++) {
+            const bcd_start_entry *e = bcd_start_all_entry(k);
+            if (!strcmp(e->folder, old->folder) && !strcmp(e->name, old->name)) still_used = 1;
+        }
+        if (still_used) continue;
+        if (snprintf(dir, sizeof(dir), "%s/%s", menu, old->folder) >= (int)sizeof(dir) ||
+            snprintf(file, sizeof(file), "%s/%s.lnk", dir, old->name) >= (int)sizeof(file))
+            continue;
+        have = read_plain(file, current);               /* not a plain file (a folder, a symbolic link): left alone */
+        if (have < 0 || have > LNK_FILE_MAX || bcd_lnk_owner(current, (size_t)have) != 1) continue;
+        if (unlink(file) == 0) r->retired++;
+        rmdir(dir);                                     /* only succeeds when empty; "Programs" itself is never touched */
+    }
+}
+
 bcd_start_result bcd_startmenu_install(const char *prefix, const char *bundle)
 {
-    bcd_start_result r = { 0, 0, 0, 0, 0, 0 };
-    char menu[PATH_MAX], probe[PATH_MAX], file[PATH_MAX], target[256];
+    bcd_start_result r = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    char menu[PATH_MAX], file[PATH_MAX], target[256];
     uint8_t built[LNK_FILE_MAX], current[LNK_FILE_MAX + 1];
     size_t i;
 
@@ -267,25 +466,31 @@ bcd_start_result bcd_startmenu_install(const char *prefix, const char *bundle)
         r.no_menu = 1;
         return r;
     }
-    for (i = 0; i < bcd_start_entry_count; i++) {
-        const bcd_start_entry *e = &bcd_start_entries[i];
+    retire_old(menu, &r);
+    for (i = 0; i < bcd_start_all_count(); i++) {
+        const bcd_start_entry *e = bcd_start_all_entry(i);
         size_t size;
         long have;
+        int farm;
 
-        /* a program the app does not carry gets no entry */
-        if ((snprintf(probe, sizeof(probe), "%s/arm64ec-windows/%s", bundle, e->program) >= (int)sizeof(probe) || !exists(probe)) &&
-            (snprintf(probe, sizeof(probe), "%s/aarch64-windows/%s", bundle, e->program) >= (int)sizeof(probe) || !exists(probe))) {
+        /* a program the app does not carry gets no entry; nor does one that waits for Wine Gecko (an entry already written stays) */
+        farm = program_farm(bundle, e);
+        if (farm < 0 || ((e->flags & BCD_START_GECKO) && !gecko_available(prefix))) {
             r.missing++;
             continue;
         }
-        if (snprintf(target, sizeof(target), "C:\\windows\\system32\\%s", e->program) >= (int)sizeof(target)) { r.failed++; continue; }
-        size = bcd_lnk_build(target, NULL, NULL, e->description, built, sizeof(built));
+        if (snprintf(target, sizeof(target), "C:\\windows\\%s\\%s", farm ? "syswow64" : "system32", e->program) >= (int)sizeof(target)) {
+            r.failed++;
+            continue;
+        }
+        size = bcd_lnk_build(target, e->arguments, NULL, e->description, built, sizeof(built));
         if (size == 0) { r.failed++; continue; }
         if (!make_folders(menu, e->folder)) { r.failed++; continue; }
         if (snprintf(file, sizeof(file), "%s/%s%s%s.lnk", menu, e->folder, *e->folder ? "/" : "", e->name) >= (int)sizeof(file)) {
             r.failed++;
             continue;
         }
+        if (farm) r.x86++;
         if (lstat(file, &(struct stat){ 0 }) == 0) {
             have = read_plain(file, current);
             if (have < 0 || have > LNK_FILE_MAX || bcd_lnk_owner(current, (size_t)have) != 1) { r.foreign++; continue; }

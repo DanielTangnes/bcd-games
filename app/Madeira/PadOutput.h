@@ -20,6 +20,10 @@ void madeira_pad_output_configure(int xinput, int hid);
 /// player 1), or nil. GamepadInput.refreshControllers reports every change.
 void madeira_pad_output_set_slot(int slot, GCController *_Nullable controller);
 
+/// madeira-bcd (2026-10-25, round 604): how hard the pad in XInput slot 0-3 rumbles, as a factor of what the game asks for (0 to 1; 1, the
+/// default, leaves every level as it was). Per player, so it follows the slot when controllers change places. Settings > Controllers.
+void madeira_pad_output_set_scale(int slot, float scale);
+
 /// 0 when the app resigns active / goes to the background: motors stop and
 /// adaptive triggers go off. 1 re-applies what the game last asked for.
 void madeira_pad_output_set_active(int active);

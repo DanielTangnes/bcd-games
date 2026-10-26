@@ -13,7 +13,9 @@ import UIKit
 //     opened) and Done;
 //   - a selected control's panel, docked to the side of the screen away from it so it never
 //     covers it: what the control does (keys, mouse and key sticks, controller inputs), its
-//     size, the controller button that also presses it in keyboard-and-mouse mode, Remove;
+//     size, Lock (it then cannot be moved, resized or removed), To front / To back (which of
+//     two overlapping controls is on top), the controller button that also presses it in
+//     keyboard-and-mouse mode, Remove;
 //   - the layouts panel: switch, new, save as new, delete, and the controls' opacity and size
 //     in play.
 // Every change goes through BCDTouchEditorActions (BCDTouchLive in the app), which keeps the
@@ -43,6 +45,11 @@ struct BCDTouchEditorState: Equatable {
     func remove(_ id: UUID)
     func setAction(_ id: UUID, _ action: BCDTouchAction)
     func setScale(_ id: UUID, _ scale: Double)
+    /// A locked control cannot be moved, resized or removed until it is unlocked.
+    func setLocked(_ id: UUID, _ locked: Bool)
+    /// In front of, or behind, the controls it overlaps.
+    func bringToFront(_ id: UUID)
+    func sendToBack(_ id: UUID)
     func setPadLink(_ id: UUID, _ name: String?)
     func setOpacity(_ value: Double)
     func setLayoutScale(_ value: Double)
@@ -86,7 +93,9 @@ struct BCDTouchEditor: View {
                 let rect = dock(avoiding: frame(of: item))
                 BCDTouchInspector(item: item, layoutScale: state.layoutScale, padLinks: state.padLinks,
                                   tab: Binding(get: { tab ?? BCDTouchEditorTab.of(item.action) }, set: { tab = $0 }),
-                                  actions: actions, roomy: roomy)
+                                  actions: actions, roomy: roomy,
+                                  inFront: BCDTouchLayering.isFront(state.items, item.id),
+                                  atBack: BCDTouchLayering.isBack(state.items, item.id))
                     .frame(width: rect.width, height: rect.height)
                     .background(BCDTouchPanelBackground())
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -239,6 +248,9 @@ struct BCDTouchInspector: View {
     let actions: BCDTouchEditorActions
     /// An iPad: larger type and chips.
     var roomy = false
+    /// The control is already the frontmost / the rearmost one.
+    var inFront = false
+    var atBack = false
 
     private var tabs: [BCDTouchEditorTab] {
         padLinks.isEmpty ? [.keys, .mouse, .controller] : BCDTouchEditorTab.allCases
@@ -249,7 +261,9 @@ struct BCDTouchInspector: View {
             header
             BCDTouchSliderRow(title: "Size", value: item.scale, range: BCDTouchGeometry.scaleRange,
                               text: String(format: "%.1f\u{00D7}", item.scale)) { actions.setScale(item.id, $0) }
+                .disabled(item.locked).opacity(item.locked ? 0.45 : 1)
                 .padding(.horizontal, 14).padding(.bottom, 6)
+            arrangeRow
             tabBar
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
@@ -274,7 +288,7 @@ struct BCDTouchInspector: View {
                 Text(BCDTouchNames.title(item.action))
                     .font(BCDStyle.heading(roomy ? 19 : 16)).foregroundStyle(BCDStyle.text)
                     .lineLimit(1).minimumScaleFactor(0.7)
-                Text("Drag to move \u{00B7} pinch to resize")
+                Text(item.locked ? "Locked \u{00B7} unlock to move, resize or remove" : "Drag to move \u{00B7} pinch to resize")
                     .font(BCDStyle.body(roomy ? 14 : 12)).foregroundStyle(BCDStyle.textSoft).lineLimit(1).minimumScaleFactor(0.7)
             }
             Spacer(minLength: 4)
@@ -285,10 +299,25 @@ struct BCDTouchInspector: View {
                     .background(Circle().fill(BCDStyle.alert.opacity(0.14)))
             }
             .buttonStyle(BCDTouchPressStyle())
+            .disabled(item.locked).opacity(item.locked ? 0.35 : 1)
             .accessibilityLabel("Remove this control")
             BCDTouchCloseButton { actions.select(nil) }
         }
         .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 6)
+    }
+
+    /// Lock it in place, or put it in front of or behind the controls it overlaps.
+    private var arrangeRow: some View {
+        HStack(spacing: 6) {
+            BCDTouchPanelButton(title: item.locked ? "Locked" : "Lock", symbol: item.locked ? "lock.fill" : "lock.open",
+                                prominent: item.locked) { actions.setLocked(item.id, !item.locked) }
+                .accessibilityAddTraits(item.locked ? .isSelected : [])
+            BCDTouchPanelButton(title: "To front", symbol: "square.2.layers.3d.top.filled") { actions.bringToFront(item.id) }
+                .disabled(inFront).opacity(inFront ? 0.45 : 1)
+            BCDTouchPanelButton(title: "To back", symbol: "square.2.layers.3d.bottom.filled") { actions.sendToBack(item.id) }
+                .disabled(atBack).opacity(atBack ? 0.45 : 1)
+        }
+        .padding(.horizontal, 12).padding(.bottom, 6)
     }
 
     private var tabBar: some View {

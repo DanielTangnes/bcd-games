@@ -75,6 +75,9 @@ extension BCDSettingsBackends {
 }
 
 @MainActor final class BCDPreviewControls: BCDControlsBackend {
+    var canShareLayouts: Bool { true }   // round 604: the two rows show in the preview; the app's backend opens the share sheet and the picker
+    func shareLayout(_ id: String) {}
+    func importLayoutFromFile() {}
     @Published private(set) var touchControls = true
     @Published private(set) var opacity = 0.7
     @Published private(set) var activeLayout: String? = "custom.1"
@@ -259,6 +262,26 @@ extension BCDSettingsBackends {
     func discardBackup(_ url: URL) {}
     func restoreSaves(from url: URL) { savesMessage = "412 files put back." }
     func addEveryGame() { addGamesMessage = "2 games added to your library." }
+    var prefixToolsView: AnyView? { AnyView(BCDPrefixToolsGroup(backend: BCDPreviewPrefix.shared)) }
+}
+
+/// Round 604: Settings › Storage › Windows prefix, with a few sample copies.
+@MainActor final class BCDPreviewPrefix: BCDPrefixBackend {
+    static let shared = BCDPreviewPrefix()
+    var busy: Bool { false }
+    @Published private(set) var message: String? = "Copy made: 312 files, 14.2 MB, in Files › BCD › Prefix Copies › 2026-10-25 14.32.07."
+    @Published private(set) var copies = [BCDPrefixCopyItem(id: "2026-10-25 14.32.07", made: Date() - 3600),
+                                          BCDPrefixCopyItem(id: "2026-10-24 21.05.41 Before reconfigure", made: Date() - 86_400)]
+    var blocked: String? { nil }
+    func refresh() {}
+    func makeCopy() {}
+    func putBack(_ id: String) {}
+    func deleteCopy(_ id: String) { copies.removeAll { $0.id == id } }
+    func exportKit() { message = "Exported 312 files (14.2 MB) to Files › BCD › Prefix Exports › 2026-10-25 15.00.00 Prefix.zip." }
+    func describeImport(_ url: URL) -> String { "Made 2026-10-25 15:00:00 UTC; 312 files, Windows user mythic." }
+    func importKit(from url: URL) {}
+    func reconfigure() {}
+    func reinstallSystemFiles() {}
 }
 
 @MainActor final class BCDPreviewDeveloper: BCDDeveloperBackend {
@@ -297,6 +320,7 @@ extension BCDSettingsBackends {
     @Published private(set) var sending = false
     @Published private(set) var sendStatus: String?
     @Published private(set) var extendedLogging = false
+    @Published private(set) var perfTrace = false   // round 604
     @Published private var diagnostics: Set<BCDDiagnostic> = []
     @Published private(set) var crashTuning = true
     var crashTuningRunning: Bool { true }
@@ -305,6 +329,7 @@ extension BCDSettingsBackends {
     func copy(_ code: String) {}
     func exportable() -> [URL] { [] }
     func setExtendedLogging(_ on: Bool) { extendedLogging = on }
+    func setPerfTrace(_ on: Bool) { perfTrace = on }
     func diagnostic(_ item: BCDDiagnostic) -> Bool { diagnostics.contains(item) }
     func setDiagnostic(_ item: BCDDiagnostic, _ on: Bool) { if on { diagnostics.insert(item) } else { diagnostics.remove(item) } }
     func setCrashTuning(_ on: Bool) { crashTuning = on }

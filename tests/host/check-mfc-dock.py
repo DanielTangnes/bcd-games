@@ -184,7 +184,7 @@ if call:
     check("  in the block that has the prefix, the bundle and the file manager",
           bridge.rindex("NSString *bundlePath = [[NSBundle mainBundle] bundlePath];\n            NSString *dllSource", 0, at) > bridge.rindex("// Ensure Wine prefix has system32 directory", 0, at))
 check("the overlay itself still sits behind use_arm64ec (a direct start is as before)",
-      'if (use_arm64ec && wineVcrt && wineVcrt[0] == \'1\') {' in bridge and re.search(r"\} else\n\s+if \(use_arm64ec\) \{\n\s+NSString \*vcrtSource = vcrtDir;", bridge) is not None
+      'if (use_arm64ec && wineVcrt && wineVcrt[0] == \'1\') {' in bridge and re.search(r"\} else\n\s+if \(use_arm64ec\) \{\n\s+int vcrtLinked = 0, vcrtSkipped = 0;", bridge) is not None
       and "NSString *vcrtDir = use_arm64ec ? madeira_vcruntime_dir(" in bridge)
 
 # ---------------------------------------------------------------- catalog and auto-tune

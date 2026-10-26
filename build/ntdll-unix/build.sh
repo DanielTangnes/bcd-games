@@ -11,6 +11,15 @@ APP_LIB="$REPO_ROOT/app/Madeira/libntdll_unix.a"
 
 mkdir -p "$OBJ_DIR"
 
+# Detect optional diagnostic fields in the SDK used for this target build.
+# Keep SDK versions without this member buildable; it is not a runtime requirement.
+RUSAGE_PAGE_WAIT_FLAGS=()
+if printf '#include <sys/resource.h>\nvoid probe(struct rusage_info_v6 *r) { (void)r->ri_page_wait_time_mach; }\n' | \
+    xcrun -sdk iphoneos clang -arch arm64 -isysroot "$SDK" \
+        -miphoneos-version-min=17.0 -x c -fsyntax-only - >/dev/null 2>&1; then
+    RUSAGE_PAGE_WAIT_FLAGS=(-DMADEIRA_HAVE_RUSAGE_PAGE_WAIT_TIME_MACH=1)
+fi
+
 SUCCEEDED=0
 FAILED=0
 FAILED_FILES=""
@@ -18,6 +27,7 @@ FAILED_FILES=""
 compile_one() {
     local src=$1
     local name=$2
+    shift 2   # anything after src and name: extra flags for this file only
     echo -n "  $name... "
 
     if xcrun -sdk iphoneos clang \
@@ -34,8 +44,10 @@ compile_one() {
         -DBINDIR=\"/usr/local/bin\" -DLIBDIR=\"/usr/local/lib\" \
         -DDATADIR=\"/usr/local/share\" -DSYSTEMDLLPATH=\"\" \
         -DWINE_UNIX_LIB -DWINE_IOS=1 \
+        "${RUSAGE_PAGE_WAIT_FLAGS[@]}" \
         -Dget_thread_context=ntdll_get_thread_context \
         -Dset_thread_context=ntdll_set_thread_context \
+        "$@" \
         -c "$src" -o "$OBJ_DIR/$name.o" 2>"$OBJ_DIR/$name.err"; then
         echo "OK"
         SUCCEEDED=$((SUCCEEDED + 1))
@@ -171,6 +183,31 @@ else
     FAILED_FILES="$FAILED_FILES wg_parser_apple_ios"
 fi
 
+# BCD (round 603): MIDI output.  bcd_midi_ios.c is the winmm driver side and bcd_midi_synth_ios.m the
+# synthesizer (Apple's AUMIDISynth in an AVAudioEngine); audio_null_ios.c's midi_* slots call them.  Neither
+# includes a Wine header (CoreFoundation and Wine's headers disagree about several names), so both are
+# compiled without the Wine include paths, like wg_parser_apple_ios.c.  The .m is Objective-C with ARC and
+# modules, which also autolinks AVFoundation.
+for midi_src in bcd_midi_ios.c bcd_midi_synth_ios.m; do
+    midi_name="${midi_src%.*}"
+    midi_flags=""
+    case "$midi_src" in *.m) midi_flags="-fobjc-arc -fmodules" ;; esac
+    echo -n "  $midi_name... "
+    if xcrun -sdk iphoneos clang \
+        -arch arm64 -isysroot "$SDK" -miphoneos-version-min=17.0 \
+        -O2 -fPIC -fvisibility=hidden -fno-stack-protector -fno-strict-aliasing -Wall -Werror=implicit-function-declaration \
+        $midi_flags \
+        -c "$BUILD_DIR/$midi_src" -o "$OBJ_DIR/$midi_name.o" 2>"$OBJ_DIR/$midi_name.err"; then
+        echo "OK"
+        SUCCEEDED=$((SUCCEEDED + 1))
+    else
+        echo "FAILED"
+        grep -m 6 -A 3 "error:" "$OBJ_DIR/$midi_name.err" | sed 's/^/      /'
+        FAILED=$((FAILED + 1))
+        FAILED_FILES="$FAILED_FILES $midi_name"
+    fi
+done
+
 for src in $WINE_SRC/dlls/ntdll/unix/*.c; do
     name=$(basename "$src" .c)
 
@@ -200,6 +237,12 @@ for src in $WINE_SRC/dlls/ntdll/unix/*.c; do
         thread)
             compile_one "$BUILD_DIR/thread_ios.c" "thread"
             ;;
+        sync)
+            # MADEIRA_THREAD_QOS (thread_ios.c): ios_eco_apply_self sets a guest
+            # thread's QoS through madeira_guest_qos_self, which picks the class
+            # given for the thread's name; with the variable unset it passes through.
+            compile_one "$src" "sync" -Dpthread_set_qos_class_self_np=madeira_guest_qos_self
+            ;;
         *)
             compile_one "$src" "$name"
             ;;
@@ -221,6 +264,7 @@ ar rcs "$OBJ_DIR/libntdll_unix.a" \
     "$OBJ_DIR/bcrypt_unixlib.o" "$OBJ_DIR/secur32_unixlib.o" "$OBJ_DIR/crypt32_unixlib.o" \
     "$OBJ_DIR/dwrite_unixlib.o" "$OBJ_DIR/dnsapi_unixlib.o" \
     "$OBJ_DIR/winegstreamer_unixlib.o" "$OBJ_DIR/wg_parser_apple_ios.o" "$OBJ_DIR/winedmo_unixlib.o" \
+    "$OBJ_DIR/bcd_midi_ios.o" "$OBJ_DIR/bcd_midi_synth_ios.o" \
     "$OBJ_DIR/cdrom.o" "$OBJ_DIR/debug.o" "$OBJ_DIR/env.o" "$OBJ_DIR/file.o" \
     "$OBJ_DIR/loader.o" "$OBJ_DIR/loadorder.o" "$OBJ_DIR/process.o" "$OBJ_DIR/registry.o" \
     "$OBJ_DIR/security.o" "$OBJ_DIR/serial.o" "$OBJ_DIR/server.o" \

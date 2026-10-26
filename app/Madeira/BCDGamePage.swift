@@ -33,6 +33,14 @@ struct BCDGameChoice: Identifiable, Equatable {
     var id: String { value }
 }
 
+/// A quick pick under a text setting: tapping it puts its value into the text (a launch flag), or takes it out again.
+struct BCDGameChip: Identifiable, Equatable {
+    var value: String
+    /// What it is for, in a few words.
+    var note: String
+    var id: String { value }
+}
+
 /// A screen of Options that a row opens.
 enum BCDGameScreen: Equatable {
     /// Another section, reached from this row (Controller binds, under Controls).
@@ -41,6 +49,8 @@ enum BCDGameScreen: Equatable {
     case storeSearch
     /// A picture from Files as the game's cover.
     case coverPicture
+    /// A picture from Files as the Wine desktop's wallpaper (round 604).
+    case wallpaperPicture
 }
 
 /// One setting of a game, as a row of Options.
@@ -73,6 +83,8 @@ struct BCDGameSetting: Identifiable, Equatable {
     var destructive = false
     /// A heading over this setting, which starts a run of them ("Face buttons").
     var heading: String? = nil
+    /// Quick picks under a text setting's field (launch flags, round 604); empty for every other setting.
+    var chips: [BCDGameChip] = []
 
     var isOn: Bool { value == "1" }
     var isDefault: Bool { value == defaultValue }
@@ -306,6 +318,13 @@ struct BCDGameDetails: Equatable {
     /// "64-bit · Direct3D 11".
     var program: String? = nil
     var sizeOnDisk: Int64? = nil
+    /// A Steam game that is not installed: about how much it downloads and how much it takes on this device
+    /// (Steam's product info, selected depots only; nil when Steam states none).
+    var downloadBytes: Int64? = nil
+    var installBytes: Int64? = nil
+    /// A game that is not installed has settings that matter before the install (a Steam game's language): Options opens
+    /// with them, and Options is offered although the game has no settings of its own yet.
+    var offersDownloadOptions = false
     var lastPlayed: Date? = nil
     var minutesPlayed: Int? = nil
     /// "Recommended", "Standard", "Your own", "Auto-tune on".
@@ -349,6 +368,8 @@ struct BCDGameDetails: Equatable {
     /// The game's last start failed because a .NET program found no Wine Mono, and this device
     /// still has none: the page says where to download it.
     var needsWineMono = false
+    /// What the game's program files import that this device does not have yet, in a sentence or two (BCDReadinessLive.swift, round 604); nil: nothing.
+    var readiness: String? = nil
     /// A game that is not installed, and the owned DLC it has files for: what the question before its first install
     /// asks (BCDGameDLC.swift). nil: nothing to ask (no DLC, DLC support off, or the player was asked already).
     var dlcOffer: BCDDLCOffer? = nil
@@ -404,6 +425,8 @@ struct BCDGameDetails: Equatable {
     /// Sends the log; the answer is the code to quote.
     /// The sender's comment for a log about to be sent (BCDLogComment): the text (empty for none), nil when they cancel.
     func logComment() async -> String?
+    /// The same for a known log: when a screenshot was taken during its session the dialog offers to send that too.
+    func logComment(for log: BCDGameLog) async -> String?
     /// `comment`: the sender's words for the top of the log (BCDLogComment), empty for none.
     func send(_ log: BCDGameLog, of game: BCDGame, comment: String, progress: @escaping (String) -> Void) async throws -> String
     /// The game's own config, as text (key = value lines); nil: none to edit.
@@ -415,6 +438,13 @@ struct BCDGameDetails: Equatable {
     func useStoreMatch(_ match: BCDStoreMatch, for game: BCDGame)
     /// A picture from Files becomes the game's cover; throws with the reason in BCD's words.
     func setCover(from file: URL, for game: BCDGame) async throws
+    /// A picture from Files becomes the Wine desktop's wallpaper, cut to the game's desktop size (round 604).
+    func setWallpaper(from file: URL, for game: BCDGame) async throws
+}
+
+extension BCDGameDetailBackend {
+    func setWallpaper(from file: URL, for game: BCDGame) async throws { throw BCDGameError("A wallpaper cannot be set here.") }
+    func logComment(for log: BCDGameLog) async -> String? { await logComment() }
 }
 
 /// Where the page finds its backend. The app's is BCDGamePageLive, which this file cannot name
@@ -452,6 +482,7 @@ enum BCDGameAction: Hashable {
     case saveConfig(String)
     case useStoreMatch(BCDStoreMatch)
     case setCover(URL)
+    case setWallpaper(URL)
     /// Install after the question about the game's owned DLC (BCDGameDLC.swift), with exactly the DLC chosen (none: the game alone).
     case installChoosingDLC(BCDInstallPlace, chosen: [UInt32])
     /// The question's "Choose DLC…": opens the chooser for the game's owned DLC.
@@ -571,7 +602,31 @@ enum BCDGameText {
 /// quotes stay whole.
 enum BCDLaunchFlags {
     static let flags = ["-dx11", "-dx12", "-dx10", "-dx9", "-windowed", "-fullscreen", "-nosplash"]
-    private static let direct3D: Set<String> = ["-dx9", "-dx10", "-dx11", "-dx12"]
+    /// Flags of which one at a time makes sense: asking for one takes the others out.
+    private static let exclusive: [Set<String>] = [
+        ["-dx9", "-dx10", "-dx11", "-dx12"],
+        ["-windowed", "-fullscreen"],
+        ["-force-dx9", "-force-d3d9", "-force-d3d11"],
+    ]
+
+    /// The quick picks under Launch arguments (round 604; Winlator's list of arguments that fix older and Unity games, and
+    /// the flags above). A flag the program does not know is ignored by most programs; nothing here is added unless it is tapped.
+    static let quick: [BCDGameChip] = [
+        BCDGameChip(value: "-force-gfx-direct", note: "Unity: draws on the game's main thread. For a Unity game that freezes or shows nothing."),
+        BCDGameChip(value: "-force-d3d11-singlethreaded", note: "Unity: Direct3D 11 on one thread. For a Unity game that crashes while loading."),
+        BCDGameChip(value: "-force-d3d11", note: "Unity: Direct3D 11."),
+        BCDGameChip(value: "-force-d3d9", note: "Unity: Direct3D 9."),
+        BCDGameChip(value: "-force-dx9", note: "Unity: Direct3D 9, spelled the other way."),
+        BCDGameChip(value: "/d3d9", note: "Some older games: Direct3D 9."),
+        BCDGameChip(value: "-dx11", note: "Ask for Direct3D 11."),
+        BCDGameChip(value: "-dx12", note: "Ask for Direct3D 12."),
+        BCDGameChip(value: "-dx10", note: "Ask for Direct3D 10."),
+        BCDGameChip(value: "-dx9", note: "Ask for Direct3D 9."),
+        BCDGameChip(value: "-windowed", note: "Ask for a window."),
+        BCDGameChip(value: "-fullscreen", note: "Ask for full screen."),
+        BCDGameChip(value: "-popupwindow", note: "Unity: a borderless window."),
+        BCDGameChip(value: "-nosplash", note: "Skip the splash screen."),
+    ]
 
     /// The arguments as the program gets them: split at spaces and tabs outside quotes.
     static func words(_ arguments: String) -> [String] {
@@ -602,8 +657,7 @@ enum BCDLaunchFlags {
         if has(arguments, flag) {
             words.removeAll { $0.lowercased() == key }
         } else {
-            let excluded: Set<String> = direct3D.contains(key) ? direct3D
-                : key == "-windowed" ? ["-fullscreen"] : key == "-fullscreen" ? ["-windowed"] : []
+            let excluded = exclusive.first { $0.contains(key) } ?? []
             words.removeAll { excluded.contains($0.lowercased()) }
             words.append(flag)
         }
@@ -802,15 +856,20 @@ struct BCDGamePagePlan: Equatable {
                 others.append(Choice(action: .install(.externalDrive), title: "External drive", symbol: "externaldrive"))
             }
             // A game whose size is not known yet (Epic's, until its first plan) starts the line with the place, capitalised.
-            var line = [game.size.map { BCDFormat.bytes($0) }, game.size == nil ? "On this device" : "on this device"].compactMap { $0 }.joined(separator: " ")
+            // A Steam game's size comes from Steam's product info before the download starts: about this much (shared
+            // depots whose owner was not read count nothing).
+            let size = game.size ?? details.installBytes
+            let estimate = game.size == nil && details.installBytes != nil
+            var line = [size.map { (estimate ? "About " : "") + BCDFormat.bytes($0) }, size == nil ? "On this device" : "on this device"]
+                .compactMap { $0 }.joined(separator: " ")
             if let free = system.freeDeviceBytes { line += ", \(BCDFormat.bytes(free)) free" }
             installLine = line
             if game.store != .local, let account = accounts.first(where: { $0.store == game.store }), account.name == nil {
                 notes.append(Note(text: "Downloading needs your \(game.store.title) sign-in.", warning: true,
                                   fix: Choice(action: .signIn(game.store), title: "Sign in", symbol: "person.crop.circle")))
             }
-            if let size = game.size, let free = system.freeDeviceBytes, size > free {
-                notes.append(Note(text: "It needs \(BCDFormat.bytes(size)); this device has \(BCDFormat.bytes(free)) free.", warning: true))
+            if let size, let free = system.freeDeviceBytes, size > free {
+                notes.append(Note(text: "It needs \(estimate ? "about " : "")\(BCDFormat.bytes(size)); this device has \(BCDFormat.bytes(free)) free.", warning: true))
             }
             if let warning = details.installWarning { notes.append(Note(text: warning, warning: false)) }
         case .queued, .downloading, .installing:
@@ -836,6 +895,7 @@ struct BCDGamePagePlan: Equatable {
             if details.needsWineMono {
                 notes.append(Note(text: "This game needs Wine Mono (.NET). Download it in Settings › .NET Framework.", warning: true))
             }
+            if let readiness = details.readiness { notes.append(Note(text: readiness, warning: true)) }   // round 604: BCDReadinessLive.swift
             // Before the Cloud note: only two notes show, and on an install without the increased memory
             // limit most failures come from it (2026-10-20: 54 of 257 logs, none of the large games played).
             // Only the increased memory limit is named (owner, 2026-10-22): the address map follows that entitlement
@@ -896,6 +956,10 @@ struct BCDGameFact: Identifiable, Equatable {
         if game.state.isInstalled {
             if let bytes = details.sizeOnDisk ?? game.size { facts.append(BCDGameFact(label: "Size", value: BCDFormat.bytes(bytes))) }
             facts.append(BCDGameFact(label: "Installed on", value: game.place == .externalDrive ? "External drive" : "This device"))
+        } else if details.downloadBytes != nil || details.installBytes != nil {
+            // A Steam game before its install: what Steam's product info says it downloads and takes.
+            if let bytes = details.downloadBytes { facts.append(BCDGameFact(label: "Download size", value: "About " + BCDFormat.bytes(bytes))) }
+            if let bytes = details.installBytes { facts.append(BCDGameFact(label: "Size on this device", value: "About " + BCDFormat.bytes(bytes))) }
         } else if let bytes = game.size {
             facts.append(BCDGameFact(label: "Download", value: BCDFormat.bytes(bytes)))
         }
@@ -1149,7 +1213,7 @@ struct BCDGamePending: Equatable {
             guard let backend else { return }
             Task { [weak self] in
                 // The sender's comment first (BCDLogComment through the backend); Cancel sends nothing.
-                guard let comment = await backend.logComment() else { return }
+                guard let comment = await backend.logComment(for: log) else { return }
                 self?.work("report") { [weak self] backend in
                     let code = try await backend.send(log, of: game, comment: comment) { step in self?.messages["report"] = step }
                     return "Sent. Quote this code: \(code)"
@@ -1166,6 +1230,11 @@ struct BCDGamePending: Equatable {
             work("cover") { backend in
                 try await backend.setCover(from: file, for: game)
                 return "Your picture is the cover now."
+            }
+        case .setWallpaper(let file):
+            work("setup.desktop-wallpaper") { backend in
+                try await backend.setWallpaper(from: file, for: game)
+                return "Your picture is the wallpaper from the next start."
             }
         }
         reload()
@@ -2024,7 +2093,7 @@ private struct BCDGameOptionsList: View {
     @State private var importing = false
     @State private var importKind = ImportKind.saves
 
-    enum ImportKind { case saves, cover }
+    enum ImportKind { case saves, cover, wallpaper }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -2047,11 +2116,12 @@ private struct BCDGameOptionsList: View {
         }) { share in
             BCDGameShareSheet(items: [share.item])
         }
-        .fileImporter(isPresented: $importing, allowedContentTypes: importKind == .cover ? [.image] : [.zip]) { result in
+        .fileImporter(isPresented: $importing, allowedContentTypes: importKind == .saves ? [.zip] : [.image]) { result in
             guard case .success(let file) = result else { return }
             switch importKind {
             case .saves: model.request(.restoreSaves(file))
             case .cover: model.request(.setCover(file))
+            case .wallpaper: model.request(.setWallpaper(file))
             }
         }
     }
@@ -2221,7 +2291,14 @@ private struct BCDGameOptionsList: View {
                        changed: group.settings.contains(where: \.changed), chevron: true,
                        run: { commands?.show(.group(group.id), nil) })
         }
-        if !groups.isEmpty { list.append(BCDGameSection(title: "Settings", rows: groups)) }
+        if !groups.isEmpty {
+            list.append(BCDGameSection(title: "Settings", rows: groups))
+        } else if d.offersDownloadOptions {
+            // The settings are built when Options opens (details(settings:)): until then one row stands for them.
+            list.append(BCDGameSection(title: "Settings", rows: [
+                BCDGameRow(id: "group.download", title: "Download", symbol: "arrow.down.circle", chevron: true,
+                           run: { commands?.show(.group("download"), nil) })]))
+        }
 
         var rows: [BCDGameRow] = []
         if let cloud = d.cloud {
@@ -2309,12 +2386,13 @@ private struct BCDGameOptionsList: View {
         switch setting.kind {
         case .opens(let screen):
             row.value = setting.summary.isEmpty ? nil : setting.summary
-            row.chevron = screen != .coverPicture
+            row.chevron = screen != .coverPicture && screen != .wallpaperPicture
             row.enabled = !model.busy.contains(id)
             switch screen {
             case .section(let group): row.run = { show(.group(group), nil) }
             case .storeSearch: row.run = { show(.storeSearch, nil) }
             case .coverPicture: row.run = { importFile(.cover) }
+            case .wallpaperPicture: row.run = { importFile(.wallpaper) }
             }
         case .choice:
             row.value = setting.summary
@@ -2711,6 +2789,7 @@ private struct BCDGameTextPage: View {
                     .bcdFocusable("game.panel.save", cornerRadius: 27) { save(draft) }
             }
             .padding(.top, 4)
+            if !setting.chips.isEmpty { BCDGameChipGrid(chips: setting.chips, text: $draft) }   // round 604: BCDGameChips.swift, under Save and Cancel
         }
         .onAppear { typing = true }
         .bcdKeyboardDone { typing = false }

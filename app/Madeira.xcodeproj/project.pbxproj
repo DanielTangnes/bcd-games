@@ -69,6 +69,30 @@
 		A1000DA2 /* BCDSteamDLC/BCDSteamDLCDownload.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000DA2 /* BCDSteamDLCDownload.swift */; };
 		A1000DA3 /* BCDSteamDLC/BCDSteamDLCService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000DA3 /* BCDSteamDLCService.swift */; };
 		A1000DA4 /* BCDSteamDLC/BCDGamePageLiveDLC.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000DA4 /* BCDGamePageLiveDLC.swift */; };
+		D3C0DF01 /* BCDGameSaves.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3C0DE11 /* BCDGameSaves.swift */; };
+		D3C0DF02 /* BCDSaveBackups/GameSaveRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3C0DE12 /* GameSaveRules.swift */; };
+		D3C0DF03 /* BCDSaveBackups/GameSaveBackups.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3C0DE13 /* GameSaveBackups.swift */; };
+		D3C0DF04 /* BCDSaveBackups/GameSaveAuto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3C0DE14 /* GameSaveAuto.swift */; };
+		D3C0DF05 /* BCDSaveBackups/BCDGamePageLiveSaves.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3C0DE15 /* BCDGamePageLiveSaves.swift */; };
+		D3C0DF06 /* BCDSaveBackups/GameSaveWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3C0DE16 /* GameSaveWork.swift */; };
+		D3C0DF07 /* BCDMidi/BCDGamePageLiveMidi.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3C0DE17 /* BCDGamePageLiveMidi.swift */; };
+		E53B0011 /* BCDGameSetup/BCDWallpaper.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A0011 /* BCDWallpaper.swift */; };
+		E53B000F /* BCDGameStart.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A000F /* BCDGameStart.swift */; };
+		E53B0010 /* BCDGameSetup/BCDGameStartLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A0010 /* BCDGameStartLaunch.swift */; };
+		E53B000D /* BCDPrefixTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A000D /* BCDPrefixTools.swift */; };
+		E53B000E /* BCDGameSetup/BCDPrefixToolsLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A000E /* BCDPrefixToolsLive.swift */; };
+		E53B000C /* BCDGameSetup/BCDPrefixKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A000C /* BCDPrefixKit.swift */; };
+		E53B000B /* BCDGameSetup/BCDSaveRedirect.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A000B /* BCDSaveRedirect.swift */; };
+		E53B000A /* BCDGameSetup/BCDExeIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A000A /* BCDExeIcon.swift */; };
+		E53B0009 /* BCDGameChips.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A0009 /* BCDGameChips.swift */; };
+		E53B0001 /* BCDGameSetupRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A0001 /* BCDGameSetupRules.swift */; };
+		E53B0002 /* BCDGameSetupTables.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A0002 /* BCDGameSetupTables.swift */; };
+		E53B0003 /* BCDGameSetupPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A0003 /* BCDGameSetupPage.swift */; };
+		E53B0004 /* BCDGameSetup/BCDRegistryEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A0004 /* BCDRegistryEdit.swift */; };
+		E53B0005 /* BCDGameSetup/BCDGameFixRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A0005 /* BCDGameFixRun.swift */; };
+		E53B0006 /* BCDGameSetup/BCDGameFixRedist.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A0006 /* BCDGameFixRedist.swift */; };
+		E53B0007 /* BCDGameSetup/BCDGameSetupLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A0007 /* BCDGameSetupLaunch.swift */; };
+		E53B0008 /* BCDGameSetup/BCDGamePageLiveSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53A0008 /* BCDGamePageLiveSetup.swift */; };
 		A1000DA5 /* BCDGameDLCChooser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000DA5 /* BCDGameDLCChooser.swift */; };
 		A1000D50 /* BCDEpic/BCDEpicLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000D50 /* BCDEpicLog.swift */; };
 		A1000D51 /* BCDEpic/BCDEpicAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000D51 /* BCDEpicAuth.swift */; };
@@ -181,6 +205,7 @@
 		A1000077 /* MadeiraConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000077 /* MadeiraConfig.swift */; };
 		A1000080 /* arm64ec-windows in Resources */ = {isa = PBXBuildFile; fileRef = A2000080 /* arm64ec-windows */; };
 		A1000081 /* x86_64-vcruntime in Resources */ = {isa = PBXBuildFile; fileRef = A2000081 /* x86_64-vcruntime */; };
+		D3C0DE01 /* soundfont in Resources */ = {isa = PBXBuildFile; fileRef = D3C0DE02 /* soundfont */; };
 		A1000090 /* libgnutls.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A2000090 /* libgnutls.a */; };
 		A1000091 /* libhogweed.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A2000091 /* libhogweed.a */; };
 		A1000092 /* libnettle.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A2000092 /* libnettle.a */; };
@@ -196,7 +221,60 @@
 		A1000BB1 /* BCDInGameMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000BB1 /* BCDInGameMenu.swift */; };
 		A1000BB2 /* BCDStartingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000BB2 /* BCDStartingScreen.swift */; };
 		A1000BB3 /* BCDPerformanceOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000BB3 /* BCDPerformanceOverlay.swift */; };
+		A1F46001 /* BCDHUDCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F46001 /* BCDHUDCore.swift */; };
+		A1F46002 /* BCDHUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F46002 /* BCDHUDView.swift */; };
+		A1F46003 /* BCDHUDMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F46003 /* BCDHUDMenu.swift */; };
+		A1F46004 /* BCDHUDLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F46004 /* BCDHUDLive.swift */; };
+		A1F46005 /* BCDSessionCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F46005 /* BCDSessionCore.swift */; };
+		A1F46006 /* BCDSessionRecorderLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F46006 /* BCDSessionRecorderLive.swift */; };
+		A1F46007 /* BCDScreenshotLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F46007 /* BCDScreenshotLive.swift */; };
+		A1F46008 /* BCDFrameRing.c in Sources */ = {isa = PBXBuildFile; fileRef = A2F46008 /* BCDFrameRing.c */; };
+		A1F4600A /* BCDScreenshotShrink.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F4600A /* BCDScreenshotShrink.swift */; };
 		A1000BB4 /* BCDSessionLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000BB4 /* BCDSessionLive.swift */; };
+		A1004721 /* BCDGyroLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004721 /* BCDGyroLive.swift */; };
+		A1005416 /* BCDPadModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005416 /* BCDPadModel.swift */; };
+		A1005415 /* BCDTouchExtrasLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005415 /* BCDTouchExtrasLive.swift */; };
+		A1005414 /* BCDPencil.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005414 /* BCDPencil.swift */; };
+		A1005413 /* BCDGestureMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005413 /* BCDGestureMap.swift */; };
+		A1005412 /* BCDAimZone.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005412 /* BCDAimZone.swift */; };
+		A1005411 /* BCDRadialLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005411 /* BCDRadialLive.swift */; };
+		A1005410 /* BCDRadialViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005410 /* BCDRadialViews.swift */; };
+		A100540F /* BCDRadial.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200540F /* BCDRadial.swift */; };
+		A100540E /* BCDInputActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200540E /* BCDInputActions.swift */; };
+		A100540D /* BCDPlayersLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200540D /* BCDPlayersLive.swift */; };
+		A100540C /* BCDPlayersViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200540C /* BCDPlayersViews.swift */; };
+		A100540B /* BCDPlayers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200540B /* BCDPlayers.swift */; };
+		A100540A /* BCDTouchLookViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200540A /* BCDTouchLookViews.swift */; };
+		A1005409 /* BCDTouchLook.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005409 /* BCDTouchLook.swift */; };
+		A1005408 /* BCDInputLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005408 /* BCDInputLive.swift */; };
+		A1005407 /* BCDTurboLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005407 /* BCDTurboLive.swift */; };
+		A1005406 /* BCDInputMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005406 /* BCDInputMenu.swift */; };
+		A1005405 /* BCDInputPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005405 /* BCDInputPage.swift */; };
+		A1005404 /* BCDInputProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005404 /* BCDInputProfile.swift */; };
+		A1005403 /* BCDTurbo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005403 /* BCDTurbo.swift */; };
+		A1005402 /* BCDKeyNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005402 /* BCDKeyNames.swift */; };
+		A1005401 /* BCDInputPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005401 /* BCDInputPrefs.swift */; };
+		A1004720 /* BCDGyroAim.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004720 /* BCDGyroAim.swift */; };
+		A1005101 /* BCDSessionFeel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005101 /* BCDSessionFeel.swift */; };
+		A1005102 /* BCDDebugChannels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005102 /* BCDDebugChannels.swift */; };
+		A1005103 /* BCDGestureHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005103 /* BCDGestureHelp.swift */; };
+		A1005105 /* BCDMagnifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005105 /* BCDMagnifier.swift */; };
+		A1005106 /* BCDMagnifierBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005106 /* BCDMagnifierBar.swift */; };
+		A1005107 /* BCDWindows.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005107 /* BCDWindows.swift */; };
+		A1005108 /* BCDTouchFeelModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005108 /* BCDTouchFeelModel.swift */; };
+		A1005109 /* BCDMagnifierLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005109 /* BCDMagnifierLive.swift */; };
+		A1005111 /* BCDWindowsLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005111 /* BCDWindowsLive.swift */; };
+		A1005112 /* BCDSessionFeelLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005112 /* BCDSessionFeelLive.swift */; };
+		A1005113 /* BCDDebugLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005113 /* BCDDebugLive.swift */; };
+		A1005114 /* BCDPauseLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005114 /* BCDPauseLive.swift */; };
+		A1005115 /* BCDMenuMore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005115 /* BCDMenuMore.swift */; };
+		A1005116 /* BCDPhoneRumble.m in Sources */ = {isa = PBXBuildFile; fileRef = A2005116 /* BCDPhoneRumble.m */; };
+		A1005118 /* BCDPauseGate.c in Sources */ = {isa = PBXBuildFile; fileRef = A2005118 /* BCDPauseGate.c */; };
+		A1004711 /* BCDGPUCardsLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004711 /* BCDGPUCardsLive.swift */; };
+		A1004710 /* BCDGPUCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004710 /* BCDGPUCards.swift */; };
+		A1004703 /* BCDExtraKeysLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004703 /* BCDExtraKeysLive.swift */; };
+		A1004702 /* BCDExtraKeyBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004702 /* BCDExtraKeyBar.swift */; };
+		A1004701 /* BCDExtraKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004701 /* BCDExtraKeys.swift */; };
 		A1000203 /* HardwareInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000203 /* HardwareInput.swift */; };
 		A1000210 /* i386-windows in Resources */ = {isa = PBXBuildFile; fileRef = A2000210 /* i386-windows */; };
 		A1000243 /* GamepadInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000243 /* GamepadInput.swift */; };
@@ -244,8 +322,24 @@
 		A1000921 /* LogUploadCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000921 /* LogUploadCore.swift */; };
 		A1000FE0 /* FeedbackUpload.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000FE0 /* FeedbackUpload.swift */; };
 		A1000FE1 /* FeedbackUploadCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000FE1 /* FeedbackUploadCore.swift */; };
+		A1F5500C /* BCDControlShareLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F5500C /* BCDControlShareLive.swift */; };
+		A1F5500B /* BCDControlShareCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F5500B /* BCDControlShareCore.swift */; };
+		A1F5500A /* BCDGamePageLiveSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F5500A /* BCDGamePageLiveSound.swift */; };
+		A1F55009 /* BCDGameSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F55009 /* BCDGameSound.swift */; };
+		A1F55008 /* BCDGamePageLiveHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F55008 /* BCDGamePageLiveHelp.swift */; };
+		A1F55007 /* BCDHelpLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F55007 /* BCDHelpLive.swift */; };
+		A1F55006 /* BCDReadinessLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F55006 /* BCDReadinessLive.swift */; };
+		A1F55005 /* BCDReadinessCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F55005 /* BCDReadinessCore.swift */; };
+		A1F55004 /* BCDGameHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F55004 /* BCDGameHelp.swift */; };
+		A1F55003 /* BCDHelpCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F55003 /* BCDHelpCore.swift */; };
+		A1F55002 /* BCDPerfTraceLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F55002 /* BCDPerfTraceLive.swift */; };
+		A1F55001 /* BCDPerfTraceCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F55001 /* BCDPerfTraceCore.swift */; };
 		A1000B01 /* BCDCab.c in Sources */ = {isa = PBXBuildFile; fileRef = A2000B01 /* BCDCab.c */; };
+		A1004242 /* BCDHostStatus.c in Sources */ = {isa = PBXBuildFile; fileRef = A2004242 /* BCDHostStatus.c */; };
 		A10013C1 /* BCDStartMenu.c in Sources */ = {isa = PBXBuildFile; fileRef = A20013C1 /* BCDStartMenu.c */; };
+		A1004101 /* BCDGraphicsScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004101 /* BCDGraphicsScan.swift */; };
+		A1004102 /* BCDGraphicsDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004102 /* BCDGraphicsDefaults.swift */; };
+		A1004103 /* BCDGraphicsRoutes.c in Sources */ = {isa = PBXBuildFile; fileRef = A2004103 /* BCDGraphicsRoutes.c */; };
 		A10013C3 /* BCDOrientation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20013C3 /* BCDOrientation.swift */; };
 		A10013C4 /* BCDOrientationLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20013C4 /* BCDOrientationLive.swift */; };
 		A1000B03 /* VCRuntimeDownload.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000B03 /* VCRuntimeDownload.swift */; };
@@ -377,6 +471,30 @@
 		A2000DA2 /* BCDSteamDLCDownload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDSteamDLC/BCDSteamDLCDownload.swift"; sourceTree = "<group>"; };
 		A2000DA3 /* BCDSteamDLCService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDSteamDLC/BCDSteamDLCService.swift"; sourceTree = "<group>"; };
 		A2000DA4 /* BCDGamePageLiveDLC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDSteamDLC/BCDGamePageLiveDLC.swift"; sourceTree = "<group>"; };
+		D3C0DE11 /* BCDGameSaves.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGameSaves.swift; sourceTree = "<group>"; };
+		D3C0DE12 /* GameSaveRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDSaveBackups/GameSaveRules.swift"; sourceTree = "<group>"; };
+		D3C0DE13 /* GameSaveBackups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDSaveBackups/GameSaveBackups.swift"; sourceTree = "<group>"; };
+		D3C0DE14 /* GameSaveAuto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDSaveBackups/GameSaveAuto.swift"; sourceTree = "<group>"; };
+		D3C0DE15 /* BCDGamePageLiveSaves.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDSaveBackups/BCDGamePageLiveSaves.swift"; sourceTree = "<group>"; };
+		D3C0DE16 /* GameSaveWork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDSaveBackups/GameSaveWork.swift"; sourceTree = "<group>"; };
+		D3C0DE17 /* BCDGamePageLiveMidi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDMidi/BCDGamePageLiveMidi.swift"; sourceTree = "<group>"; };
+		E53A0011 /* BCDWallpaper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDGameSetup/BCDWallpaper.swift"; sourceTree = "<group>"; };
+		E53A000F /* BCDGameStart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGameStart.swift; sourceTree = "<group>"; };
+		E53A0010 /* BCDGameStartLaunch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDGameSetup/BCDGameStartLaunch.swift"; sourceTree = "<group>"; };
+		E53A000D /* BCDPrefixTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDPrefixTools.swift; sourceTree = "<group>"; };
+		E53A000E /* BCDPrefixToolsLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDGameSetup/BCDPrefixToolsLive.swift"; sourceTree = "<group>"; };
+		E53A000C /* BCDPrefixKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDGameSetup/BCDPrefixKit.swift"; sourceTree = "<group>"; };
+		E53A000B /* BCDSaveRedirect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDGameSetup/BCDSaveRedirect.swift"; sourceTree = "<group>"; };
+		E53A000A /* BCDExeIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDGameSetup/BCDExeIcon.swift"; sourceTree = "<group>"; };
+		E53A0009 /* BCDGameChips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGameChips.swift; sourceTree = "<group>"; };
+		E53A0001 /* BCDGameSetupRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGameSetupRules.swift; sourceTree = "<group>"; };
+		E53A0002 /* BCDGameSetupTables.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGameSetupTables.swift; sourceTree = "<group>"; };
+		E53A0003 /* BCDGameSetupPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGameSetupPage.swift; sourceTree = "<group>"; };
+		E53A0004 /* BCDRegistryEdit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDGameSetup/BCDRegistryEdit.swift"; sourceTree = "<group>"; };
+		E53A0005 /* BCDGameFixRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDGameSetup/BCDGameFixRun.swift"; sourceTree = "<group>"; };
+		E53A0006 /* BCDGameFixRedist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDGameSetup/BCDGameFixRedist.swift"; sourceTree = "<group>"; };
+		E53A0007 /* BCDGameSetupLaunch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDGameSetup/BCDGameSetupLaunch.swift"; sourceTree = "<group>"; };
+		E53A0008 /* BCDGamePageLiveSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDGameSetup/BCDGamePageLiveSetup.swift"; sourceTree = "<group>"; };
 		A2000DA5 /* BCDGameDLCChooser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGameDLCChooser.swift; sourceTree = "<group>"; };
 		A2000D50 /* BCDEpicLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDEpic/BCDEpicLog.swift"; sourceTree = "<group>"; };
 		A2000D51 /* BCDEpicAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BCDEpic/BCDEpicAuth.swift"; sourceTree = "<group>"; };
@@ -505,6 +623,7 @@
 		A2000077 /* MadeiraConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MadeiraConfig.swift; sourceTree = "<group>"; };
 		A2000080 /* arm64ec-windows */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "arm64ec-windows"; sourceTree = "<group>"; };
 		A2000081 /* x86_64-vcruntime */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "x86_64-vcruntime"; sourceTree = "<group>"; };
+		D3C0DE02 /* soundfont */ = {isa = PBXFileReference; lastKnownFileType = folder; path = soundfont; sourceTree = "<group>"; };
 		A2000090 /* libgnutls.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgnutls.a; sourceTree = "<group>"; };
 		A2000091 /* libhogweed.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libhogweed.a; sourceTree = "<group>"; };
 		A2000092 /* libnettle.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libnettle.a; sourceTree = "<group>"; };
@@ -520,7 +639,63 @@
 		A2000BB1 /* BCDInGameMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDInGameMenu.swift; sourceTree = "<group>"; };
 		A2000BB2 /* BCDStartingScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDStartingScreen.swift; sourceTree = "<group>"; };
 		A2000BB3 /* BCDPerformanceOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDPerformanceOverlay.swift; sourceTree = "<group>"; };
+		A2F46001 /* BCDHUDCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDHUDCore.swift; sourceTree = "<group>"; };
+		A2F46002 /* BCDHUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDHUDView.swift; sourceTree = "<group>"; };
+		A2F46003 /* BCDHUDMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDHUDMenu.swift; sourceTree = "<group>"; };
+		A2F46004 /* BCDHUDLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDHUDLive.swift; sourceTree = "<group>"; };
+		A2F46005 /* BCDSessionCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDSessionCore.swift; sourceTree = "<group>"; };
+		A2F46006 /* BCDSessionRecorderLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDSessionRecorderLive.swift; sourceTree = "<group>"; };
+		A2F46007 /* BCDScreenshotLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDScreenshotLive.swift; sourceTree = "<group>"; };
+		A2F46008 /* BCDFrameRing.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = BCDFrameRing.c; sourceTree = "<group>"; };
+		A2F46009 /* BCDFrameRing.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BCDFrameRing.h; sourceTree = "<group>"; };
+		A2F4600A /* BCDScreenshotShrink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDScreenshotShrink.swift; sourceTree = "<group>"; };
 		A2000BB4 /* BCDSessionLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDSessionLive.swift; sourceTree = "<group>"; };
+		A2004721 /* BCDGyroLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGyroLive.swift; sourceTree = "<group>"; };
+		A2005416 /* BCDPadModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDPadModel.swift; sourceTree = "<group>"; };
+		A2005415 /* BCDTouchExtrasLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDTouchExtrasLive.swift; sourceTree = "<group>"; };
+		A2005414 /* BCDPencil.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDPencil.swift; sourceTree = "<group>"; };
+		A2005413 /* BCDGestureMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGestureMap.swift; sourceTree = "<group>"; };
+		A2005412 /* BCDAimZone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDAimZone.swift; sourceTree = "<group>"; };
+		A2005411 /* BCDRadialLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDRadialLive.swift; sourceTree = "<group>"; };
+		A2005410 /* BCDRadialViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDRadialViews.swift; sourceTree = "<group>"; };
+		A200540F /* BCDRadial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDRadial.swift; sourceTree = "<group>"; };
+		A200540E /* BCDInputActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDInputActions.swift; sourceTree = "<group>"; };
+		A200540D /* BCDPlayersLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDPlayersLive.swift; sourceTree = "<group>"; };
+		A200540C /* BCDPlayersViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDPlayersViews.swift; sourceTree = "<group>"; };
+		A200540B /* BCDPlayers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDPlayers.swift; sourceTree = "<group>"; };
+		A200540A /* BCDTouchLookViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDTouchLookViews.swift; sourceTree = "<group>"; };
+		A2005409 /* BCDTouchLook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDTouchLook.swift; sourceTree = "<group>"; };
+		A2005408 /* BCDInputLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDInputLive.swift; sourceTree = "<group>"; };
+		A2005407 /* BCDTurboLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDTurboLive.swift; sourceTree = "<group>"; };
+		A2005406 /* BCDInputMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDInputMenu.swift; sourceTree = "<group>"; };
+		A2005405 /* BCDInputPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDInputPage.swift; sourceTree = "<group>"; };
+		A2005404 /* BCDInputProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDInputProfile.swift; sourceTree = "<group>"; };
+		A2005403 /* BCDTurbo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDTurbo.swift; sourceTree = "<group>"; };
+		A2005402 /* BCDKeyNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDKeyNames.swift; sourceTree = "<group>"; };
+		A2005401 /* BCDInputPrefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDInputPrefs.swift; sourceTree = "<group>"; };
+		A2004720 /* BCDGyroAim.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGyroAim.swift; sourceTree = "<group>"; };
+		A2005101 /* BCDSessionFeel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDSessionFeel.swift; sourceTree = "<group>"; };
+		A2005102 /* BCDDebugChannels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDDebugChannels.swift; sourceTree = "<group>"; };
+		A2005103 /* BCDGestureHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGestureHelp.swift; sourceTree = "<group>"; };
+		A2005105 /* BCDMagnifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDMagnifier.swift; sourceTree = "<group>"; };
+		A2005106 /* BCDMagnifierBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDMagnifierBar.swift; sourceTree = "<group>"; };
+		A2005107 /* BCDWindows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDWindows.swift; sourceTree = "<group>"; };
+		A2005108 /* BCDTouchFeelModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDTouchFeelModel.swift; sourceTree = "<group>"; };
+		A2005109 /* BCDMagnifierLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDMagnifierLive.swift; sourceTree = "<group>"; };
+		A2005111 /* BCDWindowsLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDWindowsLive.swift; sourceTree = "<group>"; };
+		A2005112 /* BCDSessionFeelLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDSessionFeelLive.swift; sourceTree = "<group>"; };
+		A2005113 /* BCDDebugLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDDebugLive.swift; sourceTree = "<group>"; };
+		A2005114 /* BCDPauseLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDPauseLive.swift; sourceTree = "<group>"; };
+		A2005115 /* BCDMenuMore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDMenuMore.swift; sourceTree = "<group>"; };
+		A2005116 /* BCDPhoneRumble.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BCDPhoneRumble.m; sourceTree = "<group>"; };
+		A2005117 /* BCDPhoneRumble.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BCDPhoneRumble.h; sourceTree = "<group>"; };
+		A2005118 /* BCDPauseGate.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = BCDPauseGate.c; sourceTree = "<group>"; };
+		A2005119 /* BCDPauseGate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BCDPauseGate.h; sourceTree = "<group>"; };
+		A2004711 /* BCDGPUCardsLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGPUCardsLive.swift; sourceTree = "<group>"; };
+		A2004710 /* BCDGPUCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGPUCards.swift; sourceTree = "<group>"; };
+		A2004703 /* BCDExtraKeysLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDExtraKeysLive.swift; sourceTree = "<group>"; };
+		A2004702 /* BCDExtraKeyBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDExtraKeyBar.swift; sourceTree = "<group>"; };
+		A2004701 /* BCDExtraKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDExtraKeys.swift; sourceTree = "<group>"; };
 		A2000203 /* HardwareInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareInput.swift; sourceTree = "<group>"; };
 		A2000210 /* i386-windows */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "i386-windows"; sourceTree = "<group>"; };
 		A2000243 /* GamepadInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GamepadInput.swift; sourceTree = "<group>"; };
@@ -568,10 +743,28 @@
 		A2000921 /* LogUploadCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogUploadCore.swift; sourceTree = "<group>"; };
 		A2000FE0 /* FeedbackUpload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackUpload.swift; sourceTree = "<group>"; };
 		A2000FE1 /* FeedbackUploadCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackUploadCore.swift; sourceTree = "<group>"; };
+		A2F5500C /* BCDControlShareLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDControlShareLive.swift; sourceTree = "<group>"; };
+		A2F5500B /* BCDControlShareCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDControlShareCore.swift; sourceTree = "<group>"; };
+		A2F5500A /* BCDGamePageLiveSound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGamePageLiveSound.swift; sourceTree = "<group>"; };
+		A2F55009 /* BCDGameSound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGameSound.swift; sourceTree = "<group>"; };
+		A2F55008 /* BCDGamePageLiveHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGamePageLiveHelp.swift; sourceTree = "<group>"; };
+		A2F55007 /* BCDHelpLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDHelpLive.swift; sourceTree = "<group>"; };
+		A2F55006 /* BCDReadinessLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDReadinessLive.swift; sourceTree = "<group>"; };
+		A2F55005 /* BCDReadinessCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDReadinessCore.swift; sourceTree = "<group>"; };
+		A2F55004 /* BCDGameHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGameHelp.swift; sourceTree = "<group>"; };
+		A2F55003 /* BCDHelpCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDHelpCore.swift; sourceTree = "<group>"; };
+		A2F55002 /* BCDPerfTraceLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDPerfTraceLive.swift; sourceTree = "<group>"; };
+		A2F55001 /* BCDPerfTraceCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDPerfTraceCore.swift; sourceTree = "<group>"; };
 		A2000B01 /* BCDCab.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = BCDCab.c; sourceTree = "<group>"; };
 		A2000B02 /* BCDCab.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BCDCab.h; sourceTree = "<group>"; };
+		A2004242 /* BCDHostStatus.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = BCDHostStatus.c; sourceTree = "<group>"; };
+		A2004243 /* BCDHostStatus.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BCDHostStatus.h; sourceTree = "<group>"; };
 		A20013C1 /* BCDStartMenu.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = BCDStartMenu.c; sourceTree = "<group>"; };
 		A20013C2 /* BCDStartMenu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BCDStartMenu.h; sourceTree = "<group>"; };
+		A2004101 /* BCDGraphicsScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGraphicsScan.swift; sourceTree = "<group>"; };
+		A2004102 /* BCDGraphicsDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGraphicsDefaults.swift; sourceTree = "<group>"; };
+		A2004103 /* BCDGraphicsRoutes.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = BCDGraphicsRoutes.c; sourceTree = "<group>"; };
+		A2004104 /* BCDGraphicsRoutes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BCDGraphicsRoutes.h; sourceTree = "<group>"; };
 		A20013C3 /* BCDOrientation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDOrientation.swift; sourceTree = "<group>"; };
 		A20013C4 /* BCDOrientationLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDOrientationLive.swift; sourceTree = "<group>"; };
 		A2000B03 /* VCRuntimeDownload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VCRuntimeDownload.swift; sourceTree = "<group>"; };
@@ -715,10 +908,16 @@
 				A2000B03 /* VCRuntimeDownload.swift */,
 				A2000B01 /* BCDCab.c */,
 				A2000B02 /* BCDCab.h */,
+				A2004242 /* BCDHostStatus.c */,
+				A2004243 /* BCDHostStatus.h */,
 				A20013C1 /* BCDStartMenu.c */,
 				A20013C2 /* BCDStartMenu.h */,
 				A20013C3 /* BCDOrientation.swift */,
 				A20013C4 /* BCDOrientationLive.swift */,
+				A2004101 /* BCDGraphicsScan.swift */,
+				A2004102 /* BCDGraphicsDefaults.swift */,
+				A2004103 /* BCDGraphicsRoutes.c */,
+				A2004104 /* BCDGraphicsRoutes.h */,
 				A2000602 /* SteamDownloadBackground.swift */,
 				A2000600 /* SteamInstall.swift */,
 				A2000609 /* ContentDecryptor.swift */,
@@ -743,6 +942,30 @@
 				A2000DA2 /* BCDSteamDLCDownload.swift */,
 				A2000DA3 /* BCDSteamDLCService.swift */,
 				A2000DA4 /* BCDGamePageLiveDLC.swift */,
+				D3C0DE11 /* BCDGameSaves.swift */,
+				D3C0DE12 /* GameSaveRules.swift */,
+				D3C0DE13 /* GameSaveBackups.swift */,
+				D3C0DE14 /* GameSaveAuto.swift */,
+				D3C0DE15 /* BCDGamePageLiveSaves.swift */,
+				D3C0DE16 /* GameSaveWork.swift */,
+				D3C0DE17 /* BCDGamePageLiveMidi.swift */,
+				E53A0011 /* BCDWallpaper.swift */,
+				E53A000F /* BCDGameStart.swift */,
+				E53A0010 /* BCDGameStartLaunch.swift */,
+				E53A000D /* BCDPrefixTools.swift */,
+				E53A000E /* BCDPrefixToolsLive.swift */,
+				E53A000C /* BCDPrefixKit.swift */,
+				E53A000B /* BCDSaveRedirect.swift */,
+				E53A000A /* BCDExeIcon.swift */,
+				E53A0009 /* BCDGameChips.swift */,
+				E53A0001 /* BCDGameSetupRules.swift */,
+				E53A0002 /* BCDGameSetupTables.swift */,
+				E53A0003 /* BCDGameSetupPage.swift */,
+				E53A0004 /* BCDRegistryEdit.swift */,
+				E53A0005 /* BCDGameFixRun.swift */,
+				E53A0006 /* BCDGameFixRedist.swift */,
+				E53A0007 /* BCDGameSetupLaunch.swift */,
+				E53A0008 /* BCDGamePageLiveSetup.swift */,
 				A2000DA5 /* BCDGameDLCChooser.swift */,
 				A2000D50 /* BCDEpicLog.swift */,
 				A2000D51 /* BCDEpicAuth.swift */,
@@ -823,7 +1046,63 @@
 				A2000BB1 /* BCDInGameMenu.swift */,
 				A2000BB2 /* BCDStartingScreen.swift */,
 				A2000BB3 /* BCDPerformanceOverlay.swift */,
+				A2F46001 /* BCDHUDCore.swift */,
+				A2F46002 /* BCDHUDView.swift */,
+				A2F46003 /* BCDHUDMenu.swift */,
+				A2F46004 /* BCDHUDLive.swift */,
+				A2F46005 /* BCDSessionCore.swift */,
+				A2F46006 /* BCDSessionRecorderLive.swift */,
+				A2F46007 /* BCDScreenshotLive.swift */,
+				A2F46008 /* BCDFrameRing.c */,
+				A2F46009 /* BCDFrameRing.h */,
+				A2F4600A /* BCDScreenshotShrink.swift */,
 				A2000BB4 /* BCDSessionLive.swift */,
+				A2004721 /* BCDGyroLive.swift */,
+				A2005416 /* BCDPadModel.swift */,
+				A2005415 /* BCDTouchExtrasLive.swift */,
+				A2005414 /* BCDPencil.swift */,
+				A2005413 /* BCDGestureMap.swift */,
+				A2005412 /* BCDAimZone.swift */,
+				A2005411 /* BCDRadialLive.swift */,
+				A2005410 /* BCDRadialViews.swift */,
+				A200540F /* BCDRadial.swift */,
+				A200540E /* BCDInputActions.swift */,
+				A200540D /* BCDPlayersLive.swift */,
+				A200540C /* BCDPlayersViews.swift */,
+				A200540B /* BCDPlayers.swift */,
+				A200540A /* BCDTouchLookViews.swift */,
+				A2005409 /* BCDTouchLook.swift */,
+				A2005408 /* BCDInputLive.swift */,
+				A2005407 /* BCDTurboLive.swift */,
+				A2005406 /* BCDInputMenu.swift */,
+				A2005405 /* BCDInputPage.swift */,
+				A2005404 /* BCDInputProfile.swift */,
+				A2005403 /* BCDTurbo.swift */,
+				A2005402 /* BCDKeyNames.swift */,
+				A2005401 /* BCDInputPrefs.swift */,
+				A2004720 /* BCDGyroAim.swift */,
+				A2005101 /* BCDSessionFeel.swift */,
+				A2005102 /* BCDDebugChannels.swift */,
+				A2005103 /* BCDGestureHelp.swift */,
+				A2005105 /* BCDMagnifier.swift */,
+				A2005106 /* BCDMagnifierBar.swift */,
+				A2005107 /* BCDWindows.swift */,
+				A2005108 /* BCDTouchFeelModel.swift */,
+				A2005109 /* BCDMagnifierLive.swift */,
+				A2005111 /* BCDWindowsLive.swift */,
+				A2005112 /* BCDSessionFeelLive.swift */,
+				A2005113 /* BCDDebugLive.swift */,
+				A2005114 /* BCDPauseLive.swift */,
+				A2005115 /* BCDMenuMore.swift */,
+				A2005116 /* BCDPhoneRumble.m */,
+				A2005117 /* BCDPhoneRumble.h */,
+				A2005118 /* BCDPauseGate.c */,
+				A2005119 /* BCDPauseGate.h */,
+				A2004711 /* BCDGPUCardsLive.swift */,
+				A2004710 /* BCDGPUCards.swift */,
+				A2004703 /* BCDExtraKeysLive.swift */,
+				A2004702 /* BCDExtraKeyBar.swift */,
+				A2004701 /* BCDExtraKeys.swift */,
 				A2000212 /* GameLibrary.swift */,
 				A2000213 /* LibraryBCD.swift */,
 				A2000B40 /* BCDGamePage.swift */,
@@ -848,6 +1127,18 @@
 				A2000921 /* LogUploadCore.swift */,
 				A2000FE0 /* FeedbackUpload.swift */,
 				A2000FE1 /* FeedbackUploadCore.swift */,
+				A2F5500C /* BCDControlShareLive.swift */,
+				A2F5500B /* BCDControlShareCore.swift */,
+				A2F5500A /* BCDGamePageLiveSound.swift */,
+				A2F55009 /* BCDGameSound.swift */,
+				A2F55008 /* BCDGamePageLiveHelp.swift */,
+				A2F55007 /* BCDHelpLive.swift */,
+				A2F55006 /* BCDReadinessLive.swift */,
+				A2F55005 /* BCDReadinessCore.swift */,
+				A2F55004 /* BCDGameHelp.swift */,
+				A2F55003 /* BCDHelpCore.swift */,
+				A2F55002 /* BCDPerfTraceLive.swift */,
+				A2F55001 /* BCDPerfTraceCore.swift */,
 				A2000913 /* DockReset.swift */,
 				A2000F90 /* DockGameEnd.swift */,
 				A2000209 /* StorageModel.swift */,
@@ -888,6 +1179,7 @@
 				A20000D1 /* d3d12 */,
 				A20000D2 /* licenses */,
 				A2000081 /* x86_64-vcruntime */,
+				D3C0DE02 /* soundfont */,
 				A2000040 /* prefix-template.tar.gz */,
 				A2000094 /* cacert.pem */,
 				A2000041 /* PrefixExtractor.c */,
@@ -1096,6 +1388,7 @@
 				A10000D1 /* d3d12 in Resources */,
 				A10000D2 /* licenses in Resources */,
 				A1000081 /* x86_64-vcruntime in Resources */,
+				D3C0DE01 /* soundfont in Resources */,
 				A1000040 /* prefix-template.tar.gz in Resources */,
 				A1000094 /* cacert.pem in Resources */,
 				A1000BA2 /* recommendations.json in Resources */,
@@ -1202,9 +1495,13 @@
 				A1000711 /* WineMono.swift in Sources */,
 				A1000B03 /* VCRuntimeDownload.swift in Sources */,
 				A1000B01 /* BCDCab.c in Sources */,
+				A1004242 /* BCDHostStatus.c in Sources */,
 				A10013C1 /* BCDStartMenu.c in Sources */,
 				A10013C3 /* BCDOrientation.swift in Sources */,
 				A10013C4 /* BCDOrientationLive.swift in Sources */,
+				A1004101 /* BCDGraphicsScan.swift in Sources */,
+				A1004102 /* BCDGraphicsDefaults.swift in Sources */,
+				A1004103 /* BCDGraphicsRoutes.c in Sources */,
 				A1000602 /* SteamDownloadBackground.swift in Sources */,
 				A1000600 /* SteamInstall.swift in Sources */,
 				A1000609 /* SwiftSteam/Content/ContentDecryptor.swift in Sources */,
@@ -1229,6 +1526,30 @@
 				A1000DA2 /* BCDSteamDLC/BCDSteamDLCDownload.swift in Sources */,
 				A1000DA3 /* BCDSteamDLC/BCDSteamDLCService.swift in Sources */,
 				A1000DA4 /* BCDSteamDLC/BCDGamePageLiveDLC.swift in Sources */,
+				D3C0DF01 /* BCDGameSaves.swift in Sources */,
+				D3C0DF02 /* BCDSaveBackups/GameSaveRules.swift in Sources */,
+				D3C0DF03 /* BCDSaveBackups/GameSaveBackups.swift in Sources */,
+				D3C0DF04 /* BCDSaveBackups/GameSaveAuto.swift in Sources */,
+				D3C0DF05 /* BCDSaveBackups/BCDGamePageLiveSaves.swift in Sources */,
+				D3C0DF06 /* BCDSaveBackups/GameSaveWork.swift in Sources */,
+				D3C0DF07 /* BCDMidi/BCDGamePageLiveMidi.swift in Sources */,
+				E53B0011 /* BCDGameSetup/BCDWallpaper.swift in Sources */,
+				E53B000F /* BCDGameStart.swift in Sources */,
+				E53B0010 /* BCDGameSetup/BCDGameStartLaunch.swift in Sources */,
+				E53B000D /* BCDPrefixTools.swift in Sources */,
+				E53B000E /* BCDGameSetup/BCDPrefixToolsLive.swift in Sources */,
+				E53B000C /* BCDGameSetup/BCDPrefixKit.swift in Sources */,
+				E53B000B /* BCDGameSetup/BCDSaveRedirect.swift in Sources */,
+				E53B000A /* BCDGameSetup/BCDExeIcon.swift in Sources */,
+				E53B0009 /* BCDGameChips.swift in Sources */,
+				E53B0001 /* BCDGameSetupRules.swift in Sources */,
+				E53B0002 /* BCDGameSetupTables.swift in Sources */,
+				E53B0003 /* BCDGameSetupPage.swift in Sources */,
+				E53B0004 /* BCDGameSetup/BCDRegistryEdit.swift in Sources */,
+				E53B0005 /* BCDGameSetup/BCDGameFixRun.swift in Sources */,
+				E53B0006 /* BCDGameSetup/BCDGameFixRedist.swift in Sources */,
+				E53B0007 /* BCDGameSetup/BCDGameSetupLaunch.swift in Sources */,
+				E53B0008 /* BCDGameSetup/BCDGamePageLiveSetup.swift in Sources */,
 				A1000DA5 /* BCDGameDLCChooser.swift in Sources */,
 				A1000D50 /* BCDEpic/BCDEpicLog.swift in Sources */,
 				A1000D51 /* BCDEpic/BCDEpicAuth.swift in Sources */,
@@ -1306,7 +1627,60 @@
 				A1000BB1 /* BCDInGameMenu.swift in Sources */,
 				A1000BB2 /* BCDStartingScreen.swift in Sources */,
 				A1000BB3 /* BCDPerformanceOverlay.swift in Sources */,
+				A1F46001 /* BCDHUDCore.swift in Sources */,
+				A1F46002 /* BCDHUDView.swift in Sources */,
+				A1F46003 /* BCDHUDMenu.swift in Sources */,
+				A1F46004 /* BCDHUDLive.swift in Sources */,
+				A1F46005 /* BCDSessionCore.swift in Sources */,
+				A1F46006 /* BCDSessionRecorderLive.swift in Sources */,
+				A1F46007 /* BCDScreenshotLive.swift in Sources */,
+				A1F46008 /* BCDFrameRing.c in Sources */,
+				A1F4600A /* BCDScreenshotShrink.swift in Sources */,
 				A1000BB4 /* BCDSessionLive.swift in Sources */,
+				A1004721 /* BCDGyroLive.swift in Sources */,
+				A1005416 /* BCDPadModel.swift in Sources */,
+				A1005415 /* BCDTouchExtrasLive.swift in Sources */,
+				A1005414 /* BCDPencil.swift in Sources */,
+				A1005413 /* BCDGestureMap.swift in Sources */,
+				A1005412 /* BCDAimZone.swift in Sources */,
+				A1005411 /* BCDRadialLive.swift in Sources */,
+				A1005410 /* BCDRadialViews.swift in Sources */,
+				A100540F /* BCDRadial.swift in Sources */,
+				A100540E /* BCDInputActions.swift in Sources */,
+				A100540D /* BCDPlayersLive.swift in Sources */,
+				A100540C /* BCDPlayersViews.swift in Sources */,
+				A100540B /* BCDPlayers.swift in Sources */,
+				A100540A /* BCDTouchLookViews.swift in Sources */,
+				A1005409 /* BCDTouchLook.swift in Sources */,
+				A1005408 /* BCDInputLive.swift in Sources */,
+				A1005407 /* BCDTurboLive.swift in Sources */,
+				A1005406 /* BCDInputMenu.swift in Sources */,
+				A1005405 /* BCDInputPage.swift in Sources */,
+				A1005404 /* BCDInputProfile.swift in Sources */,
+				A1005403 /* BCDTurbo.swift in Sources */,
+				A1005402 /* BCDKeyNames.swift in Sources */,
+				A1005401 /* BCDInputPrefs.swift in Sources */,
+				A1004720 /* BCDGyroAim.swift in Sources */,
+				A1005101 /* BCDSessionFeel.swift in Sources */,
+				A1005102 /* BCDDebugChannels.swift in Sources */,
+				A1005103 /* BCDGestureHelp.swift in Sources */,
+				A1005105 /* BCDMagnifier.swift in Sources */,
+				A1005106 /* BCDMagnifierBar.swift in Sources */,
+				A1005107 /* BCDWindows.swift in Sources */,
+				A1005108 /* BCDTouchFeelModel.swift in Sources */,
+				A1005109 /* BCDMagnifierLive.swift in Sources */,
+				A1005111 /* BCDWindowsLive.swift in Sources */,
+				A1005112 /* BCDSessionFeelLive.swift in Sources */,
+				A1005113 /* BCDDebugLive.swift in Sources */,
+				A1005114 /* BCDPauseLive.swift in Sources */,
+				A1005115 /* BCDMenuMore.swift in Sources */,
+				A1005116 /* BCDPhoneRumble.m in Sources */,
+				A1005118 /* BCDPauseGate.c in Sources */,
+				A1004711 /* BCDGPUCardsLive.swift in Sources */,
+				A1004710 /* BCDGPUCards.swift in Sources */,
+				A1004703 /* BCDExtraKeysLive.swift in Sources */,
+				A1004702 /* BCDExtraKeyBar.swift in Sources */,
+				A1004701 /* BCDExtraKeys.swift in Sources */,
 				A1000212 /* GameLibrary.swift in Sources */,
 				A1000213 /* LibraryBCD.swift in Sources */,
 				A1000B40 /* BCDGamePage.swift in Sources */,
@@ -1330,6 +1704,18 @@
 				A1000921 /* LogUploadCore.swift in Sources */,
 				A1000FE0 /* FeedbackUpload.swift in Sources */,
 				A1000FE1 /* FeedbackUploadCore.swift in Sources */,
+				A1F5500C /* BCDControlShareLive.swift in Sources */,
+				A1F5500B /* BCDControlShareCore.swift in Sources */,
+				A1F5500A /* BCDGamePageLiveSound.swift in Sources */,
+				A1F55009 /* BCDGameSound.swift in Sources */,
+				A1F55008 /* BCDGamePageLiveHelp.swift in Sources */,
+				A1F55007 /* BCDHelpLive.swift in Sources */,
+				A1F55006 /* BCDReadinessLive.swift in Sources */,
+				A1F55005 /* BCDReadinessCore.swift in Sources */,
+				A1F55004 /* BCDGameHelp.swift in Sources */,
+				A1F55003 /* BCDHelpCore.swift in Sources */,
+				A1F55002 /* BCDPerfTraceLive.swift in Sources */,
+				A1F55001 /* BCDPerfTraceCore.swift in Sources */,
 				A1000913 /* DockReset.swift in Sources */,
 				A1000F90 /* DockGameEnd.swift in Sources */,
 				A1000209 /* StorageModel.swift in Sources */,

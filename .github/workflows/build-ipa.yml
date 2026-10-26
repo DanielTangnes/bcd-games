@@ -72,6 +72,10 @@ jobs:
       - name: Check generated settings catalog
         run: python3 tests/host/check-config-catalog.py
 
+      # The preview still compiles every distinct input; identical checks share its successful result.
+      - name: Check preview build cache correctness
+        run: python3 tests/host/check-ui-preview-cache.py
+
       # madeira-bcd: the games' built-in recommended settings and where the app
       # applies them (GameRecommendations.swift; owner's decision 2026-10-09).
       - name: Check built-in recommended game settings
@@ -100,10 +104,43 @@ jobs:
       - name: Check the Start menu entries
         run: python3 tests/host/check-bcd-startmenu.py
 
+      # BCD's system tests (tests/systests): the RAM test that stops before iOS would close the app (its loop is run against thousands of
+      # made-up devices), the JIT pool, CPU, system info, VC++ and .NET, disk and network tests, one Windows program for x64 and one
+      # for the 32-bit set. The program is built with llvm-mingw for both machines and compared with the tracked binaries.
+      - name: Check the system tests
+        run: python3 tests/host/check-systests.py
+
+      # What those tests are told about the device and the engine (app/Madeira/BCDHostStatus.c, build/ntdll-unix/ios_host_status.h):
+      # two small files in the prefix, only in the plain Windows desktop session; off, a session behaves as before.
+      - name: Check the host status for the system tests
+        run: python3 tests/host/check-host-status.py
+      - name: Check the desktop session's guest-log mirror for the Start menu tests
+        run: python3 tests/host/check-desktop-guest-log.py
+
       # BCD's Direct3D 9, 10, 11 and 12 test programs (tests/dxtests, madeira-d3d12/tests/windows/cube_window.c): shaders
       # (DXBC made offline from cube.hlsl), sources, window handling, the tracked binaries and where they ship.
       - name: Check the DirectX test programs
         run: python3 tests/host/check-dx-tests.py
+
+      # BCD's graphics, sound, video and input test programs of round 602 (tests/dxtests, the "BCD Tests" Start menu folder): the
+      # arithmetic of bcdstats.h run on the host against known answers, the two self-made clips (MP4 and ASF structure, decoded on a
+      # Mac), the sources, the tracked 64-bit and 32-bit binaries rebuilt and compared, and where they ship.
+      - name: Check the graphics, sound, video and input tests
+        run: python3 tests/host/check-bcd-tests.py
+
+      # 7-Zip in the Start menu (round 603): the pinned release of the project (SHA-256, licence text), the RAR code left out of the
+      # object lists the build reads from 7-Zip's own makefiles, the two tracked programs (x86-64, imports a Wine session has, no RAR
+      # code), the notices. BCD_CHECK_7ZIP_BUILD=1 builds both again and compares them with the tracked ones.
+      - name: Check 7-Zip (pinned source, no RAR code, the tracked programs)
+        run: python3 tests/host/check-7zip.py
+
+      # BCD's runtime installer (bcd-runtimes/, round 603; the "BCD Runtimes" Start menu folder): SHA-256, deflate and ZIP against Python's
+      # hashlib and zlib, the download rules (HTTPS, one host, redirects by hand), the table of runtimes, the PhysX install from NVIDIA's own
+      # manifest and the DirectX cabinet reader run on fake disks and registries, the sources and the tracked program.
+      - name: Check the runtime installer (downloads, checksums, XNA, PhysX, OpenAL, DirectX June 2010)
+        env:
+          MINGW: ${{ github.workspace }}/toolchains/llvm-mingw-20260421-ucrt-macos-universal/bin
+        run: python3 tests/host/check-bcd-runtimes.py
 
       # Opt-in screen orientation lock for a game's session (BCDOrientation.swift): Settings › Graphics and a game's page
       # choose "follow the device" (the default, today's behaviour), landscape or a landscape side; the game's own choice wins.
@@ -126,6 +163,42 @@ jobs:
       # is deleted, automatic sending is opt-in and Wi-Fi only.
       - name: Check Send logs to BCD
         run: python3 tests/host/check-log-upload.py --require-swift
+
+      # The performance trace (round 604; BCDPerfTrace*.swift): one line a second, an hour at most, the newest 20 kept, sent after a log's
+      # last line when the player turned it on (or a guided debug run did), nothing at all while it is off, and tools/log-facts.py reading it.
+      - name: Check the performance trace
+        run: python3 tests/host/check-bcd-perftrace.py --require-swift
+
+      # Help with a game (round 604; BCDHelpCore/BCDGameHelp/BCDReadinessCore.swift and their live sides): the guided debug run (nothing sent unless the
+      # player taps Send, the trace and the detailed log asked for by the session only), game feedback through the existing Feedback intake, and the
+      # launch check (a note on the game's page, from the import tables of its program files), with tools/pull-logs.py reading the feedback.
+      - name: Check help with a game
+        run: python3 tests/host/check-bcd-help.py --require-swift
+
+      # Shareable control layouts (round 604; BCDControlShare*.swift): a custom layout as a small JSON file, a file added as a new layout after the
+      # envelope and every control are checked (size, ranges, nesting, fresh ids, a name that replaces nothing).
+      - name: Check shareable control layouts
+        run: python3 tests/host/check-bcd-control-share.py --require-swift
+
+      # The performance HUD (round 603: Off, four layouts and Custom; BCDHUD*.swift, BCDFrameRing.c): the layouts against the design, an
+      # old overlay carried over unchanged, the frame arithmetic, placement from the window's size and safe area alone (a phone, 4:3,
+      # a near-square window, a resize), the ring under the address, undefined-behaviour and thread sanitizers, the present-path
+      # patch on the pinned DXMT, nothing alive while it is off, and no touch taken from the game.
+      - name: Check the performance HUD
+        run: python3 tests/host/check-bcd-hud.py --require-swift
+
+      # The session summary line ([session], BCDSessionCore.swift), the marker of an open session and the one question after a
+      # session that closed unexpectedly (BCDSessionRecorderLive.swift), and the readers of the line: tools/log-facts.py and
+      # the scanner behind the replay.
+      - name: Check the session summary and the question after an unexpected close
+        run: python3 tests/host/check-bcd-session-record.py --require-swift
+
+      # Screenshots from the in-game menu and Send Log (BCDScreenshotLive.swift, LogUpload.swift, the intake's POST /v1/shots,
+      # tools/pull-logs.py): the game's own surface only, a memory guard, Photos add-only, the picture sent as it is and only when
+      # chosen, as a small copy of 100 KB or less made apart from the kept one (BCDScreenshotShrink.swift, run on generated pictures),
+      # the intake's 160 KB limit, and the pull tool saving it beside its log.
+      - name: Check screenshots with Send Log
+        run: python3 tests/host/check-bcd-screenshot.py --require-swift
 
       # madeira-bcd FORK-ONLY: Settings › Feedback (FeedbackUpload*.swift, BCDSettingsFeedback.swift,
       # the intake's POST /v1/feedback, tools/pull-logs.py --feedback): the intake's gate, endpoint
@@ -301,6 +374,57 @@ jobs:
       # BCD-saves-<date>.zip; no source opens a file by an old name.
       - name: Check BCD's file names
         run: python3 tests/host/check-bcd-file-names.py --require-swift
+
+      # The extra keys (round 603): the key bar over the game (Game › Key bar) and the second page of the bar over the
+      # iOS keyboard (Fn): Alt+Tab, Alt+Enter, Win, F1-F12, Esc, Del and Ctrl/Alt/Shift latches, posted as every key is.
+      - name: Check the extra keys
+        run: python3 tests/host/check-bcd-extra-keys.py --require-swift
+
+      # The in-game menu's items of round 604: Pause, Windows, Task Manager, magnifier, picture filter and flip, gestures help, the live log's
+      # tools with Wine debug-channel presets, vibration, touch controls that hide and take a colour, the controller's way of opening the
+      # menu, "Save these settings for this game", frame generation and the cooling cap. Every one is a menu choice; nothing changes
+      # for a game whose player does none of them.
+      - name: Check the BCD in-game menu items
+        run: python3 tests/host/check-bcd-menu-items.py --require-swift
+      # Turbo and macros (round 604): a held controller button repeats, a button plays a chain of presses, per game, off by default; nothing
+      # exists (two static flags, no timer) until a game turns it on and is played.
+      - name: Check turbo and macros
+        run: python3 tests/host/check-bcd-turbo.py --require-swift
+
+      # Players (round 604): press a button on a controller to make it Player 1 to 4, rumble for each player, the touch controls as a player; with
+      # nothing chosen a controller takes the first free slot as before.
+      - name: Check players
+        run: python3 tests/host/check-bcd-players.py --require-swift
+
+      # Radial menu (round 604): a button at the edge opens a ring of up to eight keys and actions round the thumb, per game, off by default;
+      # no window exists until a game turns it on and is played.
+      - name: Check radial menu
+        run: python3 tests/host/check-bcd-radial.py --require-swift
+
+      # Aim mode, touch gestures and the Apple Pencil as a mouse (round 604): what a finger or a Pencil on the game does beyond the pointer
+      # setting, per game, off by default; with all three off MetalBackedView reads one static flag.
+      - name: Check aim mode, touch gestures and the Apple Pencil
+        run: python3 tests/host/check-bcd-touch-extras.py --require-swift
+
+      # The gamepad model picker (round 604): what a game sees as player 1's controller (Xbox, DualSense, generic gamepad); it only names the
+      # values env.MADEIRA_PAD_MODE always took, and offers no DualShock 4 while the wineserver has none.
+      - name: Check the gamepad model picker
+        run: python3 tests/host/check-bcd-padmodel.py --require-swift
+
+      # Touch-control look (round 604): the colour of the on-screen buttons, what a press lights up in and the symbols on the face buttons;
+      # BCD's own look is what a player who chooses nothing has, drawn as before.
+      - name: Check touch-control look
+        run: python3 tests/host/check-bcd-touch-look.py --require-swift
+
+      # Gyro aim (round 603): turning the phone aims the game as the mouse or the right stick, per game, off by default; nothing runs
+      # (no sensor, one static flag in the controller code) until a game turns it on and is played.
+      - name: Check gyro aim
+        run: python3 tests/host/check-bcd-gyro.py --require-swift
+
+      # "Look like this GPU" (round 603): a game's gpu-card line names the graphics card it is told it has, the same in DXGI,
+      # Direct3D 9 and Windows' own adapter; nothing changes for a game that picks none.
+      - name: Check Look like this GPU
+        run: python3 tests/host/check-gpu-cards.py --require-swift
 
       # BCD's interface: Settings (app/Madeira/BCDSettings*.swift): headers, no engine types in its
       # views, the preview build, the controller's walk, no old name on screen, the credits word
@@ -934,6 +1058,41 @@ jobs:
       - name: Check audio after an interruption
         run: python3 tests/host/check-audio-resume.py
 
+      # The game's volume at the audio endpoint (round 604; env.MADEIRA_AUDIO_GAIN, build/ntdll-unix/audio_null_ios.c) and the Sound rows of a game's page
+      # (BCDGameSound.swift): unchanged unless 10..200, exact scaling, read once, one comparison in the render callback when it is off.
+      - name: Check the audio volume
+        run: python3 tests/host/check-audio-gain.py
+
+      # BCD (round 603): MIDI music. A game's MIDI output plays through Apple's synthesizer and a General MIDI SoundFont
+      # (build/ntdll-unix/bcd_midi_ios.c, bcd_midi_synth_ios.m; env.MADEIRA_MIDI = 0 turns it off). The driver check runs
+      # winmm's messages in mmdevapi's 64-bit and 32-bit argument blocks against a recording synthesizer.
+      - name: Check the MIDI driver
+        run: python3 tests/host/check-midi-driver.py
+
+      # The SoundFont is a third party's file (TimGM6mb, GPL-2.0, app/Madeira/soundfont/NOTICE-TimGM6mb.txt): downloaded and
+      # checked against its SHA-256 here (tools/fetch-soundfont.sh), never committed. Without it the build still works and
+      # games' MIDI music stays silent, as before.
+      - name: Fetch the General MIDI sound bank
+        run: bash tools/fetch-soundfont.sh
+
+      - name: Check the MIDI synthesizer against Apple's
+        run: python3 tests/host/check-midi-synth.py
+
+      # BCD (round 603): save backups per game (app/Madeira/BCDSaveBackups/, BCDGameSaves.swift): where a game saves, a dated
+      # zip in Documents/Save Backups, a restore that asks first, the automatic backup when a game closes (off by default).
+      - name: Check the save backups
+        run: python3 tests/host/check-game-saves.py --require-swift
+
+      # BCD (round 604): game setup (app/Madeira/BCDGameSetup/, BCDGameSetup*.swift): the Windows version, DLL components, FEX presets,
+      # game fixes (INI, registry, delete, write, redist) and the Wine desktop's text size and colours, all lines of the game's own file.
+      - name: Check the game setup
+        run: python3 tests/host/check-game-setup.py --require-swift
+
+      # BCD (round 604): the start helper (bcd-helper/): a delay before a game starts, a second program that runs beside it and window rules,
+      # in a small Windows program the app copies beside the start script. core.h runs on the host against a fake system.
+      - name: Check the start helper
+        run: python3 tests/host/check-bcd-helper.py
+
       # madeira-bcd: MADEIRA_GAME_WINDOWS=2 (opt-in) draws a GDI game window that
       # covers the guest desktop (Warcraft II BNE: sound, no picture).
       - name: Check game windows cover switch
@@ -1143,6 +1302,22 @@ jobs:
         env:
           MINGW: ${{ github.workspace }}/toolchains/llvm-mingw-20260421-ucrt-macos-universal/bin
         run: python3 tests/host/check-d3d9-fault-dump.py
+
+      # madeira-bcd (round 602): DXMT's Direct3D 9 as the default of a 64-bit game whose folder shows no Direct3D 11, DXGI or Direct3D 12:
+      # the production BCDGraphicsScan.swift compiled with swiftc and run on synthetic game folders (Unity, Unreal, Chromium, 32-bit,
+      # unsure scans), the one-line hook and the game's own word winning.
+      - name: Check the 64-bit Direct3D 9 default (game folder scan)
+        run: python3 tests/host/check-d3d9-x64-default.py
+      - name: Check the 64-bit Direct3D 9 default's remembered answers
+        run: python3 tests/host/check-d3d9-x64-cache.py
+
+      # madeira-bcd (round 602): the two opt-in 32-bit replacements, crosire's d3d8to9 (env.MADEIRA_D3D8 = d3d9) and cnc-ddraw
+      # (env.MADEIRA_DDRAW = cnc): the vendored sources byte for byte, the build scripts, the link helper (BCDGraphicsRoutes.c, compiled
+      # and run on temporary folders), the bridge hook, the catalog, the list policy and auto-tune's rules.
+      - name: Check the Direct3D 8 and DirectDraw routes (d3d8to9, cnc-ddraw)
+        env:
+          MINGW: ${{ github.workspace }}/toolchains/llvm-mingw-20260421-ucrt-macos-universal/bin
+        run: python3 tests/host/check-d3d8-to-d3d9.py
 
       # The Xcode project links 7 archives out of FEX/build-ios/ -- FEXCore,
       # FEXCore_Base, JemallocLibs plus the External deps. Nothing built them
@@ -1537,6 +1712,16 @@ jobs:
       - name: Patch DXMT tiny fullscreen window
         run: python3 tools/patch-dxmt-wsi-tiny-fullscreen.py
 
+      # Blur (8XZKXY, S465J5: 1160x800@4199012 / 1174409890 uninitialized RefreshRateInHz) and The Secret of Monkey Island: SE
+      # (0QM8ZF, FTZTQ1: 3456x2234@0 from a MacBook Retina Settings.ini) failed CreateDevice with D3DERR_INVALIDCALL (0x8876086c).
+      # isPresentableFullscreenExtent now accepts plausible [320x200, 7680x4320] fullscreen extents and garbage refresh rates
+      # (scaled by the layer; env.MADEIRA_D3D9_STRICT_MODES=1 rejects them). Before the i386 farm key, which hashes it.
+      - name: Check DXMT D3D9 fullscreen extent
+        run: python3 tests/host/check-dxmt-d3d9-fullscreen-extent.py
+
+      - name: Patch DXMT D3D9 fullscreen extent
+        run: python3 tools/patch-dxmt-fullscreen-extent.py
+
       # env.MADEIRA_DXMT_FAULT_INFO = 1 (off by default): command buffers with
       # encoder execution status, labelled encoders and a [fault-enc] line after
       # "Device error", so a GPU hang names its encoder (GTA V Legacy hung the GPU
@@ -1715,6 +1900,12 @@ jobs:
       - name: Patch winemetal frame cap for the power governor
         run: python3 tools/patch-winemetal-fps-cap.py
 
+      # madeira-bcd HUD (round 603): every Present of the process also stamps the frame-time ring (app/Madeira/BCDFrameRing.c, linked
+      # into the app) for the HUD's graph and lows and the [session] summary line. A weak import: a link without the app's ring still
+      # links. One clock read and two relaxed atomics a frame; always on. Native only, so the i386 farm cache key is not touched.
+      - name: Patch winemetal frame-time ring
+        run: python3 tools/patch-winemetal-frame-ring.py
+
       # On Apple's tile-based GPU every attachment a pass stores is a whole pass
       # over that surface in memory. With bcd.cfg / a game's config
       # rp-discard = 1, madeira-d3d12 leaves the store actions of a pass whose
@@ -1836,6 +2027,56 @@ jobs:
             exit 1
           fi
           echo "::notice::the $(wc -l < "$T/before" | tr -d ' ') shipped d3d9, d3d11, dxgi, d3d10core and winemetal DLLs are byte for byte what they were before d3d9-dxmt.dll was built"
+          exit "$rc"
+
+      # madeira-bcd (round 602): crosire's d3d8to9 (Direct3D 8 on Direct3D 9, BSD-2-Clause, third-party/d3d8to9) and FunkyFr3sh's cnc-ddraw
+      # (a DirectDraw replacement, MIT, third-party/cnc-ddraw), built for i686 with llvm-mingw into the i386 farm AFTER its cache was
+      # saved (outside the farm's cache key, like d3d9-dxmt.dll above), as d3d8to9.dll and cnc-ddraw.dll NEXT TO Wine's d3d8.dll and
+      # ddraw.dll, which stay the default: a game gets them only with env.MADEIRA_D3D8 = d3d9 / env.MADEIRA_DDRAW = cnc (BCDGraphicsRoutes.c).
+      # Nothing that ships today may change: each step hashes the farm's Direct3D, DirectDraw, DXGI and winemetal DLLs before and after
+      # and fails if one differs. A failure only warns: nothing is shipped and Wine's DLLs go out alone, as before.
+      - name: Build d3d8to9.dll (Direct3D 8 on Direct3D 9, i386)
+        continue-on-error: true
+        shell: bash
+        run: |
+          shipped() {
+            for f in app/Madeira/i386-windows/{d3d8,d3d9,d3d9shim,d3d9-emulated,d3d11,dxgi,d3d10core,winemetal,ddraw,wined3d,d3dx9_43}.dll; do
+              [ -f "$f" ] && shasum -a 256 "$f"
+            done
+            return 0
+          }
+          T="$(mktemp -d)"
+          shipped > "$T/before"
+          rc=0
+          bash tools/build-d3d8to9-dll.sh || rc=$?
+          shipped > "$T/after"
+          if ! cmp -s "$T/before" "$T/after"; then
+            echo "::error::a shipped Direct3D / DirectDraw / DXGI / winemetal DLL of the i386 farm changed while d3d8to9.dll was built:"
+            diff "$T/before" "$T/after" || true
+            exit 1
+          fi
+          exit "$rc"
+
+      - name: Build cnc-ddraw.dll (DirectDraw replacement, i386)
+        continue-on-error: true
+        shell: bash
+        run: |
+          shipped() {
+            for f in app/Madeira/i386-windows/{d3d8,d3d9,d3d9shim,d3d9-emulated,d3d11,dxgi,d3d10core,winemetal,ddraw,wined3d,d3dx9_43}.dll; do
+              [ -f "$f" ] && shasum -a 256 "$f"
+            done
+            return 0
+          }
+          T="$(mktemp -d)"
+          shipped > "$T/before"
+          rc=0
+          bash tools/build-cnc-ddraw-dll.sh || rc=$?
+          shipped > "$T/after"
+          if ! cmp -s "$T/before" "$T/after"; then
+            echo "::error::a shipped Direct3D / DirectDraw / DXGI / winemetal DLL of the i386 farm changed while cnc-ddraw.dll was built:"
+            diff "$T/before" "$T/after" || true
+            exit 1
+          fi
           exit "$rc"
 
       # madeira-bcd FORK-ONLY (owner's decision, 2026-10-11): never part of a pull request to
@@ -1989,6 +2230,9 @@ jobs:
           python3 tests/host/check-stp-straddle.py
           python3 tests/host/check-d3d12-zero-extent.py
           python3 tests/host/check-alloc-fail-throttle.py
+
+      - name: Check anonymous alias LDADDAL word emulation
+        run: python3 tests/host/check-anon-ldadd.py
 
       # madeira-bcd (build 591), engine fixes from the 580 log wave: env.MADEIRA_FAULT_GUARD_RATE (fault-storm guards that ended live Unity
       # Mono games), env.MADEIRA_USER_VA_GB (FINAL FANTASY TACTICS asks for 256 GiB), create_view's assert, env.MADEIRA_ANON_CAS_FLUSH
@@ -2284,6 +2528,11 @@ jobs:
       - name: Check the vm-fault-wait line
         run: python3 tests/host/check-vm-fault-wait.py
 
+      # BCD: EA redist processes reuse their WoW window/TEB addresses. A stale
+      # exit handoff must never join self or free a replacement's live stack.
+      - name: Check EA thread retirement
+        run: python3 tests/host/check-ea-thread-reap.py
+
       # madeira-bcd: ... and also a sign-extending load (ldrsw x28, [x18, #0x180c]: FEX's WowTebOffset
       # read; Left 4 Dead 2 died of it after 200 s, FFXIV's WebView2 setup too, build 574).
       - name: Check x18 signed loads
@@ -2464,6 +2713,30 @@ jobs:
       - name: Build the Direct3D 9, 10 and 11 test programs
         continue-on-error: true
         run: bash tools/build-dx-tests.sh
+
+      # BCD's system tests (tests/systests/systest.c): bcd-systest-x64.exe into arm64ec-windows and bcd-systest-x86.exe into the
+      # i386 farm's folder (after the farm, so its cache does not carry it). A build that fails keeps the tracked programs.
+      - name: Build the system test programs (x64 and x86)
+        continue-on-error: true
+        run: bash tools/build-systests.sh
+
+      # BCD's runtime installer (bcd-runtimes/runtimes.c, round 603): bcd-runtimes-x64.exe into arm64ec-windows, after the farm. A build that
+      # fails keeps the tracked program.
+      - name: Build the runtime installer (bcd-runtimes-x64.exe)
+        continue-on-error: true
+        run: bash tools/build-bcd-runtimes.sh
+
+      # BCD's start helper (bcd-helper/helper.c, round 604): bcd-helper-x64.exe into arm64ec-windows, after the farm. A build that fails
+      # keeps the tracked program.
+      - name: Build the start helper (bcd-helper-x64.exe)
+        continue-on-error: true
+        run: bash tools/build-bcd-helper.sh
+
+      # 7-Zip 26.05 from the pinned release (third-party/7zip), without its RAR code: 7zFM.exe (the File Manager) and 7z.exe, x86-64
+      # Windows programs next to Wine's programs in arm64ec-windows. About ten minutes; a build that fails keeps the tracked programs.
+      - name: Build 7-Zip (7zFM.exe and 7z.exe, without the RAR code)
+        continue-on-error: true
+        run: bash tools/build-7zip.sh
 
       # DXMT's NVAPI (dxmt/src/nvapi), which its DXMT build leaves
       # out; answers games that want a known vendor's driver version once the
@@ -2789,6 +3062,137 @@ jobs:
       # /tmp/vcr.exe, and a session links the bundle's copy first (WineProcessBridge.m).
       - name: Check the in-app VC++ runtime download
         run: python3 tests/host/check-vcruntime-download.py --require-swift
+
+      # madeira-bcd (upstream port 2026-10-25): PrefixExtractor.c refuses '..' components, absolute paths and a bad tar size field;
+      # PrefixExtractor.c built on the host with zlib and sanitizers, given synthetic archives and the bundled prefix template.
+      - name: Check the prefix tarball extractor
+        run: python3 tests/host/check-prefix-extract.py
+
+      # madeira-bcd (upstream port 2026-10-25): wineserver's alloc_shared_object rounds a shared object to 8 bytes so the next object's
+      # 64-bit sequence store is aligned on ARM64 (SimCity 4 Deluxe); the production allocator under ASan/UBSan.
+      - name: Check wineserver shared object alignment
+        run: python3 tests/host/check-session-object-alignment.py
+
+      # madeira-bcd (upstream port 2026-10-25): the ntdll build probes the iPhoneOS SDK for rusage_info_v6.ri_page_wait_time_mach; the
+      # [xp] line's pgw= reads -1.0 when the member is absent.
+      - name: Check the rusage SDK probe
+        run: python3 tests/host/check-rusage-sdk.py
+
+      # madeira-bcd (upstream port 2026-10-25): wine_process_exit_code() (the guest's exit status, release/acquire, also for a session
+      # ended off the boot thread) and the JITAllocator early-VA accessors for Swift 6; the accessors built on the host, both files
+      # syntax-checked with the iPhoneOS SDK.
+      - name: Check wine_process_exit_code and the early VA accessors
+        run: python3 tests/host/check-wine-exit-code.py
+
+      # madeira-bcd (upstream port 2026-10-25): MADEIRA_ENV_LOCKED, a host's list of environment names that bcd.cfg's and a game's env.*
+      # lines may not replace; off unless a host sets it; the matcher built on the host.
+      - name: Check MADEIRA_ENV_LOCKED
+        run: python3 tests/host/check-env-locked.py
+
+      # madeira-bcd (upstream port 2026-10-25): the guest's stdin and stdout on pipes and a forced console, all opt-in
+      # (env.MADEIRA_STDIN_PIPE, env.MADEIRA_STDOUT_PIPE, env.MADEIRA_FORCE_CONSOLE, or Documents/bcd-stdin.txt, bcd-stdout.txt, bcd-
+      # console.txt); the accessors run over real pipes.
+      - name: Check the guest stdin and stdout pipes
+        run: python3 tests/host/check-guest-pipes.py
+
+      # madeira-bcd (upstream port 2026-10-25): the VC++ overlay takes only .dll files and also Microsoft's fourteen names from
+      # Documents/vcruntime (the list builder compiled on the host); tools/fetch-vcruntime.sh gives, from the build's own download, the
+      # same fourteen DLLs byte for byte; tests/host/check-vcruntime.py on synthetic folders.
+      - name: Check the VC++ runtime sources and tools/fetch-vcruntime.sh
+        run: python3 tests/host/check-vcruntime-sources.py
+
+      # madeira-bcd (upstream port 2026-10-25): a Steam request whose connection closes while it is being sent is resumed once (the
+      # production SteamSession.swift with a stand-in connection; callServiceMethod, sendAndWait and sendAndWaitPICS).
+      - name: Check SteamSession's pending jobs
+        run: python3 tests/host/check-steam-session-jobs.py
+
+      # madeira-bcd (upstream port 2026-10-25): Steam Cloud sync decisions on the production code, the Steam Cloud saves switch off
+      # stops every check, transfer and Play prompt (BCD's Accounts settings), turning it back on starts clean, and save transfers
+      # always go over https.
+      - name: Check Steam Cloud
+        run: python3 tests/host/check-steam-cloud.py
+
+      # madeira-bcd (upstream port 2026-10-25): SteamRemoteCache, which rewrites the list Valve's client answers Steam Cloud API saves
+      # from, compiled on the host over temporary prefixes; off in BCD unless env.MADEIRA_STEAM_CLOUD_REMOTECACHE is set.
+      - name: Check Valve's client's remotecache.vdf
+        run: python3 tests/host/check-steam-remotecache.py
+
+      # madeira-bcd (upstream port 2026-10-25): the Steam game language (depots, install record, DLC depots, device mapping) and the
+      # download and install sizes, on the production app info and record writer; English unless a language is chosen.
+      - name: Check the Steam game language
+        run: python3 tests/host/check-steam-language.py --require-swift
+
+      # madeira-bcd (upstream port 2026-10-25): env.MADEIRA_ARENA_GUARD = 1 keeps a fixed or hinted guest reservation (and the steering
+      # valve's top slot) out of the FEX arena; off unless set; the guard cut out of virtual_ios.c and run on the host.
+      - name: Check the FEX arena guard
+        run: python3 tests/host/check-arena-guard.py
+
+      # madeira-bcd (upstream port 2026-10-25): env.MADEIRA_EXE_WINDOW_HANDOFF = 1 hands the fixed base to a relaunched copy of the same
+      # program and rounds the claim's size; off unless set; the window code run on the host.
+      - name: Check the executable window handoff
+        run: python3 tests/host/check-exe-window-handoff.py
+
+      # madeira-bcd (upstream port 2026-10-25): exe-window-auto (the window measured from the game's folder) and pool-above-window (the
+      # game's pool line, the pair above the window), both off unless set; fixedBaseWindowMB run on synthetic PE headers.
+      - name: Check the executable window from the game's folder and the pool above it
+        run: python3 tests/host/check-exe-window-auto.py --require-swift
+
+      # madeira-bcd (upstream port 2026-10-25): env.MADEIRA_THIN_RESERVE = 1 gives 1-2 GB read-write reserves a thin head (a game that
+      # reserves dozens of 1 GB blocks and commits little); off unless set; the switch run on the host, the hooks read.
+      - name: Check thin reservations
+        run: python3 tests/host/check-thin-reserve.py
+
+      # madeira-bcd (upstream port 2026-10-25): env.MADEIRA_IMAGE_LOW_ALIAS = 1 (the narrowed form of an image's address gets a name)
+      # and env.MADEIRA_QUERY_CLIP = 1 (VirtualQuery calls only allocatable memory free); both off unless set; the switches and the pure
+      # parts run on the host.
+      - name: Check the image low alias and the query clip
+        run: python3 tests/host/check-query-clip.py
+
+      # madeira-bcd (upstream port 2026-10-25): env.MADEIRA_KUSER_KEEP_REGS = 1 leaves registers that only look like KUSER pointers
+      # alone after the sub-floor service emulated the access; off unless set; the step's condition run on the host for every
+      # combination.
+      - name: Check the KUSER register switch
+        run: python3 tests/host/check-kuser-keep-regs.py
+
+      # madeira-bcd (upstream port 2026-10-25): env.MADEIRA_AUDIO_IO_MS asks the audio session for a smaller IO buffer and the driver
+      # reports an engine period of at least two slices (a client that queues one period); off unless set, GetDevicePeriod answers 10 ms
+      # as before; the driver's period code run on the host.
+      - name: Check the audio engine period
+        run: python3 tests/host/check-audio-period.py
+
+      # madeira-bcd (upstream port 2026-10-25): the session sets DXMT_CENSUS_THROTTLE=1 (one [mem-census] report every 10 s; a memory
+      # warning and the first report always); env.DXMT_CENSUS_THROTTLE = 0 undoes it; the app's line and, with the DXMT sources, DXMT's
+      # side read.
+      - name: Check DXMT's memory census throttle
+        run: python3 tests/host/check-census-throttle.py
+
+      # madeira-bcd (upstream port 2026-10-25): env.MADEIRA_THERMAL_CAP = 1 (off by default) caps a hot device at 40 FPS and gives the
+      # session's mode back at nominal; the production ThermalPacing run on the host with the thermal notification posted for real.
+      - name: Check the thermal frame cap
+        run: python3 tests/host/check-thermal-cap.py --require-swift
+
+      # madeira-bcd (upstream port 2026-10-25): env.MADEIRA_THREAD_QOS = pattern=class;... gives a guest thread a QoS class by its name
+      # (off unless set; sync.c's QoS call goes through a wrapper that passes through without a rule); the rule parser, matcher, table
+      # and wrapper run on the host.
+      - name: Check the QoS class per thread name
+        run: python3 tests/host/check-thread-qos.py
+
+      # madeira-bcd (upstream port 2026-10-25): a Steam discovery value in the registry that names a client no longer there (a Steam
+      # emulator's or a removed client's leftover) is replaced, a live client stays a conflict, and the failure line says what stopped
+      # the setup; the production ZIP reader and registry writer run on the host.
+      - name: Check BCD Dock's client components setup
+        run: python3 tests/host/check-dock-components.py
+
+      # madeira-bcd (upstream port 2026-10-25): the window census of a Dock start under AddressSanitizer and ThreadSanitizer, the born-
+      # minimized restore, and env.MADEIRA_RESTORE_BORN_MINIMIZED_LATE = 1 (the restore goes on after the starting screen; off unless
+      # set, where 2 ends the census like 0); the decision rules compiled with swiftc.
+      - name: Check BCD Dock's starting-screen census
+        run: python3 tests/host/check-dock-start-screen.py
+
+      # madeira-bcd (upstream port 2026-10-25): the key bar's Paste button and the opt-in Command-V type the clipboard as key and text
+      # events in order; pure paste types, the text event queue and the BCD wiring.
+      - name: Check clipboard text paste
+        run: python3 tests/host/check-clipboard-paste.py
 
       # The directory has to exist or xcodebuild fails the archive outright,
       # but the DLLs themselves are Microsoft's and cannot be committed.

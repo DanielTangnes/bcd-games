@@ -4,8 +4,12 @@
 //
 // BCD's Direct3D 9 test: a spinning textured cube, drawn with the fixed-function pipeline (a texture
 // modulated by the vertex colour, one world, view and projection matrix, a depth buffer), so it needs no shader
-// compiler and no shader bytecode. x86-64 Windows; see dxtest.h. (tests/x86/d3d9-cube-x86.c is the 32-bit test of
-// the WoW64 path; this is the 64-bit program a game's Direct3D 9 path looks like.)
+// compiler and no shader bytecode. One source, two programs (round 602): d3d9-cube-x64.exe, the 64-bit program a game's
+// Direct3D 9 path looks like (Start menu: "DirectX 9 test (64-bit)"), and d3d9-test-x86.exe, the 32-bit one (Start menu:
+// "DirectX 9 test"; most Direct3D 9 games are 32-bit, and 32-bit Direct3D 9 goes through DXMT by default). See dxtest.h.
+// (tests/x86/d3d9-cube-x86.c is the older no-CRT acceptance test of the WoW64 path.) After two seconds of drawing it logs
+// "PASS" or "FAIL" with the frame count and rate and puts the same word into the window title; it then reads the back
+// buffer once (GetRenderTargetData) and logs whether the cube is really in it.
 
 #define COBJMACROS
 #include "dxtest.h"
@@ -20,6 +24,36 @@ struct vertex9 { float x, y, z; DWORD diffuse; float u, v; };
 
 #define CHECK(call, what) do { HRESULT hr_ = (call); if (FAILED(hr_)) { \
         char m_[200]; snprintf(m_, sizeof m_, "%s failed (%#lx)", what, (unsigned long)hr_); dxt_fail(API, m_); return 1; } } while (0)
+
+/* Once, after the verdict: copies the back buffer to system memory and logs the pixel at the centre (where the cube is) and
+ * at the corner (the clear colour). Nothing here changes the verdict; a Direct3D 9 that cannot read a render target back
+ * just says so. */
+static void readback(IDirect3DDevice9 *dev)
+{
+    IDirect3DSurface9 *back = NULL, *sys = NULL;
+    D3DLOCKED_RECT lr;
+    HRESULT hr;
+
+    hr = IDirect3DDevice9_GetBackBuffer(dev, 0, 0, D3DBACKBUFFER_TYPE_MONO, &back);
+    if (FAILED(hr)) { dxt_log(API ": read-back: GetBackBuffer returned %#lx", (unsigned long)hr); return; }
+    hr = IDirect3DDevice9_CreateOffscreenPlainSurface(dev, DXT_W, DXT_H, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &sys, NULL);
+    if (FAILED(hr)) {
+        dxt_log(API ": read-back: CreateOffscreenPlainSurface returned %#lx", (unsigned long)hr);
+    } else if (FAILED(hr = IDirect3DDevice9_GetRenderTargetData(dev, back, sys))) {
+        dxt_log(API ": read-back: GetRenderTargetData returned %#lx (not supported, or the device is busy)", (unsigned long)hr);
+    } else if (FAILED(hr = IDirect3DSurface9_LockRect(sys, &lr, NULL, D3DLOCK_READONLY))) {
+        dxt_log(API ": read-back: LockRect returned %#lx", (unsigned long)hr);
+    } else {
+        const unsigned char *row_c = (const unsigned char *)lr.pBits + (DXT_H / 2) * lr.Pitch;
+        const unsigned char *row_0 = (const unsigned char *)lr.pBits + 4 * lr.Pitch;
+        unsigned centre = *(const unsigned *)(row_c + (DXT_W / 2) * 4) & 0xFFFFFF, corner = *(const unsigned *)(row_0 + 4 * 4) & 0xFFFFFF;
+        dxt_log(API ": read-back: centre %06x, corner %06x (clear colour 0f121a): %s", centre, corner,
+                centre != corner ? "the cube is in the back buffer" : "the centre is the clear colour (nothing drawn, or the read-back returns nothing)");
+        IDirect3DSurface9_UnlockRect(sys);
+    }
+    if (sys) IDirect3DSurface9_Release(sys);
+    IDirect3DSurface9_Release(back);
+}
 
 int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show)
 {
@@ -37,17 +71,26 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show)
     struct vertex9 verts[24];
     unsigned short idx[36];
     dxt_clock clock;
-    unsigned failures = 0;
+    unsigned failures = 0, presented = 0, reported = 0;
+    char title[96], verdict[16];
     HRESULT hr;
     void *p;
     int i;
 
     (void)inst; (void)prev; (void)cmd; (void)show;
-    dxt_log(API ": start, %dx%d", DXT_W, DXT_H);
+    dxt_crash_log();
+    dxt_log(API " (%d-bit): start, %dx%d", DXT_BITS, DXT_W, DXT_H);
+    {
+        char sw[32];
+        sw[0] = 0;
+        GetEnvironmentVariableA("MADEIRA_D3D9_X64", sw, sizeof sw);
+        if (DXT_BITS == 64) dxt_log(API ": env.MADEIRA_D3D9_X64 = %s (dxmt: DXMT's Direct3D 9; wined3d: Wine's, which needs OpenGL)", sw[0] ? sw : "(not set)");
+    }
+    snprintf(title, sizeof title, "BCD DirectX 9 test (%d-bit)", DXT_BITS);
     dll = LoadLibraryA("d3d9.dll");
     create = dll ? (create_fn)GetProcAddress(dll, "Direct3DCreate9") : NULL;
     if (!create) { dxt_fail(API, "d3d9.dll (Direct3DCreate9) is not available"); return 1; }
-    hwnd = dxt_window("BCD DirectX 9 test");
+    hwnd = dxt_window(title);
     if (!hwnd) { dxt_fail(API, "the window could not be created"); return 1; }
     d3d = create(D3D_SDK_VERSION);
     if (!d3d) { dxt_fail(API, "Direct3DCreate9 returned no interface"); return 1; }
@@ -119,7 +162,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show)
         IDirect3DDevice9_SetTransform(dev, D3DTS_PROJECTION, (const D3DMATRIX *)&proj);
     }
 
-    dxt_clock_start(&clock, hwnd, "BCD DirectX 9 test");
+    dxt_clock_start(&clock, hwnd, title);
     dxt_log(API ": drawing");
     while (dxt_pump()) {
         dxt_mat world = dxt_world(dxt_seconds(&clock));
@@ -133,8 +176,16 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show)
         if (FAILED(hr)) {
             if (failures++ < 3) dxt_log(API ": Present returned %#lx", (unsigned long)hr);
             Sleep(16);   /* a lost device (minimised, say) is not a reason to spin */
+        } else {
+            presented++;
         }
         dxt_clock_frame(&clock);
+        if (!reported && dxt_seconds(&clock) >= 2.0f) {   /* the verdict, once; the title keeps it */
+            reported = 1;
+            dxt_verdict(API, presented, failures, dxt_seconds(&clock), id.Description, verdict, sizeof verdict);
+            snprintf(clock.base, sizeof clock.base, "%s - %s", title, verdict);
+            readback(dev);
+        }
     }
     dxt_log(API ": the window was closed after %u frames", clock.total);
 

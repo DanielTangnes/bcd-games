@@ -1,0 +1,16 @@
+{
+ "dialogs": [],
+ "end": {
+  "quitRequested": true
+ },
+ "matched": [
+  "d3d8-to-d3d9"
+ ],
+ "next": [
+  "env.MADEIRA_D3D8 = d3d9"
+ ],
+ "note": "Grand Theft Auto III (Steam 12100, RenderWare on Direct3D 8), build 592, Send Log AN4ETP: d3d8.dll and ddraw.dll load, three tries at an OpenGL context fail, the game sits without a picture; the end is modelled as the player quitting it (quitRequested). UNPROVEN: env.MADEIRA_D3D8 = d3d9.",
+ "outcome": "exited-early",
+ "stage": 2,
+ "status": "trying"
+}

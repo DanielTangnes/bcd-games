@@ -146,18 +146,25 @@ check("the opt-in DLL loop (hasSuffix -optin.dll) ignores d3d9-dxmt.dll", 'hasSu
 
 # --- the key: catalog, policy, list --------------------------------------------------------------------------------
 cat = (root / "app/Madeira/ConfigCatalog.generated.swift").read_text()
-check("the catalog lists env.MADEIRA_D3D9_X64 as a choice, off (empty) by default",
+# Round 602 (ajan41): the empty choice is "automatic" (BCDGraphicsDefaults.swift picks DXMT from the game's folder, tests/host/check-d3d9-x64-default.py)
+# and "wined3d" is the game's way to keep Wine's d3d9.dll.
+check("the catalog lists env.MADEIRA_D3D9_X64 as a choice, empty (automatic) by default, with dxmt and wined3d as the explicit words",
       re.search(r'key: "env.MADEIRA_D3D9_X64".*kind: \.choice, defaultValue: ""', cat) is not None
-      and re.search(r'key: "env.MADEIRA_D3D9_X64".*choices: \[\("", "[^"]*"\), \("dxmt", "[^"]*"\)\]', cat) is not None)
+      and re.search(r'key: "env.MADEIRA_D3D9_X64".*choices: \[\("", "[^"]*"\), \("dxmt", "[^"]*"\), \("wined3d", "[^"]*"\)\]', cat) is not None)
 gen = (root / "build/tools/gen-config-catalog.py").read_text()
 check("the catalog generator's overlay documents it", '"env.MADEIRA_D3D9_X64": {' in gen)
 pol = (root / "app/Madeira/GameRecommendationsList.swift").read_text()
-check("a downloaded list may set it, with the value dxmt and nothing else",
-      '"MADEIRA_D3D9_X64"' in pol and 'case "MADEIRA_D3D9_X64":' in pol and 'guard value == "dxmt"' in pol)
+check("a downloaded list may set it, with the value dxmt or wined3d and nothing else",
+      '"MADEIRA_D3D9_X64"' in pol and 'case "MADEIRA_D3D9_X64":' in pol and 'guard value == "dxmt" || value == "wined3d"' in pol)
 recs = json.loads((root / "recommended/recommendations.json").read_text())
 carry = [r["id"] for r in recs["rules"] if "MADEIRA_D3D9_X64" in json.dumps(r["config"])]
 # 2026-10-24 (ajan23/loglar): MudRunner and Indivisible crash on the NULL result of the failed Direct3DCreate9 as well; their lists carry the line from build 598.
-check("only Darksiders II Deathinitive Edition's, MudRunner's, Indivisible's and Counter-Strike: Source's lists carry the line", carry == ["darksiders-ii-deathinitive", "mudrunner", "indivisible", "counter-strike-source"])
+# Round 602 (ajan41): PICO PARK, Don't Starve Together and A Hat in Time (their own programs fail the same probe) carry the line too, from build 602.
+check("only Darksiders II Deathinitive Edition's, MudRunner's, Indivisible's, Counter-Strike: Source's and (round 602) PICO PARK's, Don't Starve Together's and A Hat in Time's lists carry the line",
+      carry == ["darksiders-ii-deathinitive", "mudrunner", "indivisible", "counter-strike-source", "pico-park", "dont-starve-together", "a-hat-in-time"])
+for _id in ("pico-park", "dont-starve-together", "a-hat-in-time"):
+    r_ = next(r for r in recs["rules"] if r["id"] == _id)
+    check(f"{_id}: the line is from build 602 only, after the standard line", r_["config"][2:] == ["env.MADEIRA_EC_HOOK_TRACE = 0", {"line": "env.MADEIRA_D3D9_X64 = dxmt", "minBuild": 602}] and r_["version"] == 1)
 for _id in ("mudrunner", "indivisible"):
     r_ = next(r for r in recs["rules"] if r["id"] == _id)
     check(f"{_id}: the line is from build 598 only, after the standard line", r_["config"][2:] == ["env.MADEIRA_EC_HOOK_TRACE = 0", {"line": "env.MADEIRA_D3D9_X64 = dxmt", "minBuild": 598}])
@@ -177,9 +184,11 @@ check("its match is Steam 388410, the folder and darksiders2.exe; the line is fr
                                "env.MADEIRA_EC_HOOK_TRACE = 0"])
 # build 598: Fallout: New Vegas carries the D3D9 last-calls ring (a diagnostic), Resident Evil 6 / Revelations 2 the standard 32-bit frontend
 # (env.MADEIRA_D3D9 = emulated, the shim's own default), MudRunner and Indivisible their own lines; none of them names the 64-bit variable.
-others = [r["id"] for r in recs["rules"] if r["id"] not in ("darksiders-ii-deathinitive", "fallout-new-vegas", "resident-evil-6", "resident-evil-revelations-2", "mudrunner", "indivisible", "counter-strike-source")
+others = [r["id"] for r in recs["rules"] if r["id"] not in ("darksiders-ii-deathinitive", "fallout-new-vegas", "resident-evil-6", "resident-evil-revelations-2", "mudrunner", "indivisible", "counter-strike-source",
+                                                           "pico-park", "dont-starve-together", "a-hat-in-time",
+                                                           "grand-theft-auto-iii", "postal-2", "hotline-miami", "max-payne-2")   # the last four: env.MADEIRA_D3D8 = d3d9
           and "d3d9" in json.dumps(r["config"]).lower()]
-check("no other list names d3d9 (no game's behaviour changes: the default stays Wine's d3d9.dll)", others == [])
+check("no other list names d3d9 (the Direct3D 9 default of build 602 comes from the game's folder, BCDGraphicsDefaults.swift, not from a list)", others == [])
 print("note: the list's own version is not bumped here (the release does it); the rule's lines carry minBuild 595, so older builds skip it")
 
 # --- auto-tune ----------------------------------------------------------------------------------------------------

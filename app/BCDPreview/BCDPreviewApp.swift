@@ -10,6 +10,9 @@ import UIKit
 ///   -BCDTab home|library|downloads|settings   -BCDOrientation landscape|portrait
 ///   -BCDTab touch[-keys|-editor|-layouts|-picker|-menu]   the touch controls (BCDTouchPreview.swift)
 ///   -BCDTab controllers                      the controller screen (BCDControllerHubSample.swift)
+///   -BCDTab keybar[-held|-fn]                the extra keys: the floating key bar, the keyboard bar's second page (BCDPreviewExtraKeys.swift)
+///   -BCDLook <body>,<accent>,<symbols>,<press>   the touch controls' look (BCDTouchLook.swift): graphite,green,playstation,ring; empty is BCD's own
+///   -BCDTab input-players | input-radial[-open|-slide|-left]   the Players card and the radial menu (BCDPreviewInput.swift)
 ///   -BCDFocus <control id>                    -BCDEmpty YES (a new install's library)
 ///   -BCDButtons x,down,a                      a controller's presses, one every 0.4 s from 1.6 s after the
 ///                                             screen is up (up, down, left, right, a, b, x, y, lb, rb, menu;
@@ -35,6 +38,14 @@ struct BCDPreviewApp: App {
         let defaults = UserDefaults.standard
         let actions = BCDPreviewActions()
         BCDUpdateChecker.shared.usePreviewSample()
+        // -BCDLook graphite,green,playstation,ring: the touch controls' look (round 604; body, colour when pressed, symbols, how a press shows).
+        if let look = defaults.string(forKey: "BCDLook") {
+            let parts = look.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+            for (line, value) in zip(BCDTouchLook.lineNames, parts) {
+                BCDInputPrefs.shared.set(BCDTouchLookModel.feature, game: BCDInputPrefs.everyone, line: line, value: value)
+            }
+            BCDTouchLookModel.shared.reload()
+        }
         let sample = BCDStore.preview(empty: defaults.bool(forKey: "BCDEmpty"), actions: actions)
         // -BCDSection differ (screen "library.differ"): Hollow Knight's Steam Cloud saves differ from the device's.
         if defaults.string(forKey: "BCDSection") == "differ", sample.games.contains(where: { $0.id == "367520" }) {
@@ -43,6 +54,9 @@ struct BCDPreviewApp: App {
         _store = StateObject(wrappedValue: sample)
         BCDGameDetailSource.backend = BCDGamePageSample()
         BCDControllerHub.shareSample(empty: defaults.bool(forKey: "BCDEmpty"))   // Settings › Controls › Controllers
+        // Round 604: the controller screen's Players card on sample controllers (an empty install has none).
+        BCDPlayersModel.shared.preview(names: defaults.bool(forKey: "BCDEmpty") ? [] : ["Xbox Wireless Controller", "DualSense Wireless Controller", nil, nil],
+                                       rumble: [1: 50], touchSlot: defaults.bool(forKey: "BCDEmpty") ? 0 : 1)
         BCDAddGameSource.backend = BCDAddGameSample()
         BCDLauncherSample.prepare(defaults.string(forKey: "BCDSection"))   // the launchers' chips (Battle.net, EA app) on sample data
     }
@@ -50,6 +64,7 @@ struct BCDPreviewApp: App {
     var body: some Scene {
         WindowGroup {
             BCDPreviewSettingsSection.over(root, focus: focus)
+                .modifier(BCDPreviewExtraKeysScreens(store: store))   // -BCDTab keybar[-held|-fn] (BCDPreviewExtraKeys.swift)
                 .onAppear {
                     store.actions = actions
                     orient()
@@ -81,6 +96,8 @@ struct BCDPreviewApp: App {
             BCDEpicAskPreview(spec: tab, store: store, focus: focus)
         } else if tab.hasPrefix("add") {
             BCDAddGamePreviewRoot(spec: tab).environmentObject(store).environmentObject(focus)
+        } else if tab.hasPrefix("input-") {
+            BCDPreviewInputRoot(spec: tab, store: store).environmentObject(focus)   // round 604: the Players card, the radial menu (BCDPreviewInput.swift)
         } else if tab.hasPrefix("touch") {
             BCDTouchPreviewRoot(spec: tab, store: store).environmentObject(focus)
         } else {

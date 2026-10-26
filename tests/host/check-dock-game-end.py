@@ -509,6 +509,8 @@ static pthread_t g_wine_thread;
 static volatile int g_wine_running = 0;
 volatile int g_madeira_srv_fgetpath = 0, g_madeira_srv_eco_follow = 0, g_madeira_srv_direct = 0, g_madeira_srv_idle_us = 0, g_madeira_srv_log_all = 0;
 static int g_stops;
+static int g_wine_exit_code = 0;   /* wine_process_exit_code()'s plain global (the boot thread copies the thread-local status into it) */
+_Thread_local volatile int wine_ios_exit_code = 0;
 void wineserver_stop(void) { g_stops++; }
 void wine_session_note_launch_exit(int status);
 int wine_launched_exit_stuck(int32_t *code, double *seconds);

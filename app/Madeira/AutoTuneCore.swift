@@ -204,6 +204,15 @@ struct AutoTuneLogFacts: Codable, Equatable {
     /// Rockstar launcher sessions of GTA V Legacy and GTA IV; Doom 3, which draws through OpenGL).
     var noFrames: Bool { presentsCounted == true && presentsLogged == 0 && !frameSeen }
 
+    /// The session summary line BCD writes when a session ends, or when the app goes to the background ("[session] length=1234s play=1180s
+    /// frames=71234 avg=58.7 low1=41.2 ..." in BCDSessionCore.swift): the whole numbers of the newest one in the log. A replay and the log
+    /// cards show them; nothing decides by them. nil: the log has no such line (a session that was closed from outside, or an older build).
+    var sessionAverageFPS: Int?
+    var sessionLow1FPS: Int?
+    var sessionPlaySeconds: Int?
+    /// The newest summary was the partial one written when the app went to the background (the session did not end after it).
+    var sessionPartial = false
+
     var crashEvidence: Int { unhandled + errorExits + (runtimeErrorDialog ? 1 : 0) + (exitStatus == nil ? 0 : 1) }
 }
 
@@ -384,6 +393,12 @@ final class AutoTuneLogScanner {
     private static let mText = Array(" text=\"".utf8)
     /// The app's own words for a Madeira Dock session that runs only the one-time installs: in the "[madeira-dock] app N: ..." line
     /// and again in the "[dock-installers] app=N ..." line, once per such session and in no other.
+    /// The session summary line (BCDSessionCore.swift), not the line that says a session did not end cleanly.
+    private static let mSession = Array("[session] length=".utf8)
+    private static let mSessionAverage: [UInt8] = [0x20, 0x61, 0x76, 0x67, 0x3D]   // " avg=" as bytes: tools/autotune-fixture.py keeps every line a literal matches
+    private static let mSessionLow1: [UInt8] = [0x20, 0x6C, 0x6F, 0x77, 0x31, 0x3D]   // " low1=" as bytes: tools/autotune-fixture.py keeps every line a literal matches
+    private static let mSessionPlay: [UInt8] = [0x20, 0x70, 0x6C, 0x61, 0x79, 0x3D]   // " play=" as bytes: tools/autotune-fixture.py keeps every line a literal matches
+    private static let mSessionPartial: [UInt8] = [0x20, 0x70, 0x61, 0x72, 0x74, 0x69, 0x61, 0x6C, 0x3D, 0x31, 0x20]   // " partial=1 " as bytes: tools/autotune-fixture.py keeps every line a literal matches
     private static let mInstallsOnly = Array("this session runs only the one-time installs".utf8)
     private static let mInstallsEnded = Array("[dock-installers] end succeeded=".utf8)
     /// Window titles that read like an error and are not one. GameMaker's runner creates a hidden form named "Error Messages"
@@ -395,6 +410,12 @@ final class AutoTuneLogScanner {
 
     private func markers(_ l: UnsafeRawBufferPointer) {
         typealias S = AutoTuneLogScanner
+        if S.find(l, S.mSession) != nil {
+            facts.sessionPartial = S.find(l, S.mSessionPartial) != nil
+            facts.sessionAverageFPS = S.number(l, after: S.mSessionAverage).map { Int($0) }
+            facts.sessionLow1FPS = S.number(l, after: S.mSessionLow1).map { Int($0) }
+            facts.sessionPlaySeconds = S.number(l, after: S.mSessionPlay).map { Int($0) }
+        }
         if facts.build == nil, let v = S.number(l, after: S.mBuild) { facts.build = Int(v) }
         if facts.ramMB == nil, S.find(l, S.mDevice) != nil, let v = S.number(l, after: S.mRam) { facts.ramMB = Int(v) }
         if facts.availableMB == nil, S.find(l, S.mLaunch) != nil, let v = S.number(l, after: S.mAvailable) {

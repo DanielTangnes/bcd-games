@@ -422,7 +422,7 @@ struct RecommendationsPolicy {
         "BCD_EPIC_HOST_START",
         "_JAVA_OPTIONS", "DOTNET_EnableWriteXorExecute", "DOTNET_GCRegionRange",
         "DXMT_SMALL_RINGS", "DXMT_WSI_MODE_TABLE", "DXMT_WSI_MONITOR_IDENTITY", "FEX_VECTORTSOENABLED", "FEX_X87REDUCEDPRECISION", "LC_ALL",
-        "MADEIRA_ALIAS_RELEASE", "MADEIRA_ANON_CAS_FLUSH", "MADEIRA_APP_DLL_SHADOW", "MADEIRA_BAND_CENSUS", "MADEIRA_CAGE_RELEASE",
+        "MADEIRA_ALIAS_RELEASE", "MADEIRA_ANON_CAS_FLUSH", "MADEIRA_ANON_LDADDAL32", "MADEIRA_APP_DLL_SHADOW", "MADEIRA_BAND_CENSUS", "MADEIRA_CAGE_RELEASE",
         "MADEIRA_CHILD_ARGS", "MADEIRA_CTX_FRAME", "MADEIRA_D3D11_SRC", "MADEIRA_D3D9", "MADEIRA_D3D9_LAST", "MADEIRA_D3D9_X64", "MADEIRA_DEVICE_STATS", "MADEIRA_STEAM_IDENTITY", "MADEIRA_DOCK_GAME_SCM",
         "MADEIRA_DOCK_KEEP_ALIVE", "MADEIRA_DOCK_SCRIPT_REGISTRY", "MADEIRA_DXGI_BUDGET_EVENTS", "MADEIRA_DXGI_SRC", "MADEIRA_EC_HOOK_TRACE",
         "MADEIRA_EXECREQ_LEAVE", "MADEIRA_FASTSYNC_SEM", "MADEIRA_FAULT_GUARD_GUEST_RIP", "MADEIRA_FAULT_GUARD_RATE", "MADEIRA_FEX_AVX", "MADEIRA_FEX_BAND_KEEP_MB",
@@ -444,8 +444,10 @@ struct RecommendationsPolicy {
         "MADEIRA_D2R_PROBE_RECOVERY", "MADEIRA_FAULT_LOOP_GUEST_PROGRESS", "MADEIRA_NTDLL_DATA_SYNC_RANGE", "MADEIRA_NTDLL_XSEC", "MADEIRA_SHARED_SECTION_EXEC",   // Diablo II: Resurrected's executable-section switches (build 598; thebcd69/bcd-games#4)
         "MADEIRA_X64_GRAPHICS_ENTRY", "MADEIRA_X64_IMAGE_NOCOPY", "MADEIRA_X64_MACHINE", "SteamDeck", "WINEDEBUG",
         "MADEIRA_ZERO_MITIGATION_POLICY",   // build 600 (Glyphica: Typing Survival, ChakraCore's fail-fast over an unwritten policy buffer)
+        "MADEIRA_KUSER_KEEP_REGS",   // build 602 (The Adventures of Elliot: registers that only hold a KUSER-looking value stay as the guest set them)
         "WINEDLLOVERRIDES",
         "WINE_D3D_CONFIG",
+        "MADEIRA_D3D8", "MADEIRA_DDRAW",   // build 602: d3d8to9 as a 32-bit game's d3d8.dll and cnc-ddraw as its ddraw.dll (BCDGraphicsRoutes.c); one value each
     ]
 
     var configKeys: Set<String>
@@ -476,8 +478,8 @@ struct RecommendationsPolicy {
                 let names = value.lowercased().split(whereSeparator: { ",; ".contains($0) })
                 guard !names.isEmpty, names.allSatisfy({ ["dxva2", "evr", "xpsprint", "sfc", "sfc_os", "tbs", "twinapi.appcore", "setupapi"].contains($0)
                         || ["mfasfsrcsnk", "wmvdecod", "wmadmod"].contains($0) || ["oledlg", "fwpuclnt", "sensapi", "ddraw"].contains($0)
-                        || ["msi", "mspatcha", "odbccp32", "sxs", "rstrtmgr"].contains($0) }) else {
-                    throw RecommendationsError.policy("\(path): MADEIRA_OPTIN_DLLS may only name dxva2, evr, xpsprint, sfc, sfc_os, tbs, twinapi.appcore or setupapi, or mfasfsrcsnk, wmvdecod, wmadmod, or oledlg, fwpuclnt, sensapi, ddraw, or msi, mspatcha, odbccp32, sxs, rstrtmgr")
+                        || ["msi", "mspatcha", "odbccp32", "sxs", "rstrtmgr"].contains($0) || ["glu32", "tdh"].contains($0) }) else {
+                    throw RecommendationsError.policy("\(path): MADEIRA_OPTIN_DLLS may only name dxva2, evr, xpsprint, sfc, sfc_os, tbs, twinapi.appcore or setupapi, or mfasfsrcsnk, wmvdecod, wmadmod, or oledlg, fwpuclnt, sensapi, ddraw, or msi, mspatcha, odbccp32, sxs, rstrtmgr, or glu32, tdh")
                 }
             case "MADEIRA_STEAM_IDENTITY":
                 // No Steam game identity for this session (build 598, Rockstar's launcher of the Epic GTA V / RDR2): the one value, none.
@@ -492,14 +494,32 @@ struct RecommendationsPolicy {
                     throw RecommendationsError.policy("\(path): MADEIRA_D3D9 may only be emulated")
                 }
             case "MADEIRA_D3D9_X64":
-                // DXMT's Direct3D 9 for a 64-bit game (build 595): the one value, dxmt; Wine's d3d9.dll stays for everything else.
-                guard value == "dxmt" else {
-                    throw RecommendationsError.policy("\(path): MADEIRA_D3D9_X64 may only be dxmt")
+                // DXMT's Direct3D 9 for a 64-bit game (build 595): dxmt; Wine's d3d9.dll stays for everything else. Build 602: BCD picks dxmt
+                // by itself for a game whose folder shows no Direct3D 11, DXGI or Direct3D 12 (BCDGraphicsDefaults.swift), and "wined3d" is the
+                // game's way to keep Wine's whatever the folder shows (a list line for a game the default must leave alone).
+                guard value == "dxmt" || value == "wined3d" else {
+                    throw RecommendationsError.policy("\(path): MADEIRA_D3D9_X64 may only be dxmt or wined3d")
+                }
+            case "MADEIRA_D3D8":
+                // crosire's d3d8to9 as a 32-bit game's d3d8.dll (build 602): the one value, d3d9; Wine's d3d8.dll (OpenGL, which BCD lacks) stays for everything else.
+                guard value == "d3d9" else {
+                    throw RecommendationsError.policy("\(path): MADEIRA_D3D8 may only be d3d9")
+                }
+            case "MADEIRA_DDRAW":
+                // cnc-ddraw as a 32-bit game's ddraw.dll (build 602): the one value, cnc; Wine's ddraw.dll stays for everything else.
+                guard value == "cnc" else {
+                    throw RecommendationsError.policy("\(path): MADEIRA_DDRAW may only be cnc")
                 }
             case "MADEIRA_WINTYPES", "MADEIRA_X64_MACHINE", "MADEIRA_TINY_WINDOW_FIX", "BCD_EPIC_HOST_START", "MADEIRA_ZERO_MITIGATION_POLICY":
                 // MADEIRA_ZERO_MITIGATION_POLICY (build 600): Wine's GetProcessMitigationPolicy writes zeros into the caller's buffer, as it
                 // should (it wrote nothing); only the exact value 1 turns it on, and only Glyphica's list line does.
                 // BCD_EPIC_HOST_START (build 598): an Epic game's signed-in start keeps BCD Host as its first program; off unless a game's list says 1.
+                guard value == "0" || value == "1" else {
+                    throw RecommendationsError.policy("\(path): \(name) is 0 or 1")
+                }
+            case "MADEIRA_KUSER_KEEP_REGS":
+                // The exception handler's KUSER register rebase skips what the sub-floor service handled (build 602, The Adventures of
+                // Elliot): only the exact value 1 turns it on, and only that game's list line does.
                 guard value == "0" || value == "1" else {
                     throw RecommendationsError.policy("\(path): \(name) is 0 or 1")
                 }
@@ -552,6 +572,11 @@ struct RecommendationsPolicy {
                 // thunk apart by the guest instruction, and the 50-fault page breaker counts memory faults only. Off unless a game's list says 1.
                 guard value == "0" || value == "1" else {
                     throw RecommendationsError.policy("\(path): MADEIRA_FAULT_GUARD_GUEST_RIP is 0 or 1")
+                }
+            case "MADEIRA_ANON_LDADDAL32":
+                // Build 608: default off; only a matching game's auto-tune opts into the runtime code-write workaround.
+                guard value == "0" || value == "1" else {
+                    throw RecommendationsError.policy("\(path): MADEIRA_ANON_LDADDAL32 is 0 or 1")
                 }
             case "MADEIRA_FAULT_GUARD_RATE", "MADEIRA_MFC_DOCK", "MADEIRA_DOCK_SCRIPT_REGISTRY", "MADEIRA_ANON_CAS_FLUSH", "MADEIRA_NLS_EXTRA", "MADEIRA_WG_VIDEO":
                 // Six engine and app switches that are 0 or 1 (build 591 reads the first five from a list: the fault-storm guards that count a

@@ -581,6 +581,18 @@ final class ControlPresetsModel: ObservableObject {
         return true
     }
 
+    /// A layout from a shared file (BCDControlShareLive.swift, round 604): added as a new custom layout under a name no other layout has, never over
+    /// one; the on-screen controls are not touched. nil when saving is refused (an unreadable file is kept) or the name is taken after all.
+    @discardableResult func importLayout(name: String, controls: [TouchControl]) -> String? {
+        guard !readOnly, store.named(name) == nil else { return nil }
+        var s = store
+        guard case .created(let id) = s.save(name: name, controls: controls) else { return nil }
+        store = s
+        persist()
+        log("added a shared layout controls=\(controls.count)")
+        return id
+    }
+
     /// "New layout": an empty custom layout, made active, opened in the editor.
     @discardableResult func createLayout() -> Bool {
         guard !readOnly else { return false }

@@ -1,0 +1,13 @@
+d3d8to9 (Direct3D 8 to Direct3D 9)
+
+  Project:   https://github.com/crosire/d3d8to9  (Patrick Mours, "crosire")
+  Licence:   BSD 2-Clause, LICENSE.md in this folder, kept exactly as received. Copyright (C) 2015 Patrick Mours.
+  Version:   tag v1.16.0, commit 255338f698c8270b537f0a91a13f795f4f988250 ("Fix build with Visual Studio 2026")
+  Taken from the project's own repository (the local copy ~/madeira-local/kaynak/ucuncu/crosire--d3d8to9.git, a mirror of the
+  project's repository at that commit). `git archive --format=tar v1.16.0` has SHA-256
+      5f7c840620246b103a871bdf676a1a35b9ca76ba5e000e7f99c9901c45156316
+  What is here: the project's source/ and res/ folders, LICENSE.md, README.md and CMakeLists.txt, byte for byte (SHA256SUMS lists
+  them; tests/host/check-d3d8-to-d3d9.py compares them). Not copied: the Visual Studio files and the GitHub workflow.
+  Changes by BCD to these files: none. tools/build-d3d8to9-dll.sh compiles them for i686 with llvm-mingw (-DD3D8TO9NOLOG, the
+  Release configuration of the project's CMakeLists.txt) and ships the result as d3d8to9.dll in the i386 farm; BCD's
+  WineProcessBridge.m links it as C:\windows\syswow64\d3d8.dll only for a game whose file says env.MADEIRA_D3D8 = d3d9.

@@ -20,9 +20,10 @@ import SwiftUI
 //   - the Steam client's folder, outside its steamapps library, holds Valve's
 //     client programs: a dialog of theirs may need the user;
 //   - any other program is the game (or its own launcher) once the Dock host has
-//     started. Before that, the game's one-time installs run from the batch, and a
-//     window first shown then is an installer's: never the game, and a dialog of
-//     theirs may need the user.
+//     started, and a small window of it with a title bar (its own message box) may
+//     need the user. Before that, the game's one-time installs run from the batch,
+//     and a window first shown then is an installer's: never the game, and a dialog
+//     of theirs may need the user.
 // Log tag: [steam-launch-view] (scene names, window sizes and owner classes only).
 
 // MARK: - Rules (Foundation only; tests/host/check-dock-start-screen.py compiles this part)
@@ -38,13 +39,17 @@ struct SteamLaunchWindow: Equatable {
     var drawn: Bool
     var pid: UInt32 = 0
     var hwnd: UInt64 = 0
+    /// The window has a title bar (WS_CAPTION): a message box or a dialog, never a
+    /// splash screen or a tool strip.
+    var caption: Bool = false
 }
 
 /// What a Dock start is showing.
 enum SteamLaunchScene: Equatable {
     /// Nothing for the user yet; the host and Valve's client work in the background.
     case waiting
-    /// A window that may need the user: a dialog of Valve's client or of a one-time installer.
+    /// A window that may need the user: a dialog of Valve's client or of a one-time
+    /// installer, or the game's own message box.
     case steamWindow
     /// A window of the started game is up.
     case game
@@ -102,7 +107,8 @@ enum SteamLaunchScene: Equatable {
     /// installs), which are never the game's. `installerReveal`: an early window's
     /// dialog may need the user. Returns the window that decided, for the log.
     static func decide(_ windows: [SteamLaunchWindow], rendered: Bool, places: Places,
-                       early: Set<UInt64> = [], installerReveal: Bool = true) -> (scene: SteamLaunchScene, window: SteamLaunchWindow?) {
+                       early: Set<UInt64> = [], installerReveal: Bool = true,
+                       gameMessageReveal: Bool = false) -> (scene: SteamLaunchScene, window: SteamLaunchWindow?) {
         var steam: SteamLaunchWindow?
         for window in windows where window.visible {
             let gameSized = window.width >= gameMinimum.width && window.height >= gameMinimum.height
@@ -116,6 +122,13 @@ enum SteamLaunchScene: Equatable {
             // A one-time installer that fails can show an error box and wait for OK, and
             // the start waits for it. MADEIRA_DOCK_INSTALLER_REVEAL=0 keeps them hidden.
             case .other where installer && steam == nil && window.drawn && dialogSized && installerReveal:
+                steam = window
+            // A game that fails early can show its own message box ("Failed to load il2cpp",
+            // 179x114) and wait for OK. It is smaller than a game window, often than a dialog
+            // too; its title bar tells it from a splash screen or a tool strip.
+            // madeira-bcd: only with MADEIRA_DOCK_GAME_MESSAGE_REVEAL = 1 (`gameMessageReveal`; upstream always): a game
+            // that runs today may show a small captioned window while it starts, and the desktop would be revealed for it.
+            case .other where gameMessageReveal && !installer && steam == nil && window.drawn && window.caption:
                 steam = window
             default: break
             }
@@ -320,6 +333,7 @@ final class DockStartScreen: ObservableObject {
     /// A library session begins; `game` is set for a Dock start.
     func begin(_ game: DockGame?, at start: Date) {
         endHold(reason: nil)
+        winios_window_census_enable(0)
         active = game != nil; appID = game?.id; failure = nil
         exitObserved = false; hostStarted = false; early = []; started = start
         guard let game, MadeiraConfig.flag("MADEIRA_DOCK_HIDE_DESKTOP") else { return }   // 0: a Dock start's starting screen ends on the desktop's first frame, as before
@@ -332,6 +346,7 @@ final class DockStartScreen: ObservableObject {
     /// The session ended.
     func finish() {
         endHold(reason: "session-ended")
+        winios_window_census_enable(0)
         active = false; appID = nil; failure = nil
     }
 
@@ -362,7 +377,9 @@ final class DockStartScreen: ObservableObject {
         // Windows shown before the host started belong to the one-time installs.
         if !hostStarted { for window in windows where window.visible { early.insert(window.hwnd) } }
         let installerReveal = MadeiraConfig.flag("MADEIRA_DOCK_INSTALLER_REVEAL")   // 0: a one-time installer's dialog never reveals the desktop by itself
-        let decision = SteamLaunchScene.decide(windows, rendered: rendered, places: places, early: early, installerReveal: installerReveal)
+        let gameMessageReveal = MadeiraConfig.flag("MADEIRA_DOCK_GAME_MESSAGE_REVEAL", fallback: false)   // 1: the game's own small message box (a title bar) reveals the desktop like a dialog of Valve's client; off unless set
+        let decision = SteamLaunchScene.decide(windows, rendered: rendered, places: places, early: early, installerReveal: installerReveal,
+                                               gameMessageReveal: gameMessageReveal)
         if decision.scene != hold.scene, sceneLines < 24 {
             sceneLines += 1
             let window = decision.window.map {
@@ -409,7 +426,9 @@ final class DockStartScreen: ObservableObject {
         }
         hold = nil
         holding = false; attention = false
-        winios_window_census_enable(0)
+        // 2: the game's window is found, but its main window may still be shown for the first time
+        // minimized; Winios.m goes on restoring such windows until finish() ends the session.
+        winios_window_census_enable(reason == "game-window" ? 2 : 0)
     }
 
     /// Winios.m's census as SteamLaunchScene reads it.
@@ -419,7 +438,8 @@ final class DockStartScreen: ObservableObject {
         return raw.prefix(max(0, min(count, raw.count))).map { window in
             let image = withUnsafeBytes(of: window.image) { bytes in String(decoding: bytes.prefix { $0 != 0 }, as: UTF8.self) }
             return SteamLaunchWindow(image: image, width: Int(window.w), height: Int(window.h), visible: window.visible != 0,
-                                     drawn: window.presents > 0 || window.metal != 0, pid: window.pid, hwnd: window.hwnd)
+                                     drawn: window.presents > 0 || window.metal != 0, pid: window.pid, hwnd: window.hwnd,
+                                     caption: window.caption != 0)
         }
     }
 }

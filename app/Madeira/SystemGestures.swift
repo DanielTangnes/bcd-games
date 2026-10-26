@@ -24,6 +24,7 @@ import SwiftUI
 enum SystemGestures {
     /// env.MADEIRA_PAD_SYSTEM_GESTURES: the game's own file, else madeira.cfg, else the environment.
     static var padButtonsOptIn: Bool {
+        BCDChordSetting.mode == .holdGuide ||   // madeira-bcd (round 604): the in-game menu's "Hold Home" opens the menu, so the Home button must reach the app at once
         (MadeiraConfig.gameValue("env.MADEIRA_PAD_SYSTEM_GESTURES")
             ?? MadeiraConfig.get("env.MADEIRA_PAD_SYSTEM_GESTURES")   // 1: the Home and Create/Share buttons of a controller go to the game at once instead of to iOS's gestures; unset/0: as before
             ?? ProcessInfo.processInfo.environment["MADEIRA_PAD_SYSTEM_GESTURES"]) == "1"

@@ -1,0 +1,174 @@
+[09:41:13.526] [INFO] Checking entitlements...
+[09:41:13.526] [INFO] [build] v0.1.600 (600)
+[09:41:13.527] [INFO] [device] model=iPad16,3 idiom=pad os=iPadOS Version 18.5 (Build 22F76) ram=7463MB available=8174MB cores=9
+[09:41:13.527] [INFO] [device] address-map=[0x1007f4000,0xfc0000000) 63GB increased-memory=1 extended-va=0
+[09:41:13.528] [INFO] [jit-nodebug] debugger-less JIT pool: allowed (iOS 18: TXM restricts JIT memory only from iOS 26); env.MADEIRA_JIT_NO_DEBUGGER_POOL=1
+[09:41:13.542] [INFO] [device] gpu="Apple M4 GPU" family=apple9 argument-buffers=tier2 mesh=1 bc=1 atomics64=1 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[09:41:16.129] [INFO] Requesting JIT with StikDebug...
+[09:41:16.159] [INFO] Opening StikDebug to enable JIT...
+[09:41:17.364] [INFO] [bcd] library launch Quaver: avx=1 wine-vcrt=1 nvidia=0 game-config=1 metalfx=off
+[09:41:17.366] [INFO] Session log: logs/Quaver.exe-2026-10-25_09-41-17.txt
+[09:41:17.380] [INFO] Running full Wine sequence...
+[09:41:17.380] [INFO] [device] launch: cs-flags=0x32003005 get-task-allow=1 cs-debugged=1 debugger-attached=1 traced=1 address-map=[0x1007f4000,0xfc0000000) 63GB available=8154MB low-power=0 thermal=nominal
+[09:41:17.387] [INFO] Allocating 896MB JIT pool (BRK will suspend process)...
+[09:41:17.387] [INFO] Allocating 896MB JIT pool via debugger...
+[09:41:17.387] [INFO] [jit-pool] path: debugger (attached at the pool request; it makes every region)
+[09:41:17.388] [INFO] [jit-debugger] attached=1 at the pool request
+[09:41:19.735] [INFO] RX pool at 0x300000000
+[phase] wine-start             t+  2.429s rev=ml526
+[madeira-env] game DOTNET_GCRegionRange=400000000
+[madeira-env] game DOTNET_EnableWriteXorExecute=0
+[shell-dir] user folders for madeira, mobile: 0 created (Start Menu included)
+[09:41:20.042] [Wine init_process] waiting for request_fd from wineserver...
+[Wine init_process] reply_pipe=41, sending init_first_thread...
+[09:41:20.042] [Wine init_process] reply_pipe=41, sending init_first_thread...
+[iOS env] INCLUDED: SteamAppId=980610
+ml992: os_proc_available_memory=7216 MB + phys_footprint=975 MB = 8192 MB (hw.memsize says 7463 MB)
+ml985: preferred base 0x140000000+0x43000 REFUSED status=0xc0000018 image_flags=0x4 charact=0x22 map_addr=0 info_base=0x140000000 | STAGE=fixed-map err=3 at 0x140000000+0x44000 rev=ajan5-motor
+[wow-rwx] ml1279 MADEIRA_WOW_RWX_PLAIN=(unset) -> 32-bit guest RWX memory is plain read/write in a window once Wine Mono is mapped there
+[copy-verify] ?: OK, 6 .text pages executable (copy @0x300004000)
+[copy-verify] ntdll.dll: OK, 30 .text pages executable (copy @0x300048000)
+0024:err:seh:init_syscall_frame page0: trying debugger (BRK #0xf00d, x16=3)...
+[nls-getptr] type=11 id=1252 peb=0xfbfff0000
+[nls-getptr] type=11 id=437 peb=0xfbfff0000
+[copy-verify] libarm64ecfex.dll: OK, 131 .text pages executable (copy @0x300182000)
+[copy-verify] ucrtbase.dll: OK, 34 .text pages executable (copy @0x30059c000)
+[copy-verify] kernel32.dll: OK, 10 .text pages executable (copy @0x3006d0000)
+[copy-verify] kernelbase.dll: OK, 28 .text pages executable (copy @0x300798000)
+[nls-getptr] type=11 id=20127 peb=0xfbfff0000
+[footprint] rev=ml358 phys=989 MB (peak 989) internal=989 MB compressed=0 MB external=94 MB reusable=8 MB (cycle=1)
+D 24 Load module Quaver.exe (quaver.exe-dd0053e8d93b086b): 115900000
+D 24 Load module ntdll.dll (ntdll.dll-391ab96a83e82f14): FBFCD0000
+[nls-getptr] type=11 id=1252 peb=0xfbfff0000
+[nls-getptr] type=11 id=437 peb=0xfbfff0000
+D 24 Load module USER32.dll (user32.dll-7d4349728057d260): FBEF50000
+D 24 Load module gdi32.dll (gdi32.dll-c5970f8a59a953f3): FBEE60000
+D 24 Load module advapi32.dll (advapi32.dll-e40c14e1190b1df2): FBEDB0000
+D 24 Load module sechost.dll (sechost.dll-b36ef44c04b21a0b): FBED30000
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+[copy-verify] coreclr.dll: OK, 237 .text pages executable (copy @0x301d5f000)
+[copy-verify] ole32.dll: OK, 23 .text pages executable (copy @0x30223c000)
+[copy-verify] combase.dll: OK, 11 .text pages executable (copy @0x302360000)
+[copy-verify] rpcrt4.dll: OK, 19 .text pages executable (copy @0x302414000)
+[copy-verify] coml2.dll: OK, 1 .text pages executable (copy @0x302508000)
+[copy-verify] oleaut32.dll: OK, 24 .text pages executable (copy @0x30259c000)
+[jumbo#1] +0ms tid=16f837000 wtid=0024 peb=0xfbfff0000 nrip=0xfbdb11963 grip=0x0 size=0x400000000 (16384 MB) hint=0x0 -> 0x370000000 st=0x0 | granted=16384 MB ok=1 fail=0
+[stp-emul] ml629 #1 insn=0xad3e48c1 mode=offset off=-64 Rt=q1 Rt2=q18 Rn=x6 addr=0xf5df10030 rw=0x33b374030 base 0xf5df10030 -> 0xf5df10030 (no writeback)
+[stp-emul] ml629 #2 insn=0xad3f48c5 mode=offset off=-32 Rt=q5 Rt2=q18 Rn=x6 addr=0xf5df10040 rw=0x33b374040 base 0xf5df10040 -> 0xf5df10040 (no writeback)
+[stp-emul] ml629 #3 insn=0xad004900 mode=offset off=+0 Rt=q0 Rt2=q18 Rn=x8 addr=0xf5df10030 rw=0x33b374030 base 0xf5df10030 -> 0xf5df10030 (no writeback)
+[stp-emul] ml629 #4 insn=0xad3d48c1 mode=offset off=-96 Rt=q1 Rt2=q18 Rn=x6 addr=0xf5df10060 rw=0x33b374060 base 0xf5df10060 -> 0xf5df10060 (no writeback)
+[stp-emul] ml629 #5 insn=0xad3e48c1 mode=offset off=-64 Rt=q1 Rt2=q18 Rn=x6 addr=0xf5df10080 rw=0x33b374080 base 0xf5df10080 -> 0xf5df10080 (no writeback)
+[stp-emul] ml629 #6 insn=0xad3f48c5 mode=offset off=-32 Rt=q5 Rt2=q18 Rn=x6 addr=0xf5df100a0 rw=0x33b3740a0 base 0xf5df100a0 -> 0xf5df100a0 (no writeback)
+[stp-emul] ml629 #7 insn=0xad004900 mode=offset off=+0 Rt=q0 Rt2=q18 Rn=x8 addr=0xf5df10060 rw=0x33b374060 base 0xf5df10060 -> 0xf5df10060 (no writeback)
+[stp-emul] ml629 #8 insn=0xad3a48c1 mode=offset off=-192 Rt=q1 Rt2=q18 Rn=x6 addr=0xf5df100c0 rw=0x33b3740c0 base 0xf5df100c0 -> 0xf5df100c0 (no writeback)
+[ilonly-machine] an IL-only PE32 image (CLR flags=0x9, machine=0x14c) is not promoted to the native machine 0xaa64: its set has no mscoree.dll, so it runs as its own machine (WoW64) (it ended in c000007b before; tests/host/check-ilonly-machine.py)
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+D 24 Load module System.Threading.dll (system.threading.dll-4a78bb76d0064f54): 115FD0000
+[ilonly-machine] an IL-only PE32 image (CLR flags=0x1, machine=0x14c) is not promoted to the native machine 0xaa64: its set has no mscoree.dll, so it runs as its own machine (WoW64) (it ended in c000007b before; tests/host/check-ilonly-machine.py)
+D 24 Load module Wobble.dll (wobble.dll-00296823f7a6e2ab): FBD080000
+[store-undecoded] #1 rev=ml350 insn=0xb8f60106 pc=0x33757bc18 addr=0xf5de7d000 rw_addr=0x33b97d000 — alias OK, ADD THIS ENCODING to the case-4 emulator
+[av-detail] ml613 #1 p0=WRITE p1=0xf5de7d000 hostpc=0x33757bc18 hinsn=0xb8f60106 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=idx=1 base=0x336ffc000 size=0x1000000 state=live p1_in_carve=0 regs=0 rev=ml613
+[fault_rip] cnt=1 rip=0xfbdb48bb0 pc=0x33757bc18 addr=0xf5de7d000 kr=2(PROTECTION_FAILURE) entryprot=5 nowprot=5 region=0xf5de7c000+0x4000 [first] rev=ml555
+[mach_exc] UNHANDLED #1 pc=0x33757bc18 addr=0xf5de7d000 x18=0xfbffe0000 type=1 lr=0x337ffc274 sp=0xfbf1b0000 x16=0x3000a19a4 x17=0xfbf1aff20
+[guest-code] rev=ml333 pool_rip=0x301ea7bb0 (PE 0xfbdb48bb0): 33 c0 48 39 02 74 09 48 83 3a ff 0f 95 c0 ff c0
+[fault-host] 33757bb18: 53081f0a 6b06615f 51000309 54000ec0 d503201f d900011b 994773a8 d503201f
+[fault-host] 33757bb38: d503201f 59008268 d94002a0 d503201f d9448008 d503201f aa1b03e2 d946f3a1
+[fault-host] 33757bb58: d503201f aa1503e0 d2898106 f2b7bb66 f2c001e6 d94000c6 d503201f d2980407
+[fault-host] 33757bb78: f2b7b647 f2c001e7 f81f8ee7 a94a2f8a 8a06116b 8b0b014a a940294b cb06014a
+[fault-host] 33757bb98: b400006a f945b38b f9000f86 d63f0160 10ffd0ca f900038a b945eb8b 3400004b
+[fault-host] 33757bbb8: d4395fc0 d503201f d91973bb 6b030069 52800003 aa1403e2 aa1b03e1 d28c0206
+[mach_exc] insn_stream PC-12..PC+8: 3400004b d4395fc0 f819f3a8 [b8f60106] ca1600d8 2b1600c9 d101a7a0
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0xfbffe0000 TEB=0xfbffe0000 TEB[0x58]=0x11595e1f0 *(gs_cached+0x58)=0x11595e1f0
+[store-undecoded] #2 rev=ml350 insn=0xb8f60106 pc=0x33757bc18 addr=0xf5de7d000 rw_addr=0x33b97d000 — alias OK, ADD THIS ENCODING to the case-4 emulator
+[av-detail] ml613 #2 p0=WRITE p1=0xf5de7d000 hostpc=0x33757bc18 hinsn=0xb8f60106 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=idx=1 base=0x336ffc000 size=0x1000000 state=live p1_in_carve=0 regs=0 rev=ml613
+[fault_rip] cnt=2 rip=0xfbdb48bb0 pc=0x33757bc18 addr=0xf5de7d000 kr=2(PROTECTION_FAILURE) entryprot=5 nowprot=5 region=0xf5de7c000+0x4000 rev=ml555
+[mach_exc] UNHANDLED #2 pc=0x33757bc18 addr=0xf5de7d000 x18=0xfbffe0000 type=1 lr=0x337ffc274 sp=0xfbf1b0000 x16=0x3000a19a4 x17=0xfbf1aff20
+[guest-code] rev=ml333 pool_rip=0x301ea7bb0 (PE 0xfbdb48bb0): 33 c0 48 39 02 74 09 48 83 3a ff 0f 95 c0 ff c0
+[fault-host] 33757bb78: f2b7b647 f2c001e7 f81f8ee7 a94a2f8a 8a06116b 8b0b014a a940294b cb06014a
+[fault-host] 33757bb98: b400006a f945b38b f9000f86 d63f0160 10ffd0ca f900038a b945eb8b 3400004b
+[fault-host] 33757bbb8: d4395fc0 d503201f d91973bb 6b030069 52800003 aa1403e2 aa1b03e1 d28c0206
+[fault-host] 33757bbd8: f2b7bd06 f2c001e6 d94000c0 d503201f d2980726 f2b7b646 f2c001e6 f81f8ee6
+[fault-host] 33757bbf8: 1000004a 97ef5a36 10ffce0a f900038a b945eb8b 3400004b d4395fc0 f819f3a8
+[fault-host] 33757bc18: b8f60106 ca1600d8 2b1600c9 d101a7a0 00000000 00000000 00000000 00000000
+[mach_exc] insn_stream PC-12..PC+8: 3400004b d4395fc0 f819f3a8 [b8f60106] ca1600d8 2b1600c9 d101a7a0
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0xfbffe0000 TEB=0xfbffe0000 TEB[0x58]=0x11595e1f0 *(gs_cached+0x58)=0x11595e1f0
+[xp-names] m1142790 "wine-x18-exc"
+D 24 Load module System.Console.dll (system.console.dll-4e1f3ee709d59c31): 1167C0000
+D 24 Load module ntdll.dll (ntdll.dll-391ab96a83e82f14): FBCF50000
+0024:err:module:load_dll [dll-missing] rev=ml336 #1 L"icu.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #2 L"icuuc.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[ilonly-machine] an IL-only PE32 image (CLR flags=0x9, machine=0x14c) is not promoted to the native machine 0xaa64: its set has no mscoree.dll, so it runs as its own machine (WoW64) (it ended in c000007b before; tests/host/check-ilonly-machine.py)
+D 24 Load module System.Text.Encoding.Extensions.dll (system.text.encoding.extensions.dll-0d6ff1e5528b7d93): FBD2B0000
+D 24 Load module System.Runtime.InteropServices.dll (system.runtime.interopservices.dll-12ac87b5f9ab3fdc): 117380000
+0024:err:process:NtTerminateProcess NtTerminateProcess(handle=0x0, exit_code=0x0) syscalls=0 unix_calls=3236
+[unwind] term ml661 begin rip=30062d1d4 rsp=121f6fe28 window=[121f6fe28..12276fe28) max=32
+[unwind] term ml661 #00 pc=30062d1d4 rsp=121f6fe28  <no module — STOP>
+[unwind] term ml661 end
+0024:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0x0) syscalls=0 unix_calls=3271
+[unwind] term ml661 begin rip=3000c616c rsp=121f6fc60 window=[121f6fc60..12276fc60) max=32
+[unwind] term ml661 #00 pc=3000c616c rsp=121f6fc60  <no module — STOP>
+[unwind] term ml661 end
+[Wine ntdll/server] process_exit_wrapper(0)
+[WineProc] Wine exited with code 0 (caught by longjmp)
+[WineProc] stopping wineserver...
+[frontend] returned to library
+[store-noalias] #1 rev=ml348 addr=0x100000000 insn=0xf9400170 pc=0x30009e35c NO pool/anon alias | region 0x1007f4000+0x2354000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #3 p0=READ p1=0x100000000 hostpc=0x30009e35c hinsn=0xf9400170 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[fault_rip] cnt=3 rip=0xfbdae63e9 pc=0x30009e35c addr=0x100000000 kr=1(INVALID_ADDRESS) entryprot=5 nowprot=5 region=0x1007f4000+0x2354000 [first] rev=ml555
+[mach_exc] UNHANDLED #3 pc=0x30009e35c addr=0x100000000 x18=0x0 type=1 lr=0x300196924 sp=0xfbd2ffc60 x16=0x0 x17=0x4000
+[guest-code] rev=ml333 pool_rip=0x301e453e9 (PE 0xfbdae63e9): c7 43 08 01 00 00 00 48 8b c3 48 83 c4 20 5b c3
+[mach_exc] insn_stream PC-12..PC+8: 370005b0 f2400d7f 540003e1 [f9400170] 58000551 eb11021f 54000141
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0xfbffa0000 TEB=0xfbffa0000 TEB[0x58]=0x12242eae0 *(gs_cached+0x58)=0x12242eae0
+[store-noalias] #2 rev=ml348 addr=0x100000000 insn=0xf9400170 pc=0x30009e35c NO pool/anon alias | region 0x1007f4000+0x2354000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #4 p0=READ p1=0x100000000 hostpc=0x30009e35c hinsn=0xf9400170 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[fault_rip] cnt=4 rip=0xfbdae63e9 pc=0x30009e35c addr=0x100000000 kr=1(INVALID_ADDRESS) entryprot=5 nowprot=5 region=0x1007f4000+0x2354000 rev=ml555
+[mach_exc] UNHANDLED #4 pc=0x30009e35c addr=0x100000000 x18=0x0 type=1 lr=0x300196924 sp=0xfbd2ffc60 x16=0x0 x17=0x4000
+[guest-code] rev=ml333 pool_rip=0x301e453e9 (PE 0xfbdae63e9): c7 43 08 01 00 00 00 48 8b c3 48 83 c4 20 5b c3
+[mach_exc] insn_stream PC-12..PC+8: 370005b0 f2400d7f 540003e1 [f9400170] 58000551 eb11021f 54000141
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+0034:err:seh:segv_handler   [guest-rip-sec] rip=0xfbdae63e9 in image 0xfbda00000: rva 0xe63e9, section #0 '.text' rva 0x1000+0x3b1b4e chars 0x60000020 (R-X CODE), vprot=0x25
+0034:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #1 RIP=0xfbfd2635c RX from -32, 64 of 64 bytes: 71 fd 52 d3 10 b6 41 f9 69 fd 4c d3 10 7a 71 f8 10 26 c9 9a b0 05 00 37 7f 0d 40 f2 e1 03 00 54 70 01 40 f9 51 05 00 58 1f 02 11 eb 41 01 00 54 70 05 40 f9 11 05 00 58 11 02 11 ca 3f 3e 40 f2 
+0034:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #1 no RW alias for 0xfbfd2635c (not an anon-JIT page)
+[store-noalias] #3 rev=ml348 addr=0x0 insn=0xf9400008 pc=0x300294154 NO pool/anon alias | region 0x1007f4000+0x2354000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #5 p0=READ p1=0x0 hostpc=0x300294154 hinsn=0xf9400008 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[fault_rip] cnt=5 rip=0xfbdae63e9 pc=0x300294154 addr=0x0 kr=1(INVALID_ADDRESS) entryprot=-1 nowprot=-1 region=0x0+0x0  <== UNMAPPED AT ENTRY (wild pointer) rev=ml555
+[mach_exc] UNHANDLED #5 pc=0x300294154 addr=0x0 x18=0xfbffa0000 type=1 lr=0x30029413c sp=0xfbd2fe890 x16=0x1ffff x17=0xc002
+[guest-code] rev=ml333 pool_rip=0x301e453e9 (PE 0xfbdae63e9): c7 43 08 01 00 00 00 48 8b c3 48 83 c4 20 5b c3
+[mach_exc] insn_stream PC-12..PC+8: b000072a 9103e14a f9455d00 [f9400008] f9401529 f940810b f9400128
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[store-noalias] #4 rev=ml348 addr=0x0 insn=0xf9400008 pc=0x300294154 NO pool/anon alias | region 0x1007f4000+0x2354000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #6 p0=READ p1=0x0 hostpc=0x300294154 hinsn=0xf9400008 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[fault_rip] cnt=6 rip=0xfbdae63e9 pc=0x300294154 addr=0x0 kr=1(INVALID_ADDRESS) entryprot=-1 nowprot=-1 region=0x0+0x0  <== UNMAPPED AT ENTRY (wild pointer) rev=ml555
+0034:err:seh:segv_handler   [guest-rip-sec] rip=0xfbdae63e9 in image 0xfbda00000: rva 0xe63e9, section #0 '.text' rva 0x1000+0x3b1b4e chars 0x60000020 (R-X CODE), vprot=0x25
+0034:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #2 RIP=0xfbf7c2154 RX from -32, 64 of 64 bytes: 00 60 2d 91 af 88 02 94 62 86 40 f9 a8 15 00 90 e9 07 00 90 2a 07 00 b0 4a e1 03 91 00 5d 45 f9 08 00 40 f9 29 15 40 f9 0b 81 40 f9 28 01 40 f9 00 01 3f d6 e1 03 15 aa 60 01 3f d6 c8 02 40 b9 
+0034:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #2 no RW alias for 0xfbf7c2154 (not an anon-JIT page)
+[store-noalias] #5 rev=ml348 addr=0x0 insn=0xf9400008 pc=0x300294154 NO pool/anon alias | region 0x1007f4000+0x2354000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+0034:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #3 RIP=0xfbf7c2154 RX from -32, 64 of 64 bytes: 00 60 2d 91 af 88 02 94 62 86 40 f9 a8 15 00 90 e9 07 00 90 2a 07 00 b0 4a e1 03 91 00 5d 45 f9 08 00 40 f9 29 15 40 f9 0b 81 40 f9 28 01 40 f9 00 01 3f d6 e1 03 15 aa 60 01 3f d6 c8 02 40 b9 
+0034:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #3 no RW alias for 0xfbf7c2154 (not an anon-JIT page)
+[store-noalias] #6 rev=ml348 addr=0x0 insn=0xf9400008 pc=0x300294154 NO pool/anon alias | region 0x1007f4000+0x2354000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+0034:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #4 RIP=0xfbf7c2154 RX from -32, 64 of 64 bytes: 00 60 2d 91 af 88 02 94 62 86 40 f9 a8 15 00 90 e9 07 00 90 2a 07 00 b0 4a e1 03 91 00 5d 45 f9 08 00 40 f9 29 15 40 f9 0b 81 40 f9 28 01 40 f9 00 01 3f d6 e1 03 15 aa 60 01 3f d6 c8 02 40 b9 
+0034:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #4 no RW alias for 0xfbf7c2154 (not an anon-JIT page)
+[store-noalias] #7 rev=ml348 addr=0x0 insn=0xf9400008 pc=0x300294154 NO pool/anon alias | region 0x1007f4000+0x2354000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[store-noalias] #8 rev=ml348 addr=0x0 insn=0xf9400008 pc=0x300294154 NO pool/anon alias | region 0x1007f4000+0x2354000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #19 p0=READ p1=0x0 hostpc=0x300294154 hinsn=0xf9400008 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[av-detail] ml613 #20 p0=READ p1=0x0 hostpc=0x300294154 hinsn=0xf9400008 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[av-detail] ml613 #21 p0=READ p1=0x0 hostpc=0x300294154 hinsn=0xf9400008 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[av-detail] ml613 #22 p0=READ p1=0x0 hostpc=0x300294154 hinsn=0xf9400008 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[av-detail] ml613 #23 p0=READ p1=0x0 hostpc=0x300294154 hinsn=0xf9400008 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[av-detail] ml613 #24 p0=READ p1=0x0 hostpc=0x300294154 hinsn=0xf9400008 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[fault_rip] cnt=7 rip=0xfbdae63e9 pc=0x3000a3eac addr=0xfbd2bfaf0 kr=1(INVALID_ADDRESS) entryprot=3 nowprot=3 region=0xfbd2c0000+0x40000 rev=ml555
+[fault_rip] cnt=8 rip=0xfbdae63e9 pc=0x3000a3eac addr=0xfbd2bfaf0 kr=1(INVALID_ADDRESS) entryprot=3 nowprot=3 region=0xfbd2c0000+0x40000 rev=ml555
+0034:err:seh:segv_handler   [guest-rip-sec] rip=0xfbdae63e9 in image 0xfbda00000: rva 0xe63e9, section #0 '.text' rva 0x1000+0x3b1b4e chars 0x60000020 (R-X CODE), vprot=0x25
+[footprint] rev=ml358 phys=1122 MB (peak 1122) internal=1121 MB compressed=0 MB external=121 MB reusable=10 MB (cycle=2)
+[09:41:22.836] [INFO] Detaching debugger...
+[footprint] rev=ml358 phys=1123 MB (peak 1123) internal=1122 MB compressed=0 MB external=121 MB reusable=10 MB (cycle=3)
+[footprint] rev=ml358 phys=1123 MB (peak 1123) internal=1122 MB compressed=0 MB external=121 MB reusable=10 MB (cycle=4)
+[hwinput] keyboard focus: elsewhere (responder)

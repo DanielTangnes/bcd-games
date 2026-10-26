@@ -304,7 +304,11 @@ else:
         for name, data in BINARIES.items():
             (t / "fixtures" / name).write_bytes(data)
         (t / "VDF.swift").write_text(vdf_parser)
-        sources = [t / "VDF.swift", APP / "SwiftSteam/Library/SteamAppInfo.swift", APP / "SteamKeyValues.swift", APP / "SteamInstall.swift",
+        # SteamAppInfo.swift's SteamLanguage (the game language, English unless chosen) logs and reads bcd.cfg.
+        (t / "stubs.swift").write_text("import Foundation\nenum SteamLog { static func event(_ m: String) {}; static func trace(_ m: @autoclosure () -> String) {} }\n"
+                                       "enum MadeiraConfig { static func get(_ key: String) -> String? { nil }\n"
+                                       "    @discardableResult static func set(_ key: String, _ value: String?) -> Bool { true } }\n")
+        sources = [t / "VDF.swift", t / "stubs.swift", APP / "SwiftSteam/Library/SteamAppInfo.swift", APP / "SteamKeyValues.swift", APP / "SteamInstall.swift",
                    APP / "SwiftSteam/Install/AppManifestWriter.swift", DLC / "BCDSteamDLC.swift"]
         shutil.copy(R / "tests/host/steam_dlc_checks.swift", t / "main.swift")
         r = subprocess.run(["xcrun", "swiftc", "-swift-version", "5", "-o", str(t / "rules"), str(t / "main.swift")] + [str(s) for s in sources],

@@ -154,7 +154,7 @@ check("the pool size from the limit: opt-in, never larger than the size it had",
       'MadeiraConfig.flag("MADEIRA_POOL_FROM_LIMIT", fallback: false)' in stik
       and "poolSizeMB = min(poolSizeMB, StikJITHelper.launchPoolMB(standard: 896))" in content
       and content.index("DockPerformancePolicy.sessionPoolMB(standard: 896,") < content.index("StikJITHelper.launchPoolMB(")
-      < content.index('if let txt = MadeiraConfig.get("pool"),'))
+      < content.index('if let txt = gamePool ?? MadeiraConfig.get("pool"),'))   # gamePool is the game's own line, read only with pool-above-window (ContentView, upstream port)
 first = braced(content, "private func runWineFullSequence(")
 again = first[first.index("if Self.wineSequenceStarted {"):first.index("Self.wineSequenceStarted = true")]
 check("a second launch in the run is refused with a message, not a stuck starting screen",

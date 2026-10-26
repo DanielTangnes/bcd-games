@@ -107,6 +107,11 @@ private struct BCDControllerPage: View {
                          padding: cardPadding)
     }
 
+    /// Round 604: which controller is Player 1 to 4, and how hard each rumbles (BCDPlayers.swift).
+    private var playersCard: some View {
+        BCDPlayersCard(roomy: roomy, padding: cardPadding)
+    }
+
     private var tableCard: some View {
         BCDPadTableCard(tester: hub.tester, mapping: hub.mapping, family: family, roomy: roomy, padding: cardPadding)
     }
@@ -128,6 +133,7 @@ private struct BCDControllerPage: View {
         case .stacked:
             VStack(spacing: spacing) {
                 connectedCard
+                playersCard
                 testerCard
                 keysCard
                 tableCard
@@ -138,8 +144,10 @@ private struct BCDControllerPage: View {
                     if layout == .phoneLandscape {
                         testerCard
                         connectedCard
+                        playersCard
                     } else {
                         connectedCard
+                        playersCard
                         testerCard
                     }
                 }
@@ -156,6 +164,7 @@ private struct BCDControllerPage: View {
                     connectedCard.frame(maxWidth: .infinity)
                     testerCard
                 }
+                playersCard
                 keysCard
                 tableCard
             }

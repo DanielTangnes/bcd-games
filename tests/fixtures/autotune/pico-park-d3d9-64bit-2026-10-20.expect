@@ -1,0 +1,14 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "d3d9-64bit-dxmt-games"
+ ],
+ "next": [
+  "env.MADEIRA_D3D9_X64 = dxmt"
+ ],
+ "note": "PICO PARK (Steam 1509960, pico_park.exe, its own 64-bit Direct3D 9 engine), build 574, iPhone15,3, Send Log XF08D7: d3d9.dll is a static import, Wine's d3d9 finds no OpenGL (d3d9_init FAILED on the game's thread) and the game ends. UNPROVEN: env.MADEIRA_D3D9_X64 = dxmt.",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "trying"
+}

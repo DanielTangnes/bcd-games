@@ -1,0 +1,14 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "tdh-dll-optin"
+ ],
+ "next": [
+  "env.MADEIRA_OPTIN_DLLS = tdh"
+ ],
+ "note": "Aniimo (Steam 4143930, Aniimo.exe), build 600, Send Log 9X37R0: NEP2.dll imports tdh.dll, which BCD's 64-bit set does not ship; c0000135 at once (Library tdh.dll ... not found). env.MADEIRA_OPTIN_DLLS = tdh (build 611) links Wine's DLL for the game. Not tried on a device.",
+ "outcome": "crashed",
+ "stage": 1,
+ "status": "trying"
+}

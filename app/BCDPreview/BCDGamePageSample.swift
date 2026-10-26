@@ -34,6 +34,9 @@ import SwiftUI
     private var dlcInstalled: [String: Set<UInt32>] = ["367520": [1, 2]]
     private var dlcWanted: [String: Set<UInt32>] = [:]
     private var dlcAsked = Set<String>()
+    /// Round 604's input choices (BCDInputPage.swift) for the sample games: game -> feature -> line -> value.
+    private var inputLines: [String: [String: [String: String]]] = [:]
+    private func inputProfile(_ game: BCDGame) -> BCDInputProfile { BCDInputProfile(lines: inputLines[game.id] ?? [:]) }
 
     private func value(_ game: BCDGame, _ id: String, _ fallback: String) -> String { values[game.id]?[id] ?? fallback }
 
@@ -111,7 +114,7 @@ import SwiftUI
             BCDGameSettingGroup(id: "controls", title: "Controls", symbol: "gamecontroller", settings: [
                 toggle("touch", "Touch controls", note: "Buttons on the screen over the game."),
                 choice("opacity", "Touch controls' opacity", "0.70", [("0.40", "40%"), ("0.70", "70%"), ("1.00", "100%")]),
-                choice("env.MADEIRA_PAD_MODE", "Controller API", "", [("", "XInput: an Xbox pad"), ("hid", "DirectInput / HID: the controller itself")]),
+                choice("env.MADEIRA_PAD_MODE", "Controller API", "", BCDPadModel.choices().map { ($0.line, $0.title) }, note: BCDPadModel.pageNote),
                 BCDGameSetting(id: "controller", title: "Controller mode", kind: .choice([
                     BCDGameChoice(value: "", label: "The game's own support"), BCDGameChoice(value: "dinput", label: "XInput and DirectInput"),
                     BCDGameChoice(value: "keys", label: "Keyboard and mouse")]),
@@ -119,9 +122,11 @@ import SwiftUI
             ] + (keys ? [BCDGameSetting(id: "binds", title: "Controller binds", kind: .opens(.section("binds")),
                                         value: bindsChanged == 0 ? "BCD's layout" : "\(bindsChanged) changed", defaultValue: "BCD's layout",
                                         note: "What each stick and button presses in keyboard-and-mouse mode.")] : [])
-              + [toggle("overlay", "Performance overlay")]),
+              + [choice("hud", "Performance HUD", "off", BCDHUDLayout.allCases.map { ($0.rawValue, $0.title) },
+                        note: "What shows over the game while you play: 1 the frame rate, 2 one line, 3 adds the load and a graph, 4 everything for a bug report, Custom your own readings. Its position and the Custom readings are set in the in-game menu, under Display. Settings has the choice for every game.")]),
         ]
         if keys { d.groups.append(binds(game)) }
+        d.groups += BCDInputPage.groups(inputProfile(game))   // round 604: turbo and macros, ...
         if steam {
             d.groups.append(BCDGameSettingGroup(id: "steam", title: "Steam", symbol: "arrow.down.app", settings: [
                 choice("startwith", "Start with", "", [("", "BCD Dock (Steam's client)"), ("game", "The game's own program")]),
@@ -138,7 +143,7 @@ import SwiftUI
             d.groups.append(BCDGameSettingGroup(id: "launch", title: "Launch", symbol: "play.rectangle", settings: [
                 choice("start", "Start", "direct", [("direct", "On its own"), ("desktop", "In a Wine desktop")]),
                 BCDGameSetting(id: "arguments", title: "Launch arguments", kind: .text(prompt: "-windowed -nosplash"),
-                               value: value(game, "arguments", ""), note: "Handed to the program each time it starts."),
+                               value: value(game, "arguments", ""), note: "Handed to the program each time it starts.", chips: BCDLaunchFlags.quick),
                 toggle("flag-windowed", "-windowed", note: "Ask for a window."),
                 BCDGameSetting(id: "command", title: "What starts", kind: .info, value: "\(game.id).exe " + value(game, "arguments", "")),
             ], headline: "On its own"))
@@ -161,6 +166,43 @@ import SwiftUI
             let rows = owned.map { BCDDLCRow(id: $0.id, name: $0.name, bytes: $0.bytes, installed: installed.contains($0.id), wanted: wanted.contains($0.id)) }
             if let group = BCDGameDLC.group(BCDDLCState(rows: rows, withoutFiles: 1, notOwned: 3)),
                let at = d.groups.firstIndex(where: { $0.id == "library" }) { d.groups.insert(group, at: at) }
+        }
+        // Round 604: Help with this game (BCDGameHelp.swift) and the Sound section's audio rows (BCDGameSound.swift), as the app builds them.
+        if game.state.isInstalled, let at = d.groups.firstIndex(where: { $0.id == "library" }) {
+            var help = BCDHelpState()
+            help.hasLog = true
+            help.readinessChecked = true
+            if game.id == "271590" { help.readiness = "muv-luv_pf.exe is a 32-bit program that wants mfc140u.dll (Microsoft's MFC). BCD does not carry the 32-bit one yet." }
+            if let result = values[game.id]?["help.fb.result"] { help.feedback.result = BCDFeedbackResult(rawValue: result) }
+            help.message = help.feedback.result.flatMap { _ in BCDGameFeedbackCore.text(game: game.title, draft: help.feedback, numbers: nil) }
+            d.groups.insert(BCDGameHelp.group(help), at: at)
+            d.groups.insert(BCDGameSettingGroup(id: "sound", title: "Sound", symbol: "speaker.wave.2",
+                                                settings: BCDGameSound.settings(latency: value(game, BCDGameSound.latencyID, ""), volume: value(game, BCDGameSound.volumeID, ""),
+                                                                                resume: value(game, BCDGameSound.resumeID, "0"))), at: at)
+        }
+        // Round 604: the setup sections (Windows, Components, CPU translation, Where the saves live, Game fixes, Wine desktop, Start).
+        if game.state.isInstalled {
+            var setup = BCDGameSetupState()
+            setup.windowsVersion = game.id == "wc3" ? "win7" : ""
+            setup.is64Bit = game.id != "wc3" && game.id != "wc2"
+            setup.dll.shipped = ["d3dx9_43.dll", "xinput1_3.dll", "VCRUNTIME140.dll"]
+            setup.dll.shadow = setup.is64Bit ? ["vcruntime140.dll"] : []
+            setup.dll.off = game.id == "wc3" ? ["dsound.dll"] : []
+            setup.dll.runtimes = ["OpenAL", "XNA Framework 4.0"]
+            setup.fexPreset = game.id == "271590" ? "performance" : ""
+            setup.saves = [BCDSetupSaveItem(path: "users/u/Documents/My Games/Foo", label: "Documents › My Games › Foo", place: .prefix),
+                           BCDSetupSaveItem(path: "users/u/AppData/Roaming/Vendor/Foo", label: "AppData › Roaming › Vendor › Foo", place: .files)]
+            setup.fixes = game.id == "wc3" ? [
+                BCDSetupFixItem(number: 1, enabled: true, summary: "In foo.ini, [Display] FullScreen = 1", problem: nil),
+                BCDSetupFixItem(number: 2, enabled: false, summary: "Move ShaderCache aside", problem: nil),
+                BCDSetupFixItem(number: 3, enabled: true, summary: "Write evil.dll", problem: "BCD does not write that place or a program"),
+            ] : []
+            if game.id == "wc2" { setup.desktop = BCDSetupDesktopState(dpi: "144", theme: "dark", wallpaper: "C:\\bcd-wallpaper.bmp") }
+            var start = BCDGameStartState()
+            if game.id == "wc3" {
+                start.plan = BCDStartPlan.read(["start.delay": "5", "start.second": "C:\\Tools\\mapper.exe", "window.1": "raise title \"Warcraft III\" 1000"])
+            }
+            d.groups.insert(contentsOf: BCDGameSetupPage.sections(setup) + [BCDGameStartPage.group(start)], at: min(3, d.groups.count))
         }
         if !settings { d.groups = [] }
         d.sizeOnDisk = game.size
@@ -233,6 +275,13 @@ import SwiftUI
                     if value == "1" { wanted.insert(dlc) } else { wanted.remove(dlc) }
                     dlcWanted[game.id] = wanted
                 }
+            }
+            return
+        }
+        if BCDInputLines.handles(setting) {
+            let current = inputProfile(game)
+            if let write = BCDInputLines.write(setting: setting, value: value, current: { current.get($0, $1) }) {
+                inputLines[game.id, default: [:]][write.feature, default: [:]][write.line] = write.value.isEmpty ? nil : write.value
             }
             return
         }
@@ -397,7 +446,9 @@ struct BCDGamePreviewRoot: View {
         case "tuning": .tuning
         case "config": .config
         case "findstore": .storeSearch
-        case "display", "direct3d", "compat", "controls", "launch", "steam", "library", "binds", "dlc": .group(what)
+        case "display", "direct3d", "compat", "controls", "launch", "steam", "library", "binds", "dlc", "help", "sound",
+             "windows", "components", "fex", "saveplace", "fixes", "desktop", "start": .group(what)   // the last seven: round 604 (BCDGameSetupPage.swift, BCDGameStart.swift)
+        case _ where BCDInputPage.groupIDs.contains(what): .group(what)
         case "resolution", "fps", "scaling", "arguments", "installrequest": .setting(what)
         default: what.hasPrefix("bind.") ? .setting(what) : nil
         }

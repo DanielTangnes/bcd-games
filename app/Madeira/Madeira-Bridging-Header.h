@@ -12,10 +12,16 @@
 #import "SwiftSteam/lzma_shim.h"
 // On-device remote pairing for Built-in StikJIT (build/rppairing-ios, JITPairing.swift).
 #import "MadeiraRPPairing.h"
+// BCD (round 604): the phone shaking with a game's rumble (BCDPhoneRumble.m), switched by the in-game menu.
+#import "BCDPhoneRumble.h"
+// BCD (round 604): the in-game menu's Pause holds the present path at its next frame (BCDPauseGate.c).
+#import "BCDPauseGate.h"
 // madeira-bcd: the bundled prefix template, read by the Dock's Reset (DockReset.swift).
 #include "PrefixExtractor.h"
 // BCD: the cabinet reader that unpacks Microsoft's VC++ installer on the device (VCRuntimeDownload.swift).
 #include "BCDCab.h"
+// BCD: the frame-time ring the present path writes (tools/patch-winemetal-frame-ring.py), read by the HUD and the session summary.
+#include "BCDFrameRing.h"
 
 // Wine file-based logging (server_ios.c)
 void wine_log_set_file(const char *path);
@@ -32,8 +38,14 @@ uint64_t madeira_get_present_count(void);
 void madeira_gpu_meter_enable(int on);
 double madeira_gpu_meter_busy_seconds(void);
 uint64_t madeira_gpu_meter_cmdbufs(void);
+// madeira-bcd HUD (BCDHUDLive.swift): read-only numbers for the HUD's JIT pool and swap items (virtual_ios.c): the pool's bytes handed out and
+// its size, and the bytes of game data held in the swap file now.
+void madeira_hud_jit_pool(unsigned long long *used, unsigned long long *total);
+unsigned long long madeira_hud_swap_bytes(void);
 // ml1098: ask the D3D12 runtime to capture the next N frames (winemetal_unix.c)
 void madeira_capture_request(int frames);
+// BCD (round 604): the in-game menu's Pause silences the audio endpoint (build/ntdll-unix/audio_null_ios.c); BCDFrameRing.h holds the gate for the frames.
+void madeira_audio_set_paused(int paused);
 // ml1133: ECO switch (ntdll unix sync.c). 1 = every guest thread drops to a
 // low QoS class (efficiency cores, lower clocks) to save the SoC burst budget.
 void madeira_set_eco(int on);

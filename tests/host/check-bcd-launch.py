@@ -299,8 +299,15 @@ hub_leaves = ("for name in [UIApplication.willResignActiveNotification, UIApplic
               and "MainActor.assumeIsolated { self?.router.releaseAll() }" in hub_text
               and not any(w in code(hub_text) for w in ("Steam", "Download", "BGTaskScheduler")))
 check(hub_leaves, "the controller hub only releases its held keys when BCD leaves the front (no download task)")
+# The session recorder notes when the app leaves the front (round 603): the open-session marker says "in the background", and one partial
+# summary line goes into the log, which may be the last it hears of the session. It knows nothing of downloads either.
+recorder_text = live_files["BCDSessionRecorderLive.swift"]
+recorder_leaves = ("UIApplication.didEnterBackgroundNotification" in recorder_text and "self?.lifecycle(background: true)" in recorder_text
+                   and not any(w in code(recorder_text) for w in ("Steam", "Download", "BGTaskScheduler", "beginBackgroundTask", "BGContinuedProcessingTask")))
+check(recorder_leaves, "the session recorder only notes that the app left the front (the marker, a partial summary line); no download task")
 touching = {name: [w for w in untouchable if w in code(text) and not (hub_leaves and name == "BCDControllerHub.swift"
-                                                                      and w == "didEnterBackgroundNotification")]
+                                                                      and w == "didEnterBackgroundNotification")
+                   and not (recorder_leaves and name == "BCDSessionRecorderLive.swift" and w == "didEnterBackgroundNotification")]
             for name, text in live_files.items()}
 check(not any(touching.values()), "no BCD file touches the background download task (only the engine does)",
       str({k: v for k, v in touching.items() if v}))

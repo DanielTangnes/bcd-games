@@ -85,13 +85,38 @@ func dateChecks() {
     if let wanted = ProcessInfo.processInfo.environment["TZ"] {
         check("dates: the process runs in the zone the test asked for (\(wanted))", zone.identifier == wanted, zone.identifier)
     }
-    func foundation(_ pattern: String, _ date: Date, utc: Bool = false) -> String {
+    // BCD modification (2026-10-26): keep every sampled moment and zone, but
+    // configure each reference formatter once per dateChecks() invocation.
+    // BCD_VERIFY_DATE_REFERENCES=1 cross-checks every result against a fresh
+    // formatter, for validation when this test or Foundation changes.
+    var referenceFormatters: [String: DateFormatter] = [:]
+    let verifyFresh = ProcessInfo.processInfo.environment["BCD_VERIFY_DATE_REFERENCES"] == "1"
+    var referenceComparisons = 0
+    var referenceMismatches: [String] = []
+    func makeReference(_ pattern: String, utc: Bool) -> DateFormatter {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.calendar = Calendar(identifier: .gregorian)
         f.timeZone = utc ? TimeZone(identifier: "UTC")! : zone
         f.dateFormat = pattern
-        return f.string(from: date)
+        return f
+    }
+    func foundation(_ pattern: String, _ date: Date, utc: Bool = false) -> String {
+        let key = (utc ? "UTC:" : "local:") + pattern
+        let f: DateFormatter
+        if let existing = referenceFormatters[key] {
+            f = existing
+        } else {
+            f = makeReference(pattern, utc: utc)
+            referenceFormatters[key] = f
+        }
+        let result = f.string(from: date)
+        if verifyFresh {
+            referenceComparisons += 1
+            let fresh = makeReference(pattern, utc: utc).string(from: date)
+            if result != fresh { referenceMismatches.append("\(pattern) \(date): \(result) != \(fresh)") }
+        }
+        return result
     }
     var mismatches: [String] = []
     var seed: UInt64 = 0x9E37_79B9_7F4A_7C15
@@ -147,6 +172,10 @@ func dateChecks() {
           BCDFormat.fullDate(Date(timeIntervalSinceReferenceDate: .infinity)) == "1 Jan 1970"
           && BCDFormat.logClock(Date(timeIntervalSinceReferenceDate: .nan)) == "00:00:00.000"
           && !BCDFormat.dateTime(.distantPast).isEmpty && !BCDFormat.dateTime(.distantFuture).isEmpty)
+    if verifyFresh {
+        check("dates in \(zone.identifier): reused references equal fresh formatters for \(referenceComparisons) calls",
+              referenceComparisons == 61_121 && referenceMismatches.isEmpty, referenceMismatches.prefix(5))
+    }
 }
 
 @MainActor func settle() async { for _ in 0..<20 { try? await Task.sleep(nanoseconds: 50_000_000) } }
@@ -308,6 +337,31 @@ func dateChecks() {
         facts = BCDGameFact.list(big, detailed).map { "\($0.label): \($0.value)" }
         check("facts of a game to download", facts.contains("Download: \(BCDFormat.bytes(98_000_000_000))") && !facts.contains { $0.hasPrefix("Installed on") }
               && facts.contains("Program: 32-bit · Direct3D 9") && facts.contains("Settings: Recommended"), facts)
+
+        // A Steam game before its install: Steam's own figures (about this much), when the game's size is not known yet.
+        let unsized = BCDGame(id: "steam.730", title: "Q", store: .steam, state: .notInstalled)
+        var sized = none
+        sized.downloadBytes = 20_000_000_000
+        sized.installBytes = 30_000_000_000
+        facts = BCDGameFact.list(unsized, sized).map { "\($0.label): \($0.value)" }
+        check("facts of a Steam game before its install: the download and the size on this device, both 'About'",
+              facts.contains("Download size: About \(BCDFormat.bytes(20_000_000_000))")
+              && facts.contains("Size on this device: About \(BCDFormat.bytes(30_000_000_000))")
+              && !facts.contains { $0.hasPrefix("Download:") }, facts)
+        check("  and with neither figure, no size line at all", !BCDGameFact.list(unsized, none).contains { $0.label.contains("size") || $0.label == "Download" })
+        p = plan(unsized, nil, nil, sized)
+        check("the install line says 'About' for Steam's figure, and the room left",
+              p.installLine == "About \(BCDFormat.bytes(30_000_000_000)) on this device, \(BCDFormat.bytes(50_000_000_000)) free", p)
+        var roomy = sized
+        roomy.installBytes = 80_000_000_000
+        p = plan(unsized, nil, nil, roomy)
+        check("  and warns when the device has less room: 'It needs about'",
+              p.notes.contains { $0.warning && $0.text == "It needs about \(BCDFormat.bytes(80_000_000_000)); this device has \(BCDFormat.bytes(50_000_000_000)) free." }, p)
+        p = plan(unsized, nil, nil, none)
+        check("  and without a figure the line is as before", p.installLine == "On this device, \(BCDFormat.bytes(50_000_000_000)) free", p)
+        p = plan(big, nil, nil, sized)
+        check("  a size the store gave wins over Steam's estimate (no 'About')",
+              p.installLine == "\(BCDFormat.bytes(98_000_000_000)) on this device, \(BCDFormat.bytes(50_000_000_000)) free", p)
 
         // The questions.
         let log = BCDGameLog(file: URL(fileURLWithPath: "/tmp/war3.exe-2026-10-18_21-04-11.txt"), name: "war3.exe-2026-10-18_21-04-11.txt",

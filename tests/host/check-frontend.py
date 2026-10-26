@@ -111,6 +111,7 @@ struct TouchControl: Codable, Equatable { var nx = 0.5 }
 enum ControlAction: Codable, Equatable, Hashable { case none }   // LibraryEntry.controllerBinds
 enum GamepadInput { static let keyboardMouseAvailable = true }   // LibraryEntry's per-game DirectInput choice
 enum LibraryError: LocalizedError { case message(String) }
+enum BCDGraphicsDefaults { @discardableResult static func applyD3D9X64(for entry: LibraryEntry) -> String? { nil } }   // round 602: the game folder's graphics default (its own host check: check-d3d9-x64-default.py)
 func env(_ name: String) -> String? { getenv(name).map { String(cString: $0) } }
 '''
 swift += block(lib, 'struct LibraryEntry: Codable, Identifiable') + '\n'

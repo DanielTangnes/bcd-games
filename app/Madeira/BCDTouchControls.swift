@@ -40,8 +40,9 @@ import UIKit
 /// logo's violet-to-fuchsia light for a pressed control.
 enum BCDTouchPalette {
     static let fill = BCDStyle.ground
-    static let rim = BCDStyle.lavender
-    static let label = BCDStyle.text
+    /// The player's colour for the rims and labels (BCDTouchFeel.tint, set from the in-game menu), else BCD's own.
+    static var rim: Color { BCDTouchFeel.tint.map { Color(red: $0.r, green: $0.g, blue: $0.b) } ?? BCDStyle.lavender }
+    static var label: Color { BCDTouchFeel.tint.map { Color(red: $0.r, green: $0.g, blue: $0.b) } ?? BCDStyle.text }
     static let selected = BCDStyle.fuchsia
     static func pressed(_ opacity: Double) -> LinearGradient {
         LinearGradient(colors: [BCDStyle.violet.opacity(0.92 * opacity), BCDStyle.fuchsia.opacity(0.92 * opacity)],
@@ -73,6 +74,8 @@ struct BCDTouchLayer: View {
     var selected: UUID? = nil
     let input: BCDTouchInput
     var arranging: BCDTouchArranging? = nil
+    /// How the controls look (round 604, BCDTouchLook.swift); BCD's own unless the player chose another.
+    var look = BCDTouchLook()
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -85,7 +88,7 @@ struct BCDTouchLayer: View {
             ForEach(items) { item in
                 BCDTouchControl(item: item, screen: screen, layoutScale: layoutScale, opacity: opacity,
                                 editing: editing, selected: editing && selected == item.id,
-                                input: input, arranging: arranging)
+                                input: input, arranging: arranging, look: look)
                     .equatable()
             }
         }
@@ -104,6 +107,7 @@ struct BCDTouchControl: View, Equatable {
     let selected: Bool
     let input: BCDTouchInput
     let arranging: BCDTouchArranging?
+    let look: BCDTouchLook
 
     @State private var down = false
     @State private var direction = -1
@@ -112,7 +116,7 @@ struct BCDTouchControl: View, Equatable {
 
     nonisolated static func == (a: BCDTouchControl, b: BCDTouchControl) -> Bool {
         a.item == b.item && a.screen == b.screen && a.layoutScale == b.layoutScale && a.opacity == b.opacity
-            && a.editing == b.editing && a.selected == b.selected && a.input === b.input && a.arranging === b.arranging
+            && a.editing == b.editing && a.selected == b.selected && a.input === b.input && a.arranging === b.arranging && a.look == b.look
     }
 
     private var diameter: CGFloat { CGFloat(BCDTouchGeometry.diameter(scale: item.scale, layoutScale: layoutScale)) }
@@ -121,6 +125,7 @@ struct BCDTouchControl: View, Equatable {
     var body: some View {
         BCDTouchFace(action: item.action, diameter: diameter, down: down, direction: direction, vector: vector,
                      opacity: opacity, selected: selected)
+            .environment(\.bcdTouchLook, look)
             .frame(width: size.width, height: size.height)
             .overlay { if !editing { surface } }
             .position(x: CGFloat(item.x) * screen.width, y: CGFloat(item.y) * screen.height)
@@ -159,6 +164,7 @@ struct BCDTouchControl: View, Equatable {
             .onChanged { value in
                 guard editing, let arranging else { return }
                 arranging.select(item.id)
+                if item.locked { return }   // selected to unlock it, resize nothing, move nothing
                 if dragBase == nil { dragBase = CGPoint(x: item.x, y: item.y) }
                 let base = dragBase ?? .zero
                 arranging.move(item.id,
@@ -184,7 +190,9 @@ struct BCDTouchFace: View {
     var opacity = 1.0
     /// Selected in the editor: a fuchsia ring around it.
     var selected = false
+    @Environment(\.bcdTouchLook) var look
 
+    private var paint: BCDTouchPaint { BCDTouchPaint(look: look) }
     private var size: CGSize { BCDTouchGeometry.size(action.shape, diameter: Double(diameter)) }
 
     var body: some View {
@@ -207,17 +215,17 @@ struct BCDTouchFace: View {
         }
     }
 
-    private var tint: Color? { BCDTouchPalette.face(action.padName) }
-    private var rimWidth: CGFloat { max(1.2, diameter * 0.024) }
+    private var tint: Color? { paint.tint(pad: action.padName) }
+    private var rimWidth: CGFloat { max(1.2, diameter * 0.024) * (down ? paint.pressedRimFactor : 1) }
 
     // MARK: Buttons
 
     private var button: some View {
         ZStack {
             if down {
-                outline.fill(BCDTouchPalette.pressed(opacity))
+                outline.fill(paint.pressedFill(opacity))
             } else {
-                outline.fill(BCDTouchPalette.fill.opacity(0.46 * opacity))
+                outline.fill(paint.fill.opacity(paint.fillStrength * opacity))
             }
             outline.stroke(rimColor, lineWidth: rimWidth)
             label
@@ -225,17 +233,17 @@ struct BCDTouchFace: View {
     }
 
     private var rimColor: Color {
-        if down { return Color.white.opacity(0.95 * opacity) }
+        if down { return paint.pressedRim.opacity(0.95 * opacity) }
         if let tint { return tint.opacity(0.8 * opacity) }
-        if action == .none { return BCDTouchPalette.rim.opacity(0.3 * opacity) }
-        return BCDTouchPalette.rim.opacity(0.6 * opacity)
+        if action == .none { return paint.rim.opacity(0.3 * opacity) }
+        return paint.rim.opacity(0.6 * opacity)
     }
 
     private var labelColor: Color {
-        if down { return Color.white.opacity(opacity) }
-        if let tint { return tint.opacity(opacity) }
-        if action == .none { return BCDTouchPalette.label.opacity(0.45 * opacity) }
-        return BCDTouchPalette.label.opacity(0.94 * opacity)
+        if down { return paint.pressedLabel.opacity(opacity) }
+        if let tint, paint.tintsLabels { return tint.opacity(opacity) }
+        if action == .none { return paint.label.opacity(0.45 * opacity) }
+        return paint.label.opacity(0.94 * opacity)
     }
 
     /// Type sized to the control: a letter fills more of a button than a word does.
@@ -270,6 +278,18 @@ struct BCDTouchFace: View {
         case .keyStick:
             EmptyView()
         case .pad(let name):
+            padLabel(name, box: box)
+        }
+    }
+
+    /// A controller input's face: its letters or symbol, or the PlayStation symbols of the player's look (BCDTouchLook.swift).
+    @ViewBuilder private func padLabel(_ name: String, box: CGFloat) -> some View {
+        if let glyph = look.glyph(pad: name) {
+            switch glyph {
+            case .symbol(let symbolName): symbol(symbolName, 0.36)
+            case .text(let words): text(words, box: size.height * 1.05)
+            }
+        } else {
             switch name {
             case "D↑": symbol("chevron.up", 0.36)
             case "D↓": symbol("chevron.down", 0.36)
@@ -289,18 +309,18 @@ struct BCDTouchFace: View {
         let knob = diameter * 0.44
         let travel = diameter * 0.28
         return ZStack {
-            Circle().fill(BCDTouchPalette.fill.opacity(0.36 * opacity))
-            Circle().stroke(down ? Color.white.opacity(0.9 * opacity) : BCDTouchPalette.rim.opacity(0.55 * opacity),
+            Circle().fill(paint.fill.opacity(paint.stickFillStrength * opacity))
+            Circle().stroke(down ? paint.pressedRim.opacity(0.9 * opacity) : paint.rim.opacity(0.55 * opacity),
                             lineWidth: rimWidth)
             // The gate the knob travels in.
-            Circle().stroke(BCDTouchPalette.rim.opacity(0.18 * opacity), lineWidth: 1)
+            Circle().stroke(paint.rim.opacity(0.18 * opacity), lineWidth: 1)
                 .frame(width: diameter * 0.74, height: diameter * 0.74)
             if let stick = action.keyStick { compass(stick) }
             ZStack {
                 if down {
-                    Circle().fill(BCDTouchPalette.pressed(opacity))
+                    Circle().fill(paint.knobPressedFill(opacity))
                 } else {
-                    Circle().fill(BCDTouchPalette.rim.opacity(0.4 * opacity))
+                    Circle().fill(paint.rim.opacity(0.4 * opacity))
                 }
                 Circle().stroke(Color.white.opacity(0.6 * opacity), lineWidth: 1)
                 if let name = action.padName {
@@ -335,8 +355,8 @@ struct BCDTouchFace: View {
             ForEach(spots, id: \.0) { key, offset in
                 Text(BCDTouchNames.keyLabel(key))
                     .font(.system(size: max(7, diameter * 0.14), weight: .heavy, design: .rounded))
-                    .foregroundStyle(held.contains(key) ? Color.white.opacity(opacity)
-                                                        : BCDTouchPalette.label.opacity(0.62 * opacity))
+                    .foregroundStyle(held.contains(key) ? paint.pressedLabel.opacity(opacity)
+                                                        : paint.label.opacity(0.62 * opacity))
                     .offset(offset)
             }
         }

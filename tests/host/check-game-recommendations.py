@@ -98,11 +98,11 @@ for r in recs['rules']:
                             line_builds=[builds(line) for line in r['config']],
                             small_builds=[builds(line) for line in r.get('smallRAMConfig', [])],
                             match=r.get('match'))
-assert list(presets) == ['rdr2-steam', 'rdr2-other', 'gta5e-steam', 'gta5e-other', 'gta5l-steam', 'ghost-of-tsushima', 'god-of-war',
+assert list(presets) == ['rdr2-steam', 'rdr2-other', 'gta5e-steam', 'gta5e-other', 'gta5l-steam', 'gta5l-other', 'ghost-of-tsushima', 'god-of-war',
                          'horizon-zero-dawn', 'horizon-forbidden-west', 'ratchet-clank-rift-apart', 'crysis-remastered',
                          'crysis-2-remastered', 'crysis-3-remastered', 'msfs-2024', 'counter-strike-2', 'warcraft-2-bne',
                          'breakneck', 'spelunky-2', 'albion-online', 'megabonk', 'no-im-not-a-human', 'over-the-hill', 'fort-solis', 'dragon-ball-sparking-zero', 'animal-well', 'hogwarts-legacy', 'metal-gear-solid-v', 'stellar-blade-demo', 'star-wars-galactic-racer', 'minecraft-dungeons-2', 'denshattack', 'final-fantasy-resonance-demo', 'no-rest-for-the-wicked', 'quaver', 'dying-light', 'beamng-drive', 'monster-hunter-stories-3-trial', 'pwaat', 'lego-party', '1000xresist', 'american-truck-simulator', 'marvels-spider-man-miles-morales', 'diablo-ii-resurrected', 'clair-obscur-expedition-33', 'gta4-steam', 'gtasa-de-steam', 'unrailed-2-back-on-track', 'resident-evil-2', 'resident-evil-7', 'blazblue-entropy-effect', 'dark-souls-iii', 'marvels-spider-man-remastered', 'marvels-spider-man-2', 'raidou-remastered', 'yakuza-like-a-dragon', 'batman-arkham-city-goty', 'metal-gear-solid-peace-walker', 'lonely-mountains-snow-riders', 'trails-in-the-sky-1st-chapter', 'subnautica-2', 'rdr1-steam', 'resident-evil-requiem', 'resident-evil-requiem-demo', 'resident-evil-6', 'resident-evil-revelations-2',
-                         'bioshock-infinite-epic', 'danganronpa-trigger-happy-havoc', 'life-is-strange-remastered', 'life-is-strange-2', 'project-zomboid', 'spiderheck', 'rounds', 'plateup', 'final-fantasy-tactics-ivalice-chronicles', 'age-of-empires-ii-hd', 'fallout-new-vegas', 'digimon-story-cyber-sleuth', 'final-fantasy-xv-demo', 'borderlands-3', 'zenless-zone-zero', 'jetboard-joust', 'sword-and-fairy-3', 'dead-as-disco', 'tung', 'darksiders-ii-deathinitive', 'nfs-most-wanted', 'nfs-underground-2', 'sekiro-shadows-die-twice', 'mudrunner', 'indivisible', 'terraria', 'risk-of-rain-2', 'stardew-valley', 'counter-strike-source', 'chuchel', 'botanicula', 'fallout-4', 'skyrim-special-edition', 'lego-batman-the-videogame', 'silent-hunter-3', 'just-cause-3', 'glyphica-typing-survival', 'standard'], list(presets)
+                         'bioshock-infinite-epic', 'danganronpa-trigger-happy-havoc', 'life-is-strange-remastered', 'life-is-strange-2', 'project-zomboid', 'spiderheck', 'rounds', 'plateup', 'final-fantasy-tactics-ivalice-chronicles', 'age-of-empires-ii-hd', 'fallout-new-vegas', 'digimon-story-cyber-sleuth', 'final-fantasy-xv-demo', 'borderlands-3', 'zenless-zone-zero', 'jetboard-joust', 'sword-and-fairy-3', 'dead-as-disco', 'tung', 'darksiders-ii-deathinitive', 'nfs-most-wanted', 'nfs-underground-2', 'sekiro-shadows-die-twice', 'mudrunner', 'indivisible', 'terraria', 'risk-of-rain-2', 'stardew-valley', 'counter-strike-source', 'chuchel', 'botanicula', 'fallout-4', 'skyrim-special-edition', 'lego-batman-the-videogame', 'silent-hunter-3', 'just-cause-3', 'glyphica-typing-survival', 'grand-theft-auto-iii', 'postal-2', 'hotline-miami', 'max-payne-2', 'pico-park', 'dont-starve-together', 'a-hat-in-time', 'the-adventures-of-elliot', 'standard'], list(presets)
 
 catalog_keys = set(re.findall(r'ConfigOption\(key: "([^"]+)"', catalog))
 for ident, p in presets.items():
@@ -246,7 +246,15 @@ assert legacy['version'] == 3 and legacy['title'] == 'GTA V Legacy (Steam)', leg
 assert not any(line.startswith(('vram-mb', 'swap-mb')) for line in legacy['lines']), legacy['lines']
 assert legacy['small'] == ['swap-mb = 3072'], legacy['small']
 assert 'static var smallRAMDevice: Bool { deviceRAMBytes < 10 << 30 }' in lists_src
-assert [ident for ident, p in presets.items() if p['small']] == ['gta5l-steam']
+assert [ident for ident, p in presets.items() if p['small']] == ['gta5l-steam', 'gta5l-other']
+# GTA V Legacy outside Steam (Epic, Rockstar's store; owner 2026-10-24): the Steam list's lines without its two Dock lines, plus
+# no Steam identity from build 598 (error 113 in every Epic start of build 592); the same RAM swap and switches.
+_legacy_other = presets['gta5l-other']
+_dock = ('env.MADEIRA_DOCK_GAME_SCM = 1', 'env.MADEIRA_DOCK_KEEP_ALIVE = Launcher.exe;GTA5.exe')
+assert _legacy_other['version'] == 1 and _legacy_other['title'] == 'GTA V Legacy (not Steam)', _legacy_other
+assert _legacy_other['lines'][2:] == [l for l in legacy['lines'][2:] if l not in _dock] + ['env.MADEIRA_STEAM_IDENTITY = none'], _legacy_other['lines']
+assert _legacy_other['line_builds'][-1] == (598, 1000000000) and set(_legacy_other['line_builds'][:-1]) == {(0, 1000000000)}
+assert _legacy_other['small'] == legacy['small'] and _legacy_other['switches'] == legacy['switches']
 assert 'env.MADEIRA_DOCK_KEEP_ALIVE = Launcher.exe;GTA5.exe' in legacy['lines']
 assert 'env.MADEIRA_SPAWN_BLOCK = RockstarErrorHandler;.be\\vc_redist' in legacy['lines']
 assert 'env.DXMT_WSI_MODE_TABLE = 1' in legacy['lines'] and 'env.MADEIRA_EC_HOOK_TRACE = 0' in legacy['lines']
@@ -536,7 +544,7 @@ assert not any('FEX_AVX' in l for l in presets['rdr1-steam']['lines']), 'RDR1 le
 def _cfg(_id):
     return next(r for r in recs['rules'] if r['id'] == _id)['config']
 _req = presets['resident-evil-requiem']
-assert _req['lines'][2:] == [_std, 'exe-window-mb = 592', _nocopy, 'd3d12-pso-cached-blob = 1'] and _req['version'] == 1 and _req['switches'] == '', _req
+assert _req['lines'][2:] == [_std, 'exe-window-mb = 592', _nocopy, 'd3d12-pso-cached-blob = 1'] and _req['version'] == 2 and _req['switches'] == '', _req   # v2: build 598's cached-blob line (list v8)
 assert {'line': 'exe-window-mb = 592', 'minBuild': 575} in _cfg('resident-evil-requiem') and {'line': _nocopy, 'minBuild': 576} in _cfg('resident-evil-requiem')
 assert presets['life-is-strange-remastered']['lines'][2:] == [_std, _nocopy] and presets['life-is-strange-remastered']['version'] == 1, presets['life-is-strange-remastered']
 assert presets['life-is-strange-2']['lines'][2:] == [_std, 'exe-window-mb = 400', _nocopy] and presets['life-is-strange-2']['version'] == 1, presets['life-is-strange-2']
@@ -555,7 +563,7 @@ _new591 = {
 }
 for _id, _line in _new591.items():
     assert presets[_id]['lines'][2:] == [_std, _line] + (['env.MADEIRA_D3D9_LAST = 1'] if _id == 'fallout-new-vegas' else []) \
-        and presets[_id]['version'] == 1 and presets[_id]['switches'] == '', (_id, presets[_id])   # Fallout: New Vegas: + build 598's diagnostic, below
+        and presets[_id]['version'] == (2 if _id == 'fallout-new-vegas' else 1) and presets[_id]['switches'] == '', (_id, presets[_id])   # Fallout: New Vegas: + build 598's diagnostic, below (v2, list v8)
     assert {'line': _line, 'minBuild': 591} in _cfg(_id), _id
 # bcd-games issue #13 (2026-10-23): Unreal start-up programs that ask for the ARM64 VC++ redistributable
 assert presets['dead-as-disco']['lines'][2:] == [_std, 'env.MADEIRA_OPTIN_DLLS = tbs', 'env.MADEIRA_VCRT_ARM64_KEY = 1'] and presets['dead-as-disco']['version'] == 1, presets['dead-as-disco']
@@ -585,7 +593,7 @@ assert sorted(r['id'] for r in recs['rules'] if 'MADEIRA_FILE_TRACE' in json.dum
 for _id, _line in (('mudrunner', 'env.MADEIRA_D3D9_X64 = dxmt'), ('indivisible', 'env.MADEIRA_D3D9_X64 = dxmt'), ('sekiro-shadows-die-twice', 'env.MADEIRA_NLS_EXTRA = 1')):
     assert presets[_id]['lines'][2:] == [_std, _line] and presets[_id]['version'] == 1 and presets[_id]['switches'] == '', (_id, presets[_id])
     assert {'line': _line, 'minBuild': 598} in _cfg(_id), _id
-assert sorted(r['id'] for r in recs['rules'] if 'MADEIRA_D3D9_X64' in json.dumps(r['config'])) == ['counter-strike-source', 'darksiders-ii-deathinitive', 'indivisible', 'mudrunner'], 'only Darksiders II, MudRunner, Indivisible and Counter-Strike: Source (round 2026-10-24) carry the 64-bit D3D9 line'
+assert sorted(r['id'] for r in recs['rules'] if 'MADEIRA_D3D9_X64' in json.dumps(r['config'])) == ['a-hat-in-time', 'counter-strike-source', 'darksiders-ii-deathinitive', 'dont-starve-together', 'indivisible', 'mudrunner', 'pico-park'], 'only Darksiders II, MudRunner, Indivisible, Counter-Strike: Source (round 2026-10-24) and PICO PARK, Don\'t Starve Together, A Hat in Time (round 602) carry the 64-bit D3D9 line'
 assert sorted(r['id'] for r in recs['rules'] if 'MADEIRA_NLS_EXTRA' in json.dumps(r['config'])) == ['sekiro-shadows-die-twice', 'sword-and-fairy-3'], 'only Sword and Fairy 3 and Sekiro carry the extra code pages'
 assert presets['counter-strike-source']['lines'][2:] == [_std, 'env.MADEIRA_D3D9_X64 = dxmt'] and {'line': 'env.MADEIRA_D3D9_X64 = dxmt', 'minBuild': 598} in _cfg('counter-strike-source') and presets['counter-strike-source']['version'] == 1
 # Round 2026-10-24 (ajan22, builds 598 and later): two games whose log stop has a cause with an existing opt-in switch, each line from build 598.
@@ -595,7 +603,7 @@ for _id, _line in (('risk-of-rain-2', 'env.MADEIRA_WINTYPES = 1'), ('stardew-val
     assert presets[_id]['lines'][2:] == [_std, _line] and presets[_id]['version'] == 1 and presets[_id]['switches'] == '', (_id, presets[_id])
     assert {'line': _line, 'minBuild': 598} in _cfg(_id), _id
 assert sorted(r['id'] for r in recs['rules'] if 'MADEIRA_ANON_CAS_FLUSH' in json.dumps(r['config'])) == ['jetboard-joust', 'stardew-valley'], 'only the CoreCLR games carry the CAS flush'
-assert '"MADEIRA_D3D9_X64"' in (app / 'GameRecommendationsList.swift').read_text() and 'guard value == "dxmt"' in (app / 'GameRecommendationsList.swift').read_text()
+assert '"MADEIRA_D3D9_X64"' in (app / 'GameRecommendationsList.swift').read_text() and 'guard value == "dxmt" || value == "wined3d"' in (app / 'GameRecommendationsList.swift').read_text()
 # Build 598 (ajan21-loglar, 2026-10-24): the report of a 32-bit program's access violation or int3 (ios_x86_fault_diag.h) for the two Need for Speed
 # games that stop at a fixed place of their own program (speed.exe at 0x81AB7A, SPEED2.EXE at 0x4405A9). Log only, a diagnostic and no fix;
 # only these two lists carry it (tests/host/check-x86-fault-diag.py).
@@ -622,6 +630,24 @@ assert {'line': 'env.MADEIRA_OPTIN_DLLS = wmadmod', 'minBuild': 598} in _cfg('sk
 assert {'line': 'env.MADEIRA_ZERO_MITIGATION_POLICY = 1', 'minBuild': 600} in _cfg('glyphica-typing-survival')
 assert next(r for r in recs['rules'] if r['id'] == 'glyphica-typing-survival')['minBuild'] == 600
 assert sorted(r['id'] for r in recs['rules'] if 'MADEIRA_ZERO_MITIGATION_POLICY' in json.dumps(r['config'])) == ['glyphica-typing-survival']
+# Round 602 (ajan41/tur602): the Direct3D 8 games. Each list is the standard line and the d3d8to9 line, which only builds from 602 apply; nothing else names the key.
+_d8 = ['grand-theft-auto-iii', 'postal-2', 'hotline-miami', 'max-payne-2']
+assert sorted(r['id'] for r in recs['rules'] if 'MADEIRA_D3D8' in json.dumps(r['config'])) == sorted(_d8), 'only the four Direct3D 8 games carry env.MADEIRA_D3D8'
+for _id in _d8:
+    _r = next(r for r in recs['rules'] if r['id'] == _id)
+    assert _r['config'][2:] == ['env.MADEIRA_EC_HOOK_TRACE = 0', {'line': 'env.MADEIRA_D3D8 = d3d9', 'minBuild': 602}] and _r['version'] == 1 and 'minBuild' not in _r, _id
+assert not [r['id'] for r in recs['rules'] if 'MADEIRA_DDRAW' in json.dumps(r['config'])], 'no list sets cnc-ddraw yet (no log shows a 2D DirectDraw game that fails)'
+# Upstream port 2026-10-25 (ajan45, build 602): The Adventures of Elliot (Steam 3483510, a 473 MiB fixed-base program; BCD log 8Q0SJ8, build 592, c0000018 for want of
+# a window). The rule and every line carry minBuild 602; env.MADEIRA_KUSER_KEEP_REGS and pool-above-window (both off unless set) are set by this list and nothing else
+# (exe-window-mb = 480, the image not copied and the pool settings are the game's own, as the other large-program lists have them).
+_elliot = ['exe-window-mb = 480', 'env.MADEIRA_X64_IMAGE_NOCOPY = 1', 'pool-split = 1', 'pool-low = 1', 'pool-low-margin = 32', 'pool-above-window = 1',
+           'env.MADEIRA_KUSER_KEEP_REGS = 1']
+assert [l for l in _cfg('the-adventures-of-elliot') if isinstance(l, dict)] == [{'line': l, 'minBuild': 602} for l in _elliot]
+assert [l for l in _cfg('the-adventures-of-elliot') if isinstance(l, str) and not l.startswith('#')] == ['env.MADEIRA_EC_HOOK_TRACE = 0']
+assert next(r for r in recs['rules'] if r['id'] == 'the-adventures-of-elliot')['minBuild'] == 602
+assert sorted(r['id'] for r in recs['rules'] if 'MADEIRA_KUSER_KEEP_REGS' in json.dumps(r['config'])) == ['the-adventures-of-elliot']
+assert sorted(r['id'] for r in recs['rules'] if 'pool-above-window' in json.dumps(r['config'])) == ['the-adventures-of-elliot']
+assert '"MADEIRA_KUSER_KEEP_REGS"' in (app / 'GameRecommendationsList.swift').read_text()
 assert '"MADEIRA_SPAWN_SWAP"' in (app / 'GameRecommendationsList.swift').read_text() and 'case "MADEIRA_SPAWN_SWAP":' in (app / 'GameRecommendationsList.swift').read_text()
 # ZZZ: dxva2 is an old opt-in name (Fort Solis, Dragon Ball Sparking Zero carry it at 575)
 assert presets['zenless-zone-zero']['lines'][2:] == [_std, 'env.MADEIRA_OPTIN_DLLS = dxva2'] and {'line': 'env.MADEIRA_OPTIN_DLLS = dxva2', 'minBuild': 575} in _cfg('zenless-zone-zero')
@@ -696,6 +722,8 @@ MATCH = {
     'gta5l-steam': {'steamAppIDs': [271590], 'steamFolders': ['grand theft auto v'],
                     'programs': [{'name': 'playgtav.exe', 'steam': True, 'beside': 'GTA5.exe', 'notBeside': 'GTA5_Enhanced.exe'},
                                  {'name': 'gta5.exe', 'steam': True}]},
+    'gta5l-other': {'programs': [{'name': 'playgtav.exe', 'steam': False, 'beside': 'GTA5.exe', 'notBeside': 'GTA5_Enhanced.exe'},
+                                 {'name': 'gta5.exe', 'steam': False}]},
     'ghost-of-tsushima': {'steamAppIDs': [2215430], 'steamFolders': ["ghost of tsushima director's cut", 'ghost of tsushima'],
                           'programs': [{'name': 'ghostoftsushima.exe'}]},
     'god-of-war': {'steamAppIDs': [1593500], 'steamFolders': ['godofwar', 'god of war'], 'programs': [{'name': 'gow.exe'}]},
@@ -800,6 +828,16 @@ MATCH = {
     'silent-hunter-3': {'steamAppIDs': [15210], 'steamFolders': ['silent hunter 3'], 'programs': [{'name': 'sh3.exe', 'steam': True}]},
     'just-cause-3': {'steamAppIDs': [225540], 'steamFolders': ['just cause 3'], 'programs': [{'name': 'justcause3.exe'}]},
     'glyphica-typing-survival': {'steamAppIDs': [2400160], 'steamFolders': ['glyphica'], 'programs': [{'name': 'neosphere.exe', 'beside': 'ChakraCore.dll'}]},   # build 600 (ajan38/tur600): ChakraCore's fail-fast
+    # Round 602 (ajan41/tur602): the four Direct3D 8 games of the logs, env.MADEIRA_D3D8 = d3d9 from build 602 (tests/host/check-d3d8-to-d3d9.py).
+    'grand-theft-auto-iii': {'steamAppIDs': [12100], 'steamFolders': ['grand theft auto 3'], 'programs': [{'name': 'gta3.exe'}]},
+    'postal-2': {'steamAppIDs': [223470], 'steamFolders': ['postal2complete'], 'programs': [{'name': 'postal2.exe'}]},
+    'hotline-miami': {'steamAppIDs': [219150], 'steamFolders': ['hotline_miami'], 'programs': [{'name': 'hotlinemiami_original.exe'}]},
+    'max-payne-2': {'steamAppIDs': [12150], 'steamFolders': ['max payne 2 the fall of max payne'], 'programs': [{'name': 'maxpayne2.exe'}]},
+    # Round 602 (ajan41/tur602): three 64-bit Direct3D 9 games whose own program asks Wine's d3d9 for a device (env.MADEIRA_D3D9_X64 = dxmt from build 602).
+    'pico-park': {'steamAppIDs': [1509960], 'steamFolders': ['pico_park_online'], 'programs': [{'name': 'pico_park.exe'}]},
+    'dont-starve-together': {'steamAppIDs': [322330], 'steamFolders': ["don't starve together"], 'programs': [{'name': 'dontstarve_steam_x64.exe'}]},
+    'a-hat-in-time': {'steamAppIDs': [253230], 'steamFolders': ['hatintime'], 'programs': [{'name': 'hatintimegame.exe'}]},
+    'the-adventures-of-elliot': {'steamAppIDs': [3483510], 'steamFolders': ['the adventures of elliot the millennium tales'], 'programs': [{'name': 'elliot-win64-shipping.exe'}]},   # build 602 (ajan45, upstream port): a 473 MiB fixed-base program
 }
 for ident, p in presets.items():
     assert p['match'] == MATCH.get(ident), (ident, p['match'])
@@ -954,8 +992,13 @@ let steam = #"C:\Program Files (x86)\Steam\steamapps\common"#
 // the app reads it (RecommendationsStore.initialList); no download is kept here.
 RecommendationsStore.builtInURL = URL(fileURLWithPath: ProcessInfo.processInfo.environment["BCD_TEST_RECOMMENDATIONS"]!)
 RecommendationsStore.directory = URL(fileURLWithPath: ProcessInfo.processInfo.environment["BCD_TEST_RECS_DIR"]!, isDirectory: true)
-RecommendationsStore.build = 600
+RecommendationsStore.build = 602
 check(R.active.origin == .builtIn && R.all.count == @RULE_COUNT@ && R.standard?.id == "standard", "the built-in list")
+// Upstream port 2026-10-25 (build 602): The Adventures of Elliot's rule and lines are for this build and later; an older build reads the list without the rule.
+check(RecommendationsStore.builtInFile()?.list(build: 601, origin: .builtIn).rules.contains { $0.recommendation.id == "the-adventures-of-elliot" } == false
+      && RecommendationsStore.builtInFile()?.list(build: 602, origin: .builtIn).rules.contains { $0.recommendation.id == "the-adventures-of-elliot" } == true
+      && RecommendationsStore.builtInFile()?.list(build: 601, origin: .builtIn).rules.count == @RULE_COUNT@ - 1,
+      "the Elliot rule is dropped by build 601 and kept from 602")
 
 extension GameRecommendations {
     static func rule(_ id: String) -> GameRecommendation { all.first { $0.id == id }! }
@@ -963,6 +1006,7 @@ extension GameRecommendations {
     static var gta5EnhancedSteam: GameRecommendation { rule("gta5e-steam") }
     static var gta5EnhancedOther: GameRecommendation { rule("gta5e-other") }
     static var gta5LegacySteam: GameRecommendation { rule("gta5l-steam") }
+    static var gta5LegacyOther: GameRecommendation { rule("gta5l-other") }
     static var ghostOfTsushima: GameRecommendation { rule("ghost-of-tsushima") }
     static var godOfWar: GameRecommendation { rule("god-of-war") }
 }
@@ -995,8 +1039,11 @@ check(id(other + #"\PlayGTAV.exe"#, files: [other + #"\GTA5_Enhanced.exe"#]) == 
 check(id(other + #"\GTA5_Enhanced.exe"#, files: [other + #"\GTA5_Enhanced.exe"#]) == "gta5e-other", "GTA5_Enhanced.exe elsewhere")
 check(id(#"C:\GAMES\gta v enhanced\PLAYGTAV.EXE"#, files: [other + #"\gta5_enhanced.exe"#]) == "gta5e-other", "names in any case")
 check(id("C:/Games/GTA V Enhanced/PlayGTAV.exe", files: [other + #"\GTA5_Enhanced.exe"#]) == "gta5e-other", "forward slashes")
-check(id(#"C:\Games\GTA V\PlayGTAV.exe"#, files: [#"C:\Games\GTA V\GTA5.exe"#]) == "none", "the legacy edition outside Steam has no list")
-check(id(#"C:\Games\GTA V\GTA5.exe"#) == "none", "GTA5.exe outside Steam has no list")
+check(id(#"C:\Games\GTA V\PlayGTAV.exe"#, files: [#"C:\Games\GTA V\GTA5.exe"#]) == "gta5l-other", "the legacy edition outside Steam: its own list")
+check(id(#"C:\Program Files\Epic Games\GTAV\PlayGTAV.exe"#, files: [#"C:\Program Files\Epic Games\GTAV\GTA5.exe"#]) == "gta5l-other",
+      "the Epic copy's PlayGTAV.exe")
+check(id(#"C:\Games\GTA V\GTA5.exe"#) == "gta5l-other", "GTA5.exe outside Steam: the legacy list")
+check(id(#"C:\Games\GTA V\PlayGTAV.exe"#) == "none", "PlayGTAV.exe outside Steam with neither game program beside it")
 let legacy = steam + #"\Grand Theft Auto V"#
 check(id(legacy, 271590) == "gta5l-steam", "GTA V Legacy by its App ID")
 check(id(legacy) == "gta5l-steam", "GTA V Legacy by its Steam folder")
@@ -1016,7 +1063,9 @@ check(R.all.map { $0.fileText } == onTwelve, "a 16 GB iPad: the same lists as a 
 R.deviceRAMBytes = 7_500 << 20
 check(R.gta5LegacySteam.fileText.hasSuffix("env.MADEIRA_METAL_HUD_MAIN = 1\nswap-mb = 3072\n"),
       "an 8 GB phone: the 3 GB RAM swap after GTA V Legacy's list")
-check(zip(R.all, onTwelve).allSatisfy { $0.0.id == "gta5l-steam" || $0.0.fileText == $0.1 },
+check(R.gta5LegacyOther.fileText.hasSuffix("env.MADEIRA_STEAM_IDENTITY = none\nswap-mb = 3072\n"),
+      "an 8 GB phone: the same 3 GB RAM swap after the non-Steam Legacy list")
+check(zip(R.all, onTwelve).allSatisfy { $0.0.id == "gta5l-steam" || $0.0.id == "gta5l-other" || $0.0.fileText == $0.1 },
       "every other list is the same on an 8 GB phone")
 R.deviceRAMBytes = 11_695 << 20
 check(id(other + #"\PlayGTAV.exe"#) == "none", "PlayGTAV.exe without GTA5_Enhanced.exe beside it")
@@ -1147,6 +1196,15 @@ for (folder, app, rule, exe) in list598 {
         check(id(#"D:\Games\Copy\"# + exe) == rule, "\(rule): its program's name matches wherever it is installed")
     }
 }
+// Upstream port 2026-10-25 (ajan45, build 602): The Adventures of Elliot, by its App ID, its Steam folder and its shipping program's name wherever it is installed. The
+// launcher stub Elliot.exe is a generic name and takes nothing.
+let elliotFolder = "The Adventures of Elliot The Millennium Tales"
+check(id(steam + "\\" + elliotFolder, 3483510) == "the-adventures-of-elliot", "the-adventures-of-elliot by its App ID")
+check(id(steam + "\\" + elliotFolder) == "the-adventures-of-elliot", "the-adventures-of-elliot by its Steam folder")
+check(id(steam + "\\" + elliotFolder + #"\Elliot\Binaries\Win64\Elliot-Win64-Shipping.exe"#) == "the-adventures-of-elliot", "the-adventures-of-elliot: its program inside Steam")
+check(id(#"D:\Games\Copy\Elliot-Win64-Shipping.exe"#) == "the-adventures-of-elliot", "the-adventures-of-elliot: its program's name matches wherever it is installed")
+check(id(#"D:\Games\Copy\Elliot.exe"#) == "none" && id(steam + #"\The Adventures of Elliot Soundtrack"#, 3483511) == "none",
+      "the launcher stub Elliot.exe and a neighbouring App ID take nothing")
 check(id(steam + #"\Silent Hunter 3\sh3.exe"#) == "silent-hunter-3", "silent-hunter-3: its program inside Steam")
 // 2026-10-24 (ajan26): Silent Hill 3 is also sh3.exe; Silent Hunter 3's list takes the program inside a Steam library only. LEGO Batman 2 is another game.
 check(id(#"D:\Games\Silent Hill 3\sh3.exe"#) == "none" && id(steam + #"\Lego Batman 2"#, 213330) == "none" && id(#"D:\Games\Copy\LEGOBatman2.exe"#) == "none"
@@ -1393,7 +1451,7 @@ let at = newer.rules.firstIndex { $0.id == "rdr2-steam" }!
 newer.version += 1
 newer.rules[at].version += 1
 newer.rules[at].config.append(RecommendationLine(text: "env.MADEIRA_DEVICE_STATS_EXTRA = 1"))
-newer.rules[at].config.append(RecommendationLine(text: "env.MADEIRA_LATER_BUILD = 1", minBuild: 601))
+newer.rules[at].config.append(RecommendationLine(text: "env.MADEIRA_LATER_BUILD = 1", minBuild: 604))
 newer.rules[at].switches.avx = true
 R.install(newer.list(build: RecommendationsStore.build, origin: .downloaded))
 check(R.rdr2Steam.version == builtInRDR2.version + 1 && R.rdr2Steam.fileText == builtInRDR2.fileText + "env.MADEIRA_DEVICE_STATS_EXTRA = 1\n",
@@ -1448,7 +1506,7 @@ assert '"MADEIRA_D3D9"' in (app / 'GameRecommendationsList.swift').read_text() a
 #    (builds 592) end 25-62 s into the game with a write through a NULL object in FalloutNV.exe+0x757AA9 on the loading thread; the last 64 Direct3D 9 calls
 #    with their results (MADEIRA_D3D9_LAST, build 597) name the call that failed. Not a fix; only this list carries it besides Darksiders II.
 assert presets['fallout-new-vegas']['lines'][2:] == [_std, 'env.MADEIRA_DOCK_SCRIPT_REGISTRY = 1', 'env.MADEIRA_D3D9_LAST = 1'] \
-    and presets['fallout-new-vegas']['version'] == 1 and presets['fallout-new-vegas']['switches'] == '', presets['fallout-new-vegas']
+    and presets['fallout-new-vegas']['version'] == 2 and presets['fallout-new-vegas']['switches'] == '', presets['fallout-new-vegas']
 assert {'line': 'env.MADEIRA_DOCK_SCRIPT_REGISTRY = 1', 'minBuild': 591} in _cfg('fallout-new-vegas')
 assert {'line': 'env.MADEIRA_D3D9_LAST = 1', 'minBuild': 598} in _cfg('fallout-new-vegas')
 assert sorted(r['id'] for r in recs['rules'] if 'MADEIRA_D3D9_LAST' in json.dumps(r['config'])) == ['darksiders-ii-deathinitive', 'fallout-new-vegas']

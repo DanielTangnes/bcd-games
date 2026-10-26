@@ -564,6 +564,7 @@ static void winios_note_swap_drawable(uintptr_t hwnd, CGSize size) {
  * normal session never pays a lookup. */
 #define WINIOS_WS_VISIBLE    0x10000000u
 #define WINIOS_WS_MINIMIZE   0x20000000u
+#define WINIOS_WS_CAPTION    0x00C00000u   /* WS_BORDER | WS_DLGFRAME */
 
 extern int winios_drv_census_owner(HWND hwnd, unsigned int *pid, unsigned int *style);
 extern int winios_drv_process_image(unsigned int pid, char *out, unsigned int size);
@@ -664,6 +665,7 @@ static void winios_census_note_frame(HWND hwnd, int x, int y, int w, int h, int 
         e->x = x; e->y = y; e->w = w; e->h = h;
         e->pid = pid;
         e->visible = (unsigned char)shown;
+        e->caption = (style & WINIOS_WS_CAPTION) == WINIOS_WS_CAPTION;
         memcpy(e->image, image, sizeof(e->image));
         if (shown) e->shown_once = 1;
         else if ((style & WINIOS_WS_VISIBLE) && (style & WINIOS_WS_MINIMIZE) && !e->shown_once && !e->restore_sent &&
@@ -685,7 +687,7 @@ static void winios_census_note_frame(HWND hwnd, int x, int y, int w, int h, int 
 
 /* Wine thread, from the GDI flush: count frames of listed windows only. */
 static void winios_census_note_present(HWND hwnd) {
-    if (!atomic_load_explicit(&g_census_on, memory_order_relaxed)) return;
+    if (atomic_load_explicit(&g_census_on, memory_order_relaxed) != 1) return;
     pthread_mutex_lock(&g_census_lock);
     struct winios_census_window *e = winios_census_find(hwnd);
     if (e && e->presents < 0xffffffffu) e->presents++;
@@ -695,7 +697,7 @@ static void winios_census_note_present(HWND hwnd) {
 /* A desktop-mode swapchain was made for this window (any thread). A swapchain
  * on a child window is not listed; the app also watches DXMT's present count. */
 static void winios_census_note_metal(HWND hwnd) {
-    if (!atomic_load_explicit(&g_census_on, memory_order_relaxed)) return;
+    if (atomic_load_explicit(&g_census_on, memory_order_relaxed) != 1) return;
     pthread_mutex_lock(&g_census_lock);
     struct winios_census_window *e = winios_census_find(hwnd);
     if (e) e->metal = 1;
@@ -710,7 +712,37 @@ static void winios_census_forget(HWND hwnd) {
     pthread_mutex_unlock(&g_census_lock);
 }
 
+/* The census ends when the starting screen finds the game's window, often a
+ * splash or launcher window; the game's main window can be shown for the
+ * first time, minimized, after that. on=2 keeps restoring such windows until
+ * the session ends.
+ * madeira-bcd: OFF unless MADEIRA_RESTORE_BORN_MINIMIZED_LATE=1 (the game's own file; upstream turns it
+ * on and lets 0 switch it off). It reaches past the starting screen into the whole session of every
+ * Dock game: a window a working game shows minimized on purpose would be restored. Off, on=2 ends the
+ * census exactly as on=0 does. Read at each call: a later game of the same app run has its own. */
+static int winios_restore_born_minimized_late_enabled(void) {
+    const char *e = getenv("MADEIRA_RESTORE_BORN_MINIMIZED_LATE");   /* 1: a window first shown minimized after a Dock start's starting screen has ended is restored too */
+    return e && e[0] == '1';
+}
+
 void winios_window_census_enable(int on) {
+    if (on == 2) {
+        pthread_mutex_lock(&g_census_lock);
+        int was = atomic_load(&g_census_on);
+        int keep = was != 0 && winios_restore_born_minimized_enabled() && winios_restore_born_minimized_late_enabled();
+        if (!keep) {
+            g_census_n = 0;
+            g_census_images_n = 0;
+            memset(g_census, 0, sizeof(g_census));
+        }
+        atomic_store(&g_census_on, keep ? 2 : 0);
+        pthread_mutex_unlock(&g_census_lock);
+        if (was) {
+            fprintf(stderr, "[window-census] %s\n", keep ? "off (restoring windows first shown minimized until the session ends)" : "off");
+            fflush(stderr);
+        }
+        return;
+    }
     pthread_mutex_lock(&g_census_lock);
     int was = atomic_load(&g_census_on);
     g_census_n = 0;
@@ -731,6 +763,84 @@ int winios_window_census(struct winios_census_window *out, int max) {
     memcpy(out, g_census, (size_t)n * sizeof(*out));
     pthread_mutex_unlock(&g_census_lock);
     return n;
+}
+
+/* ============================================================ *
+ * The in-game menu's window list (see Winios.h)
+ * ============================================================ */
+static _Atomic int g_winlist_wanted;
+static _Atomic int g_winlist_request;
+static pthread_mutex_t g_winlist_lock = PTHREAD_MUTEX_INITIALIZER;
+static struct winios_listed_window g_winlist[WINIOS_WINLIST_MAX];
+static int g_winlist_n;
+static _Atomic(uintptr_t) g_wincmd_hwnd;
+static _Atomic int g_wincmd_kind;
+static _Atomic uint64_t g_wincmd_ns;
+
+static uint64_t winios_winlist_now_ns(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec;
+}
+
+void winios_windows_set_wanted(int on) {
+    atomic_store(&g_winlist_wanted, on ? 1 : 0);
+    if (!on) {
+        pthread_mutex_lock(&g_winlist_lock);
+        g_winlist_n = 0;
+        pthread_mutex_unlock(&g_winlist_lock);
+        atomic_store(&g_wincmd_hwnd, 0);
+    }
+}
+
+void winios_windows_refresh(void) { atomic_store(&g_winlist_request, 1); }
+
+int winios_windows_copy(struct winios_listed_window *out, int max) {
+    if (!out || max <= 0) return 0;
+    pthread_mutex_lock(&g_winlist_lock);
+    int n = g_winlist_n < max ? g_winlist_n : max;
+    memcpy(out, g_winlist, (size_t)n * sizeof(*out));
+    pthread_mutex_unlock(&g_winlist_lock);
+    return n;
+}
+
+void winios_windows_command(unsigned long long hwnd, int kind) {
+    atomic_store(&g_wincmd_ns, winios_winlist_now_ns());
+    atomic_store(&g_wincmd_kind, kind);
+    atomic_store(&g_wincmd_hwnd, (uintptr_t)hwnd);
+}
+
+/* The Wine threads' side (driver_ios.c, ios_window_menu_poll). */
+int winios_windows_wanted(void) { return atomic_load_explicit(&g_winlist_wanted, memory_order_relaxed); }
+
+int winios_windows_take_refresh(void) { return atomic_exchange(&g_winlist_request, 0); }
+
+void winios_windows_publish(const struct winios_listed_window *list, int n) {
+    if (n < 0) n = 0;
+    if (n > WINIOS_WINLIST_MAX) n = WINIOS_WINLIST_MAX;
+    pthread_mutex_lock(&g_winlist_lock);
+    if (list && n) memcpy(g_winlist, list, (size_t)n * sizeof(*list));
+    g_winlist_n = n;
+    pthread_mutex_unlock(&g_winlist_lock);
+}
+
+/* The pending command, or 0 when there is none or it is older than 3 s (then it is dropped). */
+int winios_windows_peek_command(unsigned long long *hwnd, int *kind) {
+    uintptr_t h = atomic_load(&g_wincmd_hwnd);
+    if (!h) return 0;
+    if (winios_winlist_now_ns() - atomic_load(&g_wincmd_ns) > 3000000000ull) {
+        atomic_compare_exchange_strong(&g_wincmd_hwnd, &h, 0);
+        return 0;
+    }
+    *hwnd = (unsigned long long)h;
+    *kind = atomic_load(&g_wincmd_kind);
+    return 1;
+}
+
+/* One thread wins the command; the others find it gone. */
+int winios_windows_consume_command(unsigned long long hwnd) {
+    uintptr_t h = (uintptr_t)hwnd;
+    return atomic_compare_exchange_strong(&g_wincmd_hwnd, &h, 0) ? 1 : 0;
 }
 
 void winios_pDestroyWindow(HWND hwnd) {
@@ -841,12 +951,14 @@ void winios_pWindowPosChanged(HWND hwnd, HWND insert_after, HWND owner_hint, UIN
 
 extern void winios_drv_post_mouse(int x, int y, unsigned int flags, unsigned int mouse_data, void *hwnd);
 extern void winios_drv_post_key(unsigned short vk, unsigned int flags);
+extern void winios_drv_post_text(unsigned int scalar, unsigned short vk, int shift);
 extern void winios_dump_window_tree(void);
 extern void ios_dump_all_thread_stacks(void);
 
 #define WINIOS_RING_SIZE 256
 #define WINIOS_EV_MOUSE 0
 #define WINIOS_EV_KEY   1
+#define WINIOS_EV_TEXT  2
 #define KEYEVENTF_KEYUP 0x0002
 typedef struct {
     unsigned int type;       /* WINIOS_EV_MOUSE / WINIOS_EV_KEY */
@@ -861,6 +973,42 @@ static struct {
     unsigned int tail;       /* consumer cursor (Wine drain) */
     pthread_mutex_t lock;
 } g_input_q = { .lock = PTHREAD_MUTEX_INITIALIZER };
+
+static _Atomic unsigned int g_text_generation;
+/* One consumer owns delivery order across concurrent Wine event pumps. */
+static pthread_mutex_t g_input_drain_lock = PTHREAD_MUTEX_INITIALIZER;
+static double g_text_ready_at;
+static unsigned int g_text_paced_generation;
+
+int winios_try_post_text(unsigned int scalar, int vk, int shift, int interval_ms) {
+    if (interval_ms < 5) interval_ms = 5;
+    if (interval_ms > 100) interval_ms = 100;
+    int accepted = 0;
+    pthread_mutex_lock(&g_input_q.lock);
+    unsigned int used = (g_input_q.head + WINIOS_RING_SIZE - g_input_q.tail) % WINIOS_RING_SIZE;
+    /* Leave room for physical key/button releases while the game is busy. */
+    if (used < WINIOS_RING_SIZE - 16) {
+        g_input_q.buf[g_input_q.head] = (winios_input_event_t){
+            WINIOS_EV_TEXT, (int)scalar, vk, ((unsigned int)interval_ms << 8) | (shift != 0),
+            atomic_load(&g_text_generation)
+        };
+        g_input_q.head = (g_input_q.head + 1) % WINIOS_RING_SIZE;
+        accepted = 1;
+    }
+    pthread_mutex_unlock(&g_input_q.lock);
+    return accepted;
+}
+
+void winios_cancel_text(void) {
+    atomic_fetch_add(&g_text_generation, 1);
+}
+
+static int winios_drain_text(const winios_input_event_t *e) {
+    if (e->type != WINIOS_EV_TEXT) return 0;
+    if (e->data == atomic_load(&g_text_generation))
+        winios_drv_post_text((unsigned int)e->x, (unsigned short)e->y, (e->flags & 1) != 0);
+    return 1;
+}
 
 static void winios_q_push_ev(unsigned int type, int x, int y, unsigned int flags, unsigned int data) {
     pthread_mutex_lock(&g_input_q.lock);
@@ -917,6 +1065,72 @@ void winios_post_key(int vk, int down) {
     winios_q_push_ev(WINIOS_EV_KEY, vk, 0, down ? 0 : KEYEVENTF_KEYUP, 0);
 }
 
+/* The input queue, drained on a Wine thread: mouse and key events in order, pasted text at its own pace (see the text branch). */
+static BOOL winios_drain_input(void) {
+    BOOL drained = FALSE;
+    for (;;) {
+        winios_input_event_t e;
+        int text_owner = 0;
+        pthread_mutex_lock(&g_input_q.lock);
+        if (g_input_q.tail == g_input_q.head) {
+            pthread_mutex_unlock(&g_input_q.lock);
+            break;
+        }
+        e = g_input_q.buf[g_input_q.tail];
+        if (e.type == WINIOS_EV_TEXT) {
+            /* Pasted text (env.MADEIRA_PASTE_SHORTCUT, the keyboard bar's Paste): one consumer at a time keeps its
+             * order across the Wine threads that pump events (the others leave it queued), and it is delivered at the
+             * pace the paste asked for, never caught up as a burst. Other events take the path below, as before. */
+            if (pthread_mutex_trylock(&g_input_drain_lock)) {
+                pthread_mutex_unlock(&g_input_q.lock);
+                break;
+            }
+            if (e.data == atomic_load(&g_text_generation) && e.data == g_text_paced_generation && CACurrentMediaTime() < g_text_ready_at) {
+                pthread_mutex_unlock(&g_input_drain_lock);
+                pthread_mutex_unlock(&g_input_q.lock);
+                break;
+            }
+            text_owner = 1;
+        }
+        g_input_q.tail = (g_input_q.tail + 1) % WINIOS_RING_SIZE;
+        pthread_mutex_unlock(&g_input_q.lock);
+
+        if (text_owner) {
+            if (winios_drain_text(&e) && e.data == atomic_load(&g_text_generation)) {
+                g_text_paced_generation = e.data;
+                g_text_ready_at = CACurrentMediaTime() + (e.flags >> 8) / 1000.0;
+            }
+            pthread_mutex_unlock(&g_input_drain_lock);
+            drained = TRUE;
+            continue;   /* the clipboard's contents stay out of the input log */
+        }
+
+        /* madeira-bcd (2026-10-18): the first 40 events, then a count every
+         * 5000. A flushed line per event was a write() per mouse move on the
+         * thread that pumps the game's messages (a GCMouse reports up to its
+         * polling rate), and grew the session log by ~60 bytes per move. The
+         * first lines still prove the drain runs (docs/madeira-bcd.md). */
+        {
+            static unsigned int drained_mouse, drained_keys;   /* log counts only: a race costs a miscount */
+            unsigned int total;
+            if (e.type == WINIOS_EV_KEY) drained_keys++; else drained_mouse++;
+            total = drained_mouse + drained_keys;
+            if (total <= 40) {
+                fprintf(stderr, "[winios] drain type=%u x=%d y=%d flags=0x%x\n", e.type, e.x, e.y, e.flags); fflush(stderr);
+            } else if (total % 5000 == 0) {
+                fprintf(stderr, "[winios] drain: %u events (mouse %u, keys %u; one line each for the first 40)\n",
+                        total, drained_mouse, drained_keys); fflush(stderr);
+            }
+        }
+        if (e.type == WINIOS_EV_KEY)
+            winios_drv_post_key((unsigned short)e.x, e.flags);
+        else
+            winios_drv_post_mouse(e.x, e.y, e.flags, e.data, NULL);
+        drained = TRUE;
+    }
+    return drained;
+}
+
 BOOL winios_pProcessEvents(DWORD mask) {
     /* The restored born-minimized window's own thread brings it to the front
      * (see g_restore_foreground); other threads leave the request in place. */
@@ -946,42 +1160,7 @@ BOOL winios_pProcessEvents(DWORD mask) {
             winios_dump_window_tree();
         }
     }
-    BOOL drained = FALSE;
-    for (;;) {
-        winios_input_event_t e;
-        pthread_mutex_lock(&g_input_q.lock);
-        if (g_input_q.tail == g_input_q.head) {
-            pthread_mutex_unlock(&g_input_q.lock);
-            break;
-        }
-        e = g_input_q.buf[g_input_q.tail];
-        g_input_q.tail = (g_input_q.tail + 1) % WINIOS_RING_SIZE;
-        pthread_mutex_unlock(&g_input_q.lock);
-
-        /* madeira-bcd (2026-10-18): the first 40 events, then a count every
-         * 5000. A flushed line per event was a write() per mouse move on the
-         * thread that pumps the game's messages (a GCMouse reports up to its
-         * polling rate), and grew the session log by ~60 bytes per move. The
-         * first lines still prove the drain runs (docs/madeira-bcd.md). */
-        {
-            static unsigned int drained_mouse, drained_keys;   /* log counts only: a race costs a miscount */
-            unsigned int total;
-            if (e.type == WINIOS_EV_KEY) drained_keys++; else drained_mouse++;
-            total = drained_mouse + drained_keys;
-            if (total <= 40) {
-                fprintf(stderr, "[winios] drain type=%u x=%d y=%d flags=0x%x\n", e.type, e.x, e.y, e.flags); fflush(stderr);
-            } else if (total % 5000 == 0) {
-                fprintf(stderr, "[winios] drain: %u events (mouse %u, keys %u; one line each for the first 40)\n",
-                        total, drained_mouse, drained_keys); fflush(stderr);
-            }
-        }
-        if (e.type == WINIOS_EV_KEY)
-            winios_drv_post_key((unsigned short)e.x, e.flags);
-        else
-            winios_drv_post_mouse(e.x, e.y, e.flags, e.data, NULL);
-        drained = TRUE;
-    }
-    return drained;
+    return winios_drain_input();
 }
 
 /* ============================================================ *
@@ -1003,6 +1182,8 @@ static NSMutableDictionary<NSNumber *, NSValue *> *g_px_rects;  /* hwnd → last
 static NSMutableDictionary<NSNumber *, NSValue *> *g_surf_sizes; /* hwnd → surface px size */
 static NSMutableDictionary<NSNumber *, CAMetalLayer *> *g_metal_layers; /* hwnd → DXMT layer */
 static NSMutableDictionary<NSNumber *, NSValue *> *g_client_rects;      /* hwnd → client px rect */
+static NSMutableDictionary<NSNumber *, NSNumber *> *g_root_hwnd;        /* child hwnd → top-level ancestor hwnd */
+static NSMutableDictionary<NSNumber *, NSNumber *> *g_win_depth;        /* child hwnd → ancestor depth >= 1 */
 /* Desktop fit state (winios_desktop_fit below), main thread only. */
 static NSNumber *g_fit_key;
 static CGRect g_fit_client_px;   /* the window's client rect, desktop px */
@@ -1250,6 +1431,8 @@ static void winios_drop_compositor(const char *why) {
     [g_surf_sizes removeAllObjects];
     [g_metal_layers removeAllObjects];
     [g_client_rects removeAllObjects];
+    [g_root_hwnd removeAllObjects];
+    [g_win_depth removeAllObjects];
     g_fit_key = nil;
     [g_compositor_view removeFromSuperview];
     g_compositor_view = nil;
@@ -1394,6 +1577,103 @@ static void winios_ensure_compositor(void) {
 }
 
 /* main thread only */
+/* The in-game menu's window thumbnails (Winios.h). */
+size_t winios_window_thumbnail(unsigned long long hwnd, int max_edge, void *out, size_t cap) {
+    if (!NSThread.isMainThread || !out || cap < 256 || max_edge < 16) return 0;
+    CALayer *layer = g_layers[@((uintptr_t)hwnd)];
+    id contents = layer.contents;
+    if (!contents || CFGetTypeID((__bridge CFTypeRef)contents) != CGImageGetTypeID()) return 0;
+    CGImageRef image = (__bridge CGImageRef)contents;
+    size_t w = CGImageGetWidth(image), h = CGImageGetHeight(image);
+    if (w == 0 || h == 0) return 0;
+    double scale = (double)max_edge / (double)(w > h ? w : h);
+    if (scale > 1) scale = 1;
+    size_t tw = (size_t)(w * scale + 0.5), th = (size_t)(h * scale + 0.5);
+    if (tw < 1) tw = 1;
+    if (th < 1) th = 1;
+    CGColorSpaceRef space = CGColorSpaceCreateDeviceRGB();
+    CGContextRef ctx = CGBitmapContextCreate(NULL, tw, th, 8, 0, space, (CGBitmapInfo)kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little);
+    CGColorSpaceRelease(space);
+    if (!ctx) return 0;
+    CGContextSetRGBFillColor(ctx, 0, 0, 0, 1);
+    CGContextFillRect(ctx, CGRectMake(0, 0, tw, th));
+    CGContextSetInterpolationQuality(ctx, kCGInterpolationMedium);
+    CGContextDrawImage(ctx, CGRectMake(0, 0, tw, th), image);
+    CGImageRef small = CGBitmapContextCreateImage(ctx);
+    CGContextRelease(ctx);
+    if (!small) return 0;
+    NSMutableData *data = [NSMutableData data];
+    CGImageDestinationRef dest = CGImageDestinationCreateWithData((__bridge CFMutableDataRef)data, CFSTR("public.jpeg"), 1, NULL);
+    size_t length = 0;
+    if (dest) {
+        NSDictionary *options = @{ (__bridge NSString *)kCGImageDestinationLossyCompressionQuality: @0.6 };
+        CGImageDestinationAddImage(dest, small, (__bridge CFDictionaryRef)options);
+        if (CGImageDestinationFinalize(dest) && data.length <= cap) {
+            memcpy(out, data.bytes, data.length);
+            length = data.length;
+        }
+        CFRelease(dest);
+    }
+    CGImageRelease(small);
+    return length;
+}
+
+/* main thread only: keep every child/descendant CALayer above its root window's
+ * CALayer (and deeper descendants above shallower ones). A child swapchain (such
+ * as EADesktop's CEF browser view 0x100f2 inside 0x100f0 -> 0x100ec -> 0x200e0)
+ * often creates its CAMetalLayer while the top-level parent 0x200e0 is still
+ * hidden; when 0x200e0 is shown later, addSublayer: would otherwise place the
+ * parent's opaque layer ON TOP OF its own child layer. */
+static void winios_order_family(NSNumber *rootKey) {
+    if (!g_compositor_view || g_comp_game || !rootKey || !g_layers || !g_root_hwnd) return;
+    CALayer *rootLayer = g_layers[rootKey];
+    if (!rootLayer || !rootLayer.superlayer) return;
+    NSMutableArray<NSNumber *> *kids = nil;
+    for (NSNumber *k in g_root_hwnd) {
+        if ([g_root_hwnd[k] isEqualToNumber:rootKey] && g_layers[k]) {
+            if (!kids) kids = [NSMutableArray new];
+            [kids addObject:k];
+        }
+    }
+    if (!kids.count) return;
+    [kids sortUsingComparator:^NSComparisonResult(NSNumber *a, NSNumber *b) {
+        int da = g_win_depth[a].intValue, db = g_win_depth[b].intValue;
+        return da < db ? NSOrderedAscending : (da > db ? NSOrderedDescending : NSOrderedSame);
+    }];
+    CALayer *above = rootLayer;
+    for (NSNumber *k in kids) {
+        CALayer *kl = g_layers[k];
+        if (!kl || kl == above) continue;
+        NSArray<CALayer *> *subs = g_compositor_view.layer.sublayers;
+        NSUInteger idxK = [subs indexOfObjectIdenticalTo:kl];
+        NSUInteger idxA = [subs indexOfObjectIdenticalTo:above];
+        if (idxK == NSNotFound || idxA == NSNotFound || idxK < idxA) {
+            [g_compositor_view.layer insertSublayer:kl above:above];
+        }
+        above = kl;
+    }
+}
+
+void winios_window_lineage(HWND hwnd, HWND root, int depth) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSNumber *key = @((uintptr_t)hwnd);
+        if (!g_root_hwnd) {
+            g_root_hwnd = [NSMutableDictionary new];
+            g_win_depth = [NSMutableDictionary new];
+        }
+        if (root && depth > 0) {
+            NSNumber *rk = @((uintptr_t)root);
+            g_root_hwnd[key] = rk;
+            g_win_depth[key] = @(depth);
+            winios_order_family(rk);
+        } else {
+            [g_root_hwnd removeObjectForKey:key];
+            [g_win_depth removeObjectForKey:key];
+            winios_order_family(key);
+        }
+    });
+}
+
 static CALayer *winios_layer_for(HWND hwnd, bool create) {
     NSNumber *key = @((uintptr_t)hwnd);
     CALayer *l = g_layers[key];
@@ -1407,6 +1687,7 @@ static CALayer *winios_layer_for(HWND hwnd, bool create) {
         l.hidden = YES;
         [g_compositor_view.layer addSublayer:l];
         g_layers[key] = l;
+        winios_order_family(g_root_hwnd[key] ?: key);
         fprintf(stderr, "[winios] layer created for hwnd=%p (%lu layers)\n",
                 hwnd, (unsigned long)g_layers.count);
         fflush(stderr);
@@ -1418,6 +1699,8 @@ static void winios_remove_layer(HWND hwnd) {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (!g_layers) return;
         NSNumber *key = @((uintptr_t)hwnd);
+        [g_root_hwnd removeObjectForKey:key];
+        [g_win_depth removeObjectForKey:key];
         CALayer *l = g_layers[key];
         if (l) {
             [l removeFromSuperlayer];
@@ -1467,6 +1750,7 @@ static BOOL winios_desktop_fit(NSNumber *key, CAMetalLayer *ml, CGRect c) {
     winios_screen_size(&desk_w, &desk_h);
     CGRect desk = CGRectMake(0, 0, desk_w, desk_h);
     BOOL outside = desk_w > 0 && desk_h > 0 && c.size.width >= 64 && c.size.height >= 64
+        && c.origin.x > -16000 && c.origin.y > -16000
         && !CGRectContainsRect(CGRectInset(desk, -8, -8), c);
     if (!winios_desktop_fit_enabled() || !outside || !ml.superlayer || !g_compositor_view) {
         if (g_fit_key && [g_fit_key isEqual:key]) g_fit_key = nil;

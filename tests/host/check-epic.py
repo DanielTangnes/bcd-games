@@ -130,7 +130,10 @@ check(not re.search(r"(?i)epic|BCDEpic", code(ASK.read_text())), "...and it name
 check(len(set(re.findall(r"A[12]000(?:D5|E5|F5)[0-9A-F]\b", pbx))) == (len(FILES) + 1) * 2, "the Epic ID ranges (D50-D5F, E50-E5F, F50-F5F) hold only Epic's files and BCDAsk.swift (a build ID and a file ID each)")
 
 preview = (R / "tools/ui-preview.py").read_text()
-check('APP.glob("BCD*.swift")' in preview and "rglob" not in preview,
+# The cache recursively hashes resource bundles; only the compiler's source
+# selection must stay top-level. Keep the engine-file guard scoped to that build.
+preview_build = preview.split("def _build(out):", 1)[-1].split("\ndef ", 1)[0]
+check('APP.glob("BCD*.swift")' in preview_build and "rglob" not in preview_build,
       "the preview build compiles app/Madeira's top-level BCD*.swift only, so the engine-bound Epic files stay out")
 screens = [p for p in APP.glob("BCD*.swift") if p.name not in ("BCDLiveStore.swift", "BCDLiveFrontEnd.swift", "BCDSetupView.swift")
            and not p.name.endswith("Live.swift")]

@@ -1,0 +1,15 @@
+{
+ "dialogs": [
+  "ERROR",
+  "Could not create window: No matching GL pixel format available"
+ ],
+ "end": {},
+ "matched": [
+  "opengl-only-no-context"
+ ],
+ "next": [],
+ "note": "Send Log 0CBF7Q, build 600: GL-absent stub followed by SDL No matching GL pixel format available. Recognize the missing backend without speculative config changes; not a game compatibility fix.",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "known"
+}

@@ -317,12 +317,64 @@ enum StikJITHelper {
     /// since (malloc, Metal, IOSurface).
     private static var earlyPoolReleased = false
 
+    /// madeira-bcd exe-window-auto (off unless `exe-window-auto = 1` in the game's file or bcd.cfg): the window
+    /// a game's own fixed-base exe needs, measured from its PE header before a BCD Dock session starts
+    /// (fixedBaseWindowMB, ContentView.startDock). 0: not asked, or nothing larger than the 128MB window was
+    /// found. Read once by the next allocatePool, then cleared, so it never carries over to another game.
+    /// An `exe-window-mb` in the game's file wins over it.
+    static var exeWindowAutoMB = 0
+
+    /// madeira-bcd: the largest executable window (MB, 16MB steps) that an exe
+    /// under `folder` needs: one whose relocations are stripped (or that has no
+    /// relocation directory), based in [0x140000000, 0x180000000), ending above
+    /// the 128MB window. Only the first 4KB of each exe are read. nil when none
+    /// needs more than 128MB.
+    static func fixedBaseWindowMB(in folder: URL) -> (mb: Int, exe: String)? {
+        let winBase: UInt64 = 0x140000000, ceiling: UInt64 = 0x180000000
+        guard let walker = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil,
+                                                          options: [.skipsHiddenFiles, .skipsPackageDescendants]) else { return nil }
+        var best: (end: UInt64, exe: String)? = nil
+        var seen = 0
+        for case let url as URL in walker {
+            guard url.pathExtension.lowercased() == "exe" else { continue }
+            seen += 1
+            if seen > 256 { break }
+            guard let fh = try? FileHandle(forReadingFrom: url) else { continue }
+            let head = (try? fh.read(upToCount: 4096)) ?? Data()
+            try? fh.close()
+            let b = [UInt8](head)
+            func u16(_ o: Int) -> UInt64 { o >= 0 && o + 2 <= b.count ? UInt64(b[o]) | UInt64(b[o + 1]) << 8 : 0 }
+            func u32(_ o: Int) -> UInt64 { u16(o) | u16(o + 2) << 16 }
+            func u64(_ o: Int) -> UInt64 { u32(o) | u32(o + 4) << 32 }
+            guard b.count >= 0x40, b[0] == 0x4d, b[1] == 0x5a else { continue }
+            let pe = Int(u32(0x3c))
+            guard pe > 0, pe + 24 + 160 <= b.count, u32(pe) == 0x4550 else { continue }
+            let characteristics = u16(pe + 22)
+            let opt = pe + 24
+            guard u16(opt) == 0x20b else { continue }              // PE32+ only
+            let imageBase = u64(opt + 24)
+            let sizeOfImage = u32(opt + 56)
+            let relocSize = u32(opt + 112 + 5 * 8 + 4)
+            guard characteristics & 0x1 != 0 || relocSize == 0 else { continue }
+            guard imageBase >= winBase, imageBase < ceiling else { continue }
+            let end = imageBase + sizeOfImage
+            if end > winBase + (128 << 20) && end > (best?.end ?? 0) {
+                best = (end: end, exe: url.lastPathComponent)
+            }
+        }
+        guard let found = best else { return nil }
+        let mb = Int((found.end - winBase + (16 << 20) - 1) >> 24) * 16
+        return (mb: mb, exe: found.exe)
+    }
+
     /// Allocate a JIT memory pool via BRK #0xf00d WITHOUT detaching the debugger.
     /// The debugger stays attached so Wine can use BRK to prepare PE code pages.
     static func allocatePool(poolSize requestedPoolSize: Int = 128 * 1024 * 1024) -> (rx: UnsafeMutableRawPointer, rw: UnsafeMutableRawPointer, size: Int)? {
         var poolSize = requestedPoolSize      // ml1036: may shrink to fit, see the hole census below
         poolFailure = nil
         exeWindowWidenFailedMB = nil
+        let exeWindowAuto = exeWindowAutoMB      // madeira-bcd exe-window-auto: this request's, then cleared (it never reaches another game)
+        exeWindowAutoMB = 0
         // madeira-bcd ios18-jit (2026-10-18): P_TRACED, not CS_DEBUGGED, says whether anything
         // can answer the pool request's BRK. With no debugger attached the pool is built without
         // one where TXM does not police code (JITNoDebuggerPool, after its one-page self-test);
@@ -595,16 +647,21 @@ enum StikJITHelper {
         // Metal Gear Solid V, Stellar Blade's demo and Star Wars Galactic Racer (testers' logs, builds
         // 565-574). With the line the window grows to that size before the hole census, so the pool is
         // placed around it (it may be smaller). Without the line nothing changes.
+        // exe-window-auto (off unless set; ContentView.startDock measured the game's folder): the size the largest fixed-base
+        // exe there needs, used when the game's file names no exe-window-mb of its own.
+        let explicitWindowMB = Int((MadeiraConfig.gameValue("exe-window-mb") ?? "").trimmingCharacters(in: .whitespaces))
+        let windowFromAuto = explicitWindowMB == nil && exeWindowAuto > 128
         if windowHeld, reservePlan == nil,
-           let mb = Int((MadeiraConfig.gameValue("exe-window-mb") ?? "").trimmingCharacters(in: .whitespaces)),
+           let mb = explicitWindowMB ?? (windowFromAuto ? min(exeWindowAuto, 960) : nil),
            mb > Int(exeWinSize >> 20), mb <= 1024 {
+            let setting = windowFromAuto ? "exe-window-auto" : "exe-window-mb"
             let want = vm_address_t(mb) << 20
             var extra: vm_address_t = exeWinBase + exeWinSize
             let kr = vm_allocate(mach_task_self_, &extra, vm_size_t(want - exeWinSize), 0 /* VM_FLAGS_FIXED */)
             if kr == KERN_SUCCESS && extra == exeWinBase + exeWinSize {
                 exeWinSize = want
                 setenv("WINE_IOS_EXE_WINDOW", String(format: "%lx:%lx", Int(exeWinBase), Int(exeWinSize)), 1)
-                LogStore.shared.log("[exe-window] executable window widened to [0x140000000,+\(mb)MB) for this game (exe-window-mb)", level: .success)
+                LogStore.shared.log("[exe-window] executable window widened to [0x140000000,+\(mb)MB) for this game (\(setting))", level: .success)
             } else {
                 if kr == KERN_SUCCESS { vm_deallocate(mach_task_self_, extra, vm_size_t(want - exeWinSize)) }
                 exeWindowWidenFailedMB = mb
@@ -648,6 +705,14 @@ enum StikJITHelper {
             // `pool-pair = 0` in the game's file or bcd.cfg turns it off.
             let pairOff = ["0", "off", "false", "no"].contains((MadeiraConfig.gameValue("pool-pair")
                 ?? MadeiraConfig.get("pool-pair") ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
+            // madeira-bcd pool-above-window (off unless `pool-above-window = 1` in the game's file or bcd.cfg): the pair is also
+            // considered when the single pool lands ABOVE the window, in the higher of two runs there (takeSecondRegion only
+            // looks above the pool, so the lower run was lost: The Adventures of Elliot, 480MB window, got a 288MB pool at
+            // 0x16d848000 while 0x15e000000+240MB sat unused below it and FEX rebuilt its code cache 2,329 times in five
+            // minutes), and region A may be any run of 128MB or more. Off, only the case above (a single run below the
+            // window) is considered, with runs of 256MB or more, as every game that runs today has been placed.
+            let pairHigh = ["1", "on", "true", "yes"].contains((MadeiraConfig.gameValue("pool-above-window")
+                ?? MadeiraConfig.get("pool-above-window") ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
             let ceiling: vm_address_t = 0x180000000           // SHARED_REGION_BASE_ARM64, as takeSecondRegion
             let singleFit = largest < vm_address_t(poolSize)
                 ? poolRunSize(available: largest, wanted: vm_address_t(poolSize), pageFit: pageFit)
@@ -657,13 +722,13 @@ enum StikJITHelper {
                 // (holes below the placeholder, only when a hole above it fits).
                 let steered = earlyPoolBase != 0 && holes.contains { $0.base + $0.size > earlyPoolBase && $0.size >= singleFit }
                 let singleAt = holes.first(where: { $0.size >= singleFit && !(steered && $0.base + $0.size <= earlyPoolBase) })
-                if let s = singleAt, s.base + s.size <= exeWinBase {
+                if let s = singleAt, pairHigh || s.base + s.size <= exeWinBase {
                     var best = singleFit
                     var bestB: (base: vm_address_t, size: vm_address_t) = (base: 0, size: 0)
                     for run in holes where run.base >= exeWinBase + exeWinSize && run.base < ceiling {
                         let aFit = min(poolRunSize(available: min(run.size, ceiling - run.base),
                                                   wanted: vm_address_t(poolSize), pageFit: pageFit), vm_address_t(poolSize))
-                        guard aFit >= 256 << 20, aFit < vm_address_t(poolSize) else { continue }
+                        guard aFit >= vm_address_t(pairHigh ? 128 : 256) << 20, aFit < vm_address_t(poolSize) else { continue }
                         // B as takeSecondRegion picks it: the largest run in [A's end, ceiling),
                         // the rest of A's own run included.
                         let aEnd = run.base + aFit
@@ -682,10 +747,13 @@ enum StikJITHelper {
                         pairSingle = Int(singleFit)
                         poolSize = Int(pa.size)
                         LogStore.shared.log(String(format: "[pool-split] ml1036 pair above the window: A=0x%lx+%luMB B=0x%lx+%luMB "
-                            + "total=%luMB (single best was %luMB at 0x%lx, below the window, where the pool cannot split; "
+                            + "total=%luMB (single best was %luMB at 0x%lx, %@; "
                             + "pool-pair = 0 turns this off)",
                             Int(pa.base), Int(pa.size >> 20), Int(bestB.base), Int(bestB.size >> 20), Int(best >> 20),
-                            Int(singleFit >> 20), Int(s.base)), level: .success)
+                            Int(singleFit >> 20), Int(s.base),
+                            s.base + s.size <= exeWinBase ? "below the window, where the pool cannot split"
+                                                          : "above the window, with a run below it the split could not reach"),
+                            level: .success)
                         if best < 500 << 20 {
                             LogStore.shared.log("⚠️ SMALL JIT POOL (\(best >> 20)MB) on this launch: expect ~1 s freezes in heavy games. "
                                 + "Quit and relaunch the app for a smooth session.", level: .error)
@@ -782,10 +850,8 @@ enum StikJITHelper {
                                          : (hitsExeWindow ? "swallows the 0x140000000 executable window"
                                                           : "guest 64G window"),
                                        attempt), level: .error)
-            let dkr = vm_deallocate(mach_task_self_, vm_address_t(a), vm_size_t(poolSize))
-            LogStore.shared.log(dkr == KERN_SUCCESS
-                ? "  bad region freed"
-                : "  bad region kept as pin (vm_deallocate kr=\(dkr))")
+            plugs.append((vm_address_t(a), vm_size_t(poolSize)))
+            LogStore.shared.log("  bad region kept as pin until loop end")
         }
         // ml1040: the plugs existed only to steer first-fit; give the VA back.
         for (a, sz) in plugs { vm_deallocate(mach_task_self_, a, sz) }

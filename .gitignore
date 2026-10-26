@@ -132,6 +132,10 @@ build/wine-mono/wine-mono-*
 # redistributable terms and only unmodified. Not ours to ship -- obtain them
 # yourself, see tools/fetch-vcruntime.md.
 app/Madeira/x86_64-vcruntime/*.dll
+
+# The General MIDI SoundFont (TimGM6mb.sf2, GPL-2.0): downloaded and checked by tools/fetch-soundfont.sh, never
+# committed; its notice (NOTICE-TimGM6mb.txt) is tracked.
+app/Madeira/soundfont/*.sf2
 research/remote-metal/host/rmetald
 research/remote-metal/guest/rmtest
 
@@ -190,11 +194,16 @@ app/Madeira/arm64ec-windows/d3d11-src.dll
 # DXMT's Direct3D 9 for 64-bit games (tools/build-d3d9-x64-dll.sh), opt-in with env.MADEIRA_D3D9_X64 = dxmt.
 build/dxmt-d3d9-x64/
 app/Madeira/arm64ec-windows/d3d9-dxmt.dll
+# crosire's d3d8to9 and cnc-ddraw (tools/build-d3d8to9-dll.sh, tools/build-cnc-ddraw-dll.sh): the work directories; the DLLs go into the ignored i386 farm.
+build/d3d8to9/
+build/cnc-ddraw/
 __pycache__/
 # The i386 farm (32-bit Wine + DXMT DLLs) is built from the pinned submodules by
 # build/wine-i386/build.sh (docs/WOW64.md section 9); it is not committed.
 app/Madeira/i386-windows/*
 !app/Madeira/i386-windows/.gitkeep
+# BCD's 32-bit test programs (tools/build-dx-tests.sh) are tracked: the fallback when a build has no llvm-mingw
+!app/Madeira/i386-windows/*-test-x86.exe
 
 # Madeira Dock: built from madeira-dock by build/madeira-dock/build.sh
 app/Madeira/arm64ec-windows/dockhost.exe
@@ -214,3 +223,16 @@ bcd-host/out/
 
 # BCD's Direct3D test programs: the offline shader compiler and what tools/build-dx-tests.sh builds
 build/dx-tests/
+
+# BCD's system tests (tools/build-systests.sh): the build directory is not committed; the 32-bit program is the one tracked file of the
+# i386 farm's folder (the fallback when a build has no llvm-mingw), the 64-bit one sits tracked in arm64ec-windows like the DirectX tests
+build/systests/
+!app/Madeira/i386-windows/bcd-systest-x86.exe
+
+# 7-Zip (tools/build-7zip.py, round 603): the unpacked source and the object files; the two programs are tracked in arm64ec-windows
+build/7zip/
+
+# BCD runtime installer (tools/build-bcd-runtimes.sh, round 603): the build directory is not committed; the program is tracked in arm64ec-windows
+build/bcd-runtimes/
+# BCD start helper (tools/build-bcd-helper.sh, round 604): the build directory is not committed; the program is tracked in arm64ec-windows
+build/bcd-helper/

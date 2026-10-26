@@ -75,16 +75,22 @@ import UIKit
     // MARK: Editing
 
     func select(_ id: UUID?) { selected = id }
-    func move(_ id: UUID, x: Double, y: Double) { update(id) { $0.x = x; $0.y = y } }
+    func move(_ id: UUID, x: Double, y: Double) { update(id) { if !$0.locked { $0.x = x; $0.y = y } } }
     func add() {
         let p = BCDTouchGeometry.addPosition(count: items.count)
         let item = BCDTouchItem(id: UUID(), x: p.x, y: p.y, scale: 1, action: .mouseLeft)
         items.append(item)
         selected = item.id
     }
-    func remove(_ id: UUID) { items.removeAll { $0.id == id }; selected = nil }
+    func remove(_ id: UUID) {
+        if items.first(where: { $0.id == id })?.locked == true { return }
+        items.removeAll { $0.id == id }; selected = nil
+    }
     func setAction(_ id: UUID, _ action: BCDTouchAction) { update(id) { $0.action = action } }
-    func setScale(_ id: UUID, _ scale: Double) { update(id) { $0.scale = BCDTouchGeometry.clampScale(scale) } }
+    func setScale(_ id: UUID, _ scale: Double) { update(id) { if !$0.locked { $0.scale = BCDTouchGeometry.clampScale(scale) } } }
+    func setLocked(_ id: UUID, _ locked: Bool) { update(id) { $0.locked = locked } }
+    func bringToFront(_ id: UUID) { items = BCDTouchLayering.moved(items, id, toFront: true) }
+    func sendToBack(_ id: UUID) { items = BCDTouchLayering.moved(items, id, toFront: false) }
     func setPadLink(_ id: UUID, _ name: String?) { update(id) { $0.padLink = name } }
     func setOpacity(_ value: Double) { opacity = value }
     func setLayoutScale(_ value: Double) { layoutScale = value }
@@ -209,7 +215,7 @@ private struct BCDTouchPreviewCase: View {
             if spec != "touch-menu" && spec != "touch-off" {
                 BCDTouchLayer(items: model.items, screen: screen, layoutScale: model.layoutScale,
                               opacity: editing ? 1 : model.opacity, editing: editing, selected: model.selected,
-                              input: model, arranging: model)
+                              input: model, arranging: model, look: BCDTouchLookModel.shared.look)   // -BCDLook body,accent,icons,press (round 604)
             }
             switch spec {
             case "touch-editor", "touch-layouts":

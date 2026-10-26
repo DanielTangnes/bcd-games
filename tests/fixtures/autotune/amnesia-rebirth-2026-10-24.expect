@@ -1,0 +1,14 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "glu32-dll-optin"
+ ],
+ "next": [
+  "env.MADEIRA_OPTIN_DLLS = glu32"
+ ],
+ "note": "Amnesia: Rebirth (Epic Games, AmnesiaRebirth.exe), build 592, Send Logs 5Z1G97, 7BDDE9, 70NR89, HB3F4Z, FBWDAH: AmnesiaRebirth.exe imports GLU32.dll, which BCD's 64-bit set does not ship; c0000135 at once (Library GLU32.dll ... not found). env.MADEIRA_OPTIN_DLLS = glu32 (build 611) links Wine's DLL for the game. Not tried on a device.",
+ "outcome": "crashed",
+ "stage": 1,
+ "status": "trying"
+}

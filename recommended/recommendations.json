@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "version": 8,
-  "generated": "2026-10-24",
+  "version": 9,
+  "generated": "2026-10-26",
   "rules": [
     {
       "id": "rdr2-steam",
@@ -348,8 +348,8 @@
         "lines, 2026-10-15). On build 543 the launcher, Social Club sign-in and",
         "the code redemption worked and GTA5.exe started; it then hit airconv's",
         "geometry shader assert, fixed for the next build (log GTA5.exe 12:00:12).",
-        "From Steam only: another copy (Epic, Rockstar's store) keeps the",
-        "standard list.",
+        "From Steam only: another copy (Epic, Rockstar's store) has its own list,",
+        "gta5l-other (2026-10-24).",
         "Version 2 (owner, 2026-10-15, build 547: the game played at 38-60 FPS,",
         "log GTA5.exe 13:37:35): no `vram-mb = 4096` and no `swap-mb = 3072`. With",
         "them the first try had sudden drops and stalls; without them it played",
@@ -362,6 +362,62 @@
         "(builds 574 and 576, logs GBY65K, Y5MEB6, A50T0Q) while the same game connected with it off (8JXT6Q on the same",
         "phone, DGNRT5). The line pins AVX off, so a kept auto-tune line cannot switch it on again (the game's own file wins over",
         "auto-tune's layer and a key the game's file sets is never proposed). Not tried on a device with a played session after it."
+      ]
+    },
+    {
+      "id": "gta5l-other",
+      "title": "GTA V Legacy (not Steam)",
+      "version": 1,
+      "match": {
+        "programs": [
+          {"name": "playgtav.exe", "steam": false, "beside": "GTA5.exe", "notBeside": "GTA5_Enhanced.exe"},
+          {"name": "gta5.exe", "steam": false}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for GTA V Legacy outside Steam (Epic Games Store, Rockstar's store).",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "pool-low = 1",
+        "pool-page-fit = 1",
+        "pool-split = 1",
+        "env.FEX_VECTORTSOENABLED = 0",
+        "env.MADEIRA_CHILD_ARGS = PlayGTAV.exe -nobattleye",
+        "env.MADEIRA_DXGI_SRC = 1",
+        "env.MADEIRA_EXECREQ_LEAVE = 1",
+        "env.MADEIRA_FEX_AVX = 0",
+        "env.MADEIRA_KMT_ADAPTER = 1",
+        "env.MADEIRA_LOCK_ORPHAN = stamped",
+        "env.MADEIRA_POOL_HEAD_RESERVE_MB = 128",
+        "env.MADEIRA_POOL_LOW_IMAGES = 1",
+        "env.MADEIRA_POOL_RECYCLE_IMAGES = 1",
+        "env.MADEIRA_SC_PA_POOLS = 2",
+        "env.MADEIRA_SPAWN_BLOCK = RockstarErrorHandler;.be\\vc_redist",
+        "env.MADEIRA_TOUCH_MOUSE = 1",
+        "env.MADEIRA_WOW_MIN_FREE_GB = 2",
+        "env.MADEIRA_X64_GRAPHICS_ENTRY = 1",
+        "env.MADEIRA_X64_IMAGE_NOCOPY = 1",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        "env.DXMT_WSI_MONITOR_IDENTITY = 1",
+        "env.DXMT_WSI_MODE_TABLE = 1",
+        "env.DXMT_SMALL_RINGS = Launcher.exe;SocialClubHelper.exe",
+        "env.WINEDLLOVERRIDES = video64=",
+        "env.MADEIRA_DEVICE_STATS = 1",
+        "env.MADEIRA_METAL_HUD_MAIN = 1",
+        {"line": "env.MADEIRA_STEAM_IDENTITY = none", "minBuild": 598}
+      ],
+      "smallRAMConfig": ["swap-mb = 3072"],
+      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": true, "fpsMode": 4, "display": "fit"},
+      "notes": [
+        "GTA V Legacy outside a Steam library (owner, 2026-10-24): the Epic Games Store copy starts",
+        "C:\\Program Files\\Epic Games\\GTAV\\PlayGTAV.exe (Epic launch logs DJAMF2, QTDJYC, VX8ZZ0, build 592, iPhone18,2), which",
+        "starts Rockstar's launcher like the Steam copy. Until now this copy had no list. The Steam list's lines, without the",
+        "two Dock lines (DOCK_GAME_SCM, DOCK_KEEP_ALIVE: an Epic session already runs Wine's services and has no Dock), plus",
+        "env.MADEIRA_STEAM_IDENTITY = none (598+): every Epic start in build 592 stopped at LAUNCHER_ERR_STEAM_FAILED (113)",
+        "because BCD published a fixed Steam identity. The next wall, seen when a Discord player (slimeeyuh, iPhone18,2, iOS",
+        "27.2, build 592, 2026-10-24) started the launcher from the Desktop: the 896 MB pool shrank to 560/464 MB (no single",
+        "hole), per-process copies of Wine's DLLs held 340 MB, and SocialClubHelper.exe's 240 MiB libcef.dll got",
+        "\"[jit-pool] EXHAUSTED\" (c0000017) 42 and 116 times. NOCOPY runs libcef.dll from its file; the pool lines are",
+        "the Steam copy's. Not yet tried on a device in this form."
       ]
     },
     {
@@ -3441,6 +3497,239 @@
         "env.MADEIRA_ZERO_MITIGATION_POLICY = 1 (build 600; the Wine fork's kernelbase process.c) makes the stub zero the structure (no mitigation is enabled), so",
         "ChakraCore takes its non-CFG path. Off: the stub as before. Only this list and auto-tune's rule chakracore-cfg-policy-failfast set it. Not proven on a device:",
         "what the game does after ChakraCore starts is unknown (neoSphere's display may ask for OpenGL, which BCD does not have; ChakraCore's JIT runs under FEX)."
+      ]
+    },
+    {
+      "id": "grand-theft-auto-iii",
+      "title": "Grand Theft Auto III",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [12100],
+        "steamFolders": ["grand theft auto 3"],
+        "programs": [{"name": "gta3.exe"}]
+      },
+      "config": [
+        "# BCD's recommended settings for Grand Theft Auto III.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_D3D8 = d3d9", "minBuild": 602}
+      ],
+      "notes": [
+        "Grand Theft Auto III (Steam 12100, gta3.exe, RenderWare on Direct3D 8, BCD Dock), build 592, iPad17,1 (Send Log AN4ETP, 2026-10-24): the 32-bit game loads",
+        "ddraw.dll and d3d8.dll (L8676, L8726), Wine's wined3d tries three times for an OpenGL context and finds none (\"wined3d_adapter_gl_init Failed to get a GL",
+        "context\" L10215, L10277, L10353) and the game sits without a picture (L10416 on).",
+        "env.MADEIRA_D3D8 = d3d9 (build 602) makes crosire's d3d8to9 (Direct3D 8 on Direct3D 9, which is DXMT's in a 32-bit session) this game's d3d8.dll, linked",
+        "over Wine's in C:\\windows\\syswow64 at session start (tools/build-d3d8to9-dll.sh, BCDGraphicsRoutes.c). Every other game keeps Wine's d3d8.dll. Auto-tune's rule",
+        "d3d8-to-d3d9 adds the same line after this failure. Not tried on a device yet."
+      ]
+    },
+    {
+      "id": "postal-2",
+      "title": "POSTAL 2",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [223470],
+        "steamFolders": ["postal2complete"],
+        "programs": [{"name": "postal2.exe"}]
+      },
+      "config": [
+        "# BCD's recommended settings for POSTAL 2.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_D3D8 = d3d9", "minBuild": 602}
+      ],
+      "notes": [
+        "POSTAL 2 (Steam 223470, System\\Postal2.exe, Unreal Engine 2.5 with its Direct3D 8 renderer, BCD Dock), build 592, iPhone15,4 (Send Log EN0AAS, 2026-10-24) and",
+        "build 580 (BE6HVZ): d3d8.dll loads (L12391), Wine's wined3d finds no OpenGL (\"wined3d_adapter_gl_init Failed to get a GL context\" L12445), the engine",
+        "throws a C++ exception (L12446) and shows its \"Critical Error\" box (IDC_CrashBox, L12451).",
+        "env.MADEIRA_D3D8 = d3d9 (build 602) makes crosire's d3d8to9 (Direct3D 8 on Direct3D 9, which is DXMT's in a 32-bit session) this game's d3d8.dll, linked",
+        "over Wine's in C:\\windows\\syswow64 at session start (tools/build-d3d8to9-dll.sh, BCDGraphicsRoutes.c). Every other game keeps Wine's d3d8.dll. Auto-tune's rule",
+        "d3d8-to-d3d9 adds the same line after this failure. Not tried on a device yet."
+      ]
+    },
+    {
+      "id": "hotline-miami",
+      "title": "Hotline Miami",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [219150],
+        "steamFolders": ["hotline_miami"],
+        "programs": [{"name": "hotlinemiami_original.exe"}]
+      },
+      "config": [
+        "# BCD's recommended settings for Hotline Miami.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_D3D8 = d3d9", "minBuild": 602}
+      ],
+      "notes": [
+        "Hotline Miami (Steam 219150, HotlineMiami_Original.exe: GameMaker 8, which imports d3d8.dll and ddraw.dll), builds 576 and 580 (Send Logs 339R82, 1VPXSG, 15HRX1):",
+        "d3d8.dll loads first (L1001), the runner shows its Game Information, Error Messages and Logo forms, then Wine's wined3d finds no OpenGL (\"wined3d_adapter_gl_init",
+        "Failed to get a GL context\" L11666 in 15HRX1) and the runner shows an OK box in a window named after the game before it ends.",
+        "env.MADEIRA_D3D8 = d3d9 (build 602) makes crosire's d3d8to9 (Direct3D 8 on Direct3D 9, which is DXMT's in a 32-bit session) this game's d3d8.dll, linked",
+        "over Wine's in C:\\windows\\syswow64 at session start (tools/build-d3d8to9-dll.sh, BCDGraphicsRoutes.c). Every other game keeps Wine's d3d8.dll. Auto-tune's rule",
+        "d3d8-to-d3d9 adds the same line after this failure. Not tried on a device yet."
+      ]
+    },
+    {
+      "id": "max-payne-2",
+      "title": "Max Payne 2: The Fall of Max Payne",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [12150],
+        "steamFolders": ["max payne 2 the fall of max payne"],
+        "programs": [{"name": "maxpayne2.exe"}]
+      },
+      "config": [
+        "# BCD's recommended settings for Max Payne 2: The Fall of Max Payne.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_D3D8 = d3d9", "minBuild": 602}
+      ],
+      "notes": [
+        "Max Payne 2: The Fall of Max Payne (Steam 12150, maxpayne2.exe with e2_d3d8_driver_mfc.dll, BCD Dock), build 592 (Send Log MWRBPS, 2026-10-24): the game asks the",
+        "shim's Direct3D 9 for adapter facts (it answers), then loads its Direct3D 8 driver and d3d8.dll (L11249, L11285); Wine's wined3d finds no OpenGL (L11300) and the engine",
+        "throws MP_Exception_3DDriversNotFound and shows \"Max Payne 2 requires a Microsoft DirectX 9.0 compatible display adapter\" (msgbox-origin, L11310).",
+        "env.MADEIRA_D3D8 = d3d9 (build 602) makes crosire's d3d8to9 (Direct3D 8 on Direct3D 9, which is DXMT's in a 32-bit session) this game's d3d8.dll, linked",
+        "over Wine's in C:\\windows\\syswow64 at session start (tools/build-d3d8to9-dll.sh, BCDGraphicsRoutes.c). Every other game keeps Wine's d3d8.dll. Auto-tune's rule",
+        "d3d8-to-d3d9 adds the same line after this failure. Not tried on a device yet."
+      ]
+    },
+    {
+      "id": "pico-park",
+      "title": "PICO PARK",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [1509960],
+        "steamFolders": ["pico_park_online"],
+        "programs": [{"name": "pico_park.exe"}]
+      },
+      "config": [
+        "# BCD's recommended settings for PICO PARK.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_D3D9_X64 = dxmt", "minBuild": 602}
+      ],
+      "notes": [
+        "PICO PARK (Steam 1509960, pico_park.exe from the folder PICO_PARK_ONLINE: its own 64-bit Direct3D 9 engine, d3d9.dll and d3dx9 as static imports, BCD Dock),",
+        "build 574, iPhone15,3 (Send Log XF08D7, 2026-10-20): the game's own thread loads d3d9.dll (L9156), Wine's 64-bit d3d9 fails because wined3d needs OpenGL and BCD has none",
+        "(\"wined3d_adapter_gl_init Failed to get a GL context\" and \"d3d9_init FAILED\", L10013-10014) and the game ends.",
+        "env.MADEIRA_D3D9_X64 = dxmt (build 595) makes DXMT's Direct3D 9 for 64-bit games this program's d3d9.dll; Darksiders II Deathinitive Edition (the same failure)",
+        "creates its device and presents on it. From build 602 BCD picks it by itself for a 64-bit Direct3D 9 game whose folder shows no Direct3D 11, DXGI or Direct3D 12",
+        "(BCDGraphicsDefaults.swift); the line makes it certain for this game whatever its folder holds. Every other game keeps Wine's. Not tried on this game on a device yet."
+      ]
+    },
+    {
+      "id": "dont-starve-together",
+      "title": "Don't Starve Together",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [322330],
+        "steamFolders": ["don't starve together"],
+        "programs": [{"name": "dontstarve_steam_x64.exe"}]
+      },
+      "config": [
+        "# BCD's recommended settings for Don't Starve Together.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_D3D9_X64 = dxmt", "minBuild": 602}
+      ],
+      "notes": [
+        "Don't Starve Together (Steam 322330, bin64\\dontstarve_steam_x64.exe: Klei's engine on Direct3D 9, BCD Dock), build 574, iPad13,10 (Send Log 75HZ4Q, 2026-10-19): the game",
+        "opens its window, loads d3dcompiler_43.dll and calls Direct3DCreate9Ex and then Direct3DCreate9 on its own thread; Wine's 64-bit d3d9 fails both (\"wined3d_adapter_gl_init",
+        "Failed to get a GL context\" and \"d3d9_init FAILED\", L12652-12670) and the game shows \"Error during initialization\" (L13024 on).",
+        "env.MADEIRA_D3D9_X64 = dxmt (build 595) makes DXMT's Direct3D 9 for 64-bit games this program's d3d9.dll; Darksiders II Deathinitive Edition (the same failure)",
+        "creates its device and presents on it. From build 602 BCD picks it by itself for a 64-bit Direct3D 9 game whose folder shows no Direct3D 11, DXGI or Direct3D 12",
+        "(BCDGraphicsDefaults.swift); the line makes it certain for this game whatever its folder holds. Every other game keeps Wine's. Not tried on this game on a device yet."
+      ]
+    },
+    {
+      "id": "a-hat-in-time",
+      "title": "A Hat in Time",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [253230],
+        "steamFolders": ["hatintime"],
+        "programs": [{"name": "hatintimegame.exe"}]
+      },
+      "config": [
+        "# BCD's recommended settings for A Hat in Time.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_D3D9_X64 = dxmt", "minBuild": 602}
+      ],
+      "notes": [
+        "A Hat in Time (Steam 253230, Binaries\\Win64\\HatinTimeGame.exe: Unreal Engine 3 on Direct3D 9, 64-bit, BCD Dock), build 565, iPhone18,2 (Send Logs GBDT12 and VSX50F, 2026-10-17):",
+        "the game's own thread loads d3d9.dll, d3dx9_43.dll and d3dcompiler_43.dll (L8968-9020), Wine's 64-bit d3d9 fails because wined3d needs OpenGL and BCD has none",
+        "(\"wined3d_adapter_gl_init Failed to get a GL context\" and \"d3d9_init FAILED\", L13337-13338) and no picture follows.",
+        "env.MADEIRA_D3D9_X64 = dxmt (build 595) makes DXMT's Direct3D 9 for 64-bit games this program's d3d9.dll; Darksiders II Deathinitive Edition (the same failure)",
+        "creates its device and presents on it. From build 602 BCD picks it by itself for a 64-bit Direct3D 9 game whose folder shows no Direct3D 11, DXGI or Direct3D 12",
+        "(BCDGraphicsDefaults.swift); the line makes it certain for this game whatever its folder holds. Every other game keeps Wine's. Not tried on this game on a device yet."
+      ]
+    },
+    {
+      "id": "the-adventures-of-elliot",
+      "title": "The Adventures of Elliot: The Millennium Tales",
+      "version": 1,
+      "minBuild": 602,
+      "match": {
+        "steamAppIDs": [
+          3483510
+        ],
+        "steamFolders": [
+          "the adventures of elliot the millennium tales"
+        ],
+        "programs": [
+          {
+            "name": "elliot-win64-shipping.exe"
+          }
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for The Adventures of Elliot: The Millennium Tales.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {
+          "line": "exe-window-mb = 480",
+          "minBuild": 602
+        },
+        {
+          "line": "env.MADEIRA_X64_IMAGE_NOCOPY = 1",
+          "minBuild": 602
+        },
+        {
+          "line": "pool-split = 1",
+          "minBuild": 602
+        },
+        {
+          "line": "pool-low = 1",
+          "minBuild": 602
+        },
+        {
+          "line": "pool-low-margin = 32",
+          "minBuild": 602
+        },
+        {
+          "line": "pool-above-window = 1",
+          "minBuild": 602
+        },
+        {
+          "line": "env.MADEIRA_KUSER_KEEP_REGS = 1",
+          "minBuild": 602
+        }
+      ],
+      "notes": [
+        "The Adventures of Elliot: The Millennium Tales (Steam 3483510, Unreal Engine, Denuvo): Elliot-Win64-Shipping.exe is 473 MiB with its relocations stripped,",
+        "so it can only load at 0x140000000. A BCD log (8Q0SJ8, build 592, iPad17,4, a copy outside Steam started through Elliot.exe) shows the 128 MB window and the",
+        "image (size 0x1d91c000, charact 0x23) overlapping the JIT pool: \"failed to create main module ... c0000018\", exit 0xc0000018 after 2 s.",
+        "exe-window-mb = 480 keeps the window for the whole image (the 16 MB step that holds it). The window leaves no single 896 MB run for the pool, and the",
+        "image copy in that log already used 505 of the pool's 592 MB, so env.MADEIRA_X64_IMAGE_NOCOPY = 1 (the image is not copied; BCD's other lists for large",
+        "fixed-base programs have it) comes with it. pool-split = 1, pool-low = 1 and pool-low-margin = 32 are the pool settings this game was reported",
+        "to play with on an iPhone 17 Pro at 30 fps; pool-above-window = 1 (the pool pairs the two runs above the window, 240 + 288 MB there, instead of the",
+        "higher one alone) and env.MADEIRA_KUSER_KEEP_REGS = 1 (registers that only hold a KUSER-looking value are left alone after the sub-floor service: Denuvo",
+        "keeps 0x7ffe0283 in rcx while it reads KUSER through another register, and the TLS pointer it computed was off by the relocation) are the two changes",
+        "that report also depended on, which BCD has as switches. Not proven on a device in BCD. The rule and its lines carry minBuild 602 (the switches are read from that build).",
+        "A copy outside Steam started through Elliot.exe (the log above) is not matched by this rule; auto-tune's exe-window-fixed-base proposes the window there."
       ]
     },
     {

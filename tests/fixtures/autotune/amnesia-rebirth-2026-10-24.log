@@ -1,0 +1,16 @@
+[13:04:10.100] [INFO] Checking entitlements...
+[13:04:10.101] [INFO] [build] v0.1.592 (592)
+[13:04:10.102] [INFO] [device] model=iPhone18,2 idiom=phone os=iOS Version 27.0.1 (Build 24A446) ram=11695MB available=8100MB cores=6
+[13:04:10.103] [INFO] [device] address-map=[0x102b58000,0x8000000000) 512GB increased-memory=1 extended-va=1
+[13:04:10.104] [INFO] [device] gpu="Apple A19 Pro GPU" family=apple10 argument-buffers=tier2 mesh=1 bc=1 atomics64=1 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[13:04:17.200] [INFO] [bcd] library launch Amnesia Rebirth: avx=0 wine-vcrt=0 nvidia=0 game-config=1 metalfx=off
+[13:04:18.700] [INFO] Running full Wine sequence...
+[phase] wine-start             t+  0.688s rev=ml526
+0024:err:module:load_dll [dll-missing] rev=ml336 #1 L"GLU32.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:import_dll Library GLU32.dll (which is needed by L"C:\\Program Files\\Epic Games\\AmnesiaRebirth\\AmnesiaRebirth.exe") not found
+0024:err:module:loader_init Importing dlls for L"C:\\Program Files\\Epic Games\\AmnesiaRebirth\\AmnesiaRebirth.exe" failed, status c0000135
+0024:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0xc0000135) syscalls=0 unix_calls=625
+[WineProc] stopping wineserver...
+[13:04:19.739] [INFO] Wine finished after 1.0s
+[13:04:19.974] [INFO] [exit-report] status=0xc0000135
+[frontend] returned to library

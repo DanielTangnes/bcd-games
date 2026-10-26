@@ -7,7 +7,7 @@ import SwiftUI
 import UIKit
 
 // BCD's in-game layer (docs/BCD-UI-ARCHITECTURE.md): what a running game has over it. The
-// starting screen until the game's first frame, the menu button, the performance overlay, the
+// starting screen until the game's first frame, the menu button, the performance HUD, the
 // session line, the live log and the in-game menu. Everything here is drawn from plain values;
 // BCDSessionLive.swift (engine-bound) fills them from the session and carries out what a person
 // asks, through the same engine calls the classic layer used. The preview app fills them with
@@ -104,6 +104,8 @@ struct BCDMenuRow: Identifiable, Equatable {
     var enabled = true
     /// Asked before the row does anything.
     var confirm: BCDConfirm? = nil
+    /// A small picture (JPEG bytes) shown in place of the symbol: the Windows page's thumbnails.
+    var picture: Data? = nil
 }
 
 struct BCDMenuSection: Identifiable, Equatable {
@@ -183,7 +185,8 @@ enum BCDSessionCommand: Equatable {
 @MainActor final class BCDSessionHUDModel: ObservableObject {
     @Published var starting: BCDStartingFeed?
     @Published var menu: BCDSessionMenuModel?
-    @Published var overlay: BCDPerformanceFeed?
+    /// The performance HUD (BCDHUDView.swift); nil while the player has it off.
+    @Published var performance: BCDHUDFeed?
     @Published var log: BCDLogFeed?
     /// The session line ("Starting…", "The game was asked to close…").
     @Published var message = ""
@@ -226,13 +229,9 @@ struct BCDSessionLayer: View {
                         .padding(.top, insets.top + 64).padding(.leading, insets.leading + 14)
                         .allowsHitTesting(false)
                 }
-                if hud.starting == nil, let overlay = hud.overlay {
-                    // Top centre: clear of the touch controls on both sides (owner, 2026-10-19).
-                    BCDDraggable(key: "bcdPerformanceOverlay", start: CGPoint(x: 0.5, y: 0), viewport: geo.size,
-                                 insets: insets, report: { actions.overlayFrame($0) }) { _ in
-                        BCDPerformanceOverlay(feed: overlay,
-                                              maxWidth: min(420, geo.size.width - insets.leading - insets.trailing - 24))
-                    }
+                if hud.starting == nil, let performance = hud.performance {
+                    // Where nothing of the game is in the way (BCDHUDPlacement); it takes touches only while the player moves it.
+                    BCDHUDHost(feed: performance, viewport: geo.size, insets: insets, report: { actions.overlayFrame($0) })
                 }
                 if !hud.message.isEmpty {
                     Text(hud.message)
@@ -418,33 +417,42 @@ struct BCDKeyboardKey: Identifiable, Equatable {
     var latches = false
 
     static let all: [BCDKeyboardKey] = [
+        .init(id: "paste", title: "Paste"),
         .init(id: "esc", title: "Esc"), .init(id: "ctrl", title: "Ctrl", latches: true),
         .init(id: "shift", title: "Shift", latches: true), .init(id: "alt", title: "Alt", latches: true),
         .init(id: "tab", title: "Tab"), .init(id: "enter", title: "Enter"),
         .init(id: "left", title: "←"), .init(id: "up", title: "↑"), .init(id: "down", title: "↓"),
         .init(id: "right", title: "→"),
     ]
+
+    /// madeira-bcd (2026-10-25, round 603): the second page (BCDExtraKeys.keyboardPage), F1 to F12, Win, Alt+Tab and the rest, with the
+    /// latches again. A key of its own beside Done (BCDKeyboardBar) turns to it and back.
+    static let more: [BCDKeyboardKey] = BCDExtraKeys.keyboardPage.map { .init(id: $0.id, title: $0.title, latches: $0.isModifier) }
 }
 
-/// What the key bar shows: the keys held down.
+/// What the key bar shows: the keys held down, and which page.
 @MainActor final class BCDKeyboardBarModel: ObservableObject {
     @Published var latched: Set<String> = []
+    @Published var secondPage = false
 }
 
-/// The bar over the iOS keyboard while a game runs: Esc, the modifiers, Tab, Enter, the arrows
-/// and Done. A held modifier glows.
+/// The bar over the iOS keyboard while a game runs: Paste, Esc, the modifiers, Tab, Enter, the arrows
+/// and Done. A held modifier glows. Paste types the iPad's clipboard text into the program (HardwareInput.pasteClipboard).
 struct BCDKeyboardBar: View {
     @ObservedObject var model: BCDKeyboardBarModel
     let press: (BCDKeyboardKey) -> Void
     let done: () -> Void
+    /// madeira-bcd (2026-10-25, round 603): what the second page's keys that are not latches send (BCDExtraKeys.swift); the latches and
+    /// the first page's keys go through `press`, as they always did.
+    var extra: (BCDKeyboardKey) -> Void = { _ in }
 
     var body: some View {
         HStack(spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
-                    ForEach(BCDKeyboardKey.all) { key in
+                    ForEach(model.secondPage ? BCDKeyboardKey.more : BCDKeyboardKey.all) { key in
                         let held = model.latched.contains(key.id)
-                        Button { press(key) } label: {
+                        Button { if model.secondPage && !key.latches { extra(key) } else { press(key) } } label: {
                             Text(key.title)
                                 .font(BCDStyle.label(15))
                                 .foregroundStyle(held ? Color.white : BCDStyle.text)
@@ -462,6 +470,17 @@ struct BCDKeyboardBar: View {
                 }
                 .padding(.horizontal, 10)
             }
+            // madeira-bcd (2026-10-25, round 603): Fn turns to the second page (F1 to F12, Win, Alt+Tab ...) and back; sends no key.
+            Button { model.secondPage.toggle() } label: {
+                Text(model.secondPage ? "‹ Keys" : "Fn ›")
+                    .font(BCDStyle.label(15)).foregroundStyle(BCDStyle.text)
+                    .frame(minWidth: 46, minHeight: 38)
+                    .padding(.horizontal, 6)
+                    .background(Capsule().fill(model.secondPage ? AnyShapeStyle(BCDStyle.violet.opacity(0.55)) : AnyShapeStyle(BCDStyle.surfaceRaised)))
+                    .overlay(Capsule().strokeBorder(BCDStyle.stroke, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(model.secondPage ? "Back to the first keys" : "More keys: F1 to F12, Win, Alt+Tab")
             Button(action: done) {
                 Text("Done")
                     .font(BCDStyle.label(15)).foregroundStyle(BCDStyle.lavender)

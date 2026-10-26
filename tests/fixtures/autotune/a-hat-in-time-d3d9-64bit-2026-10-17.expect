@@ -1,0 +1,16 @@
+{
+ "dialogs": [],
+ "end": {
+  "quitRequested": true
+ },
+ "matched": [
+  "d3d9-64bit-dxmt-games"
+ ],
+ "next": [
+  "env.MADEIRA_D3D9_X64 = dxmt"
+ ],
+ "note": "A Hat in Time (Steam 253230, HatinTimeGame.exe, Unreal Engine 3 on Direct3D 9, 64-bit), build 565, iPhone18,2, Send Log GBDT12: the game's thread calls Direct3DCreate9, Wine's d3d9 finds no OpenGL (d3d9_init FAILED) and no picture follows; the end is modelled as the player quitting (quitRequested). UNPROVEN: env.MADEIRA_D3D9_X64 = dxmt.",
+ "outcome": "exited-early",
+ "stage": 2,
+ "status": "trying"
+}

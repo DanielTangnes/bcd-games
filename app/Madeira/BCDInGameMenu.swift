@@ -335,7 +335,13 @@ struct BCDInGameMenu: View {
                                           action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                if let symbol = row.symbol {
+                if let data = row.picture, let picture = UIImage(data: data) {   // madeira-bcd (round 604): a window's small picture
+                    Image(uiImage: picture).resizable().scaledToFit()
+                        .frame(width: 64, height: 40)
+                        .background(Color.black, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        .accessibilityHidden(true)
+                } else if let symbol = row.symbol {
                     Image(systemName: symbol).font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(tint == BCDStyle.text ? BCDStyle.lavender : tint)
                         .frame(width: 22)
@@ -400,6 +406,7 @@ struct BCDInGameMenu: View {
             case .rows:
                 ForEach(page.sections) { section($0) }
             case .log:
+                ForEach(page.sections) { section($0) }   // madeira-bcd (round 604): pause, clear and export above the lines
                 BCDLogLines(lines: source.logLines(), size: 10)
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)

@@ -80,7 +80,7 @@ check("by hand only: no toggle, no automatic path, no session hooks in the libra
 check("only the 20 newest logs are listed, and send refuses any other",
       "static let listed = 20" in app and "(runs + own).sorted { modified($0) > modified($1) }.prefix(listed)" in app
       and "let urls = LogUpload.recentLogs()" in bcd_logs and "guard !sending, let url = files[log.id] else { return }" in bcd_logs
-      and app.index("guard recentLogs().contains(") < app.index("LogUploadCore.pack(log, to: gz, comment: comment)")
+      and app.index("guard recentLogs().contains(") < app.index("LogUploadCore.pack(log, to: gz, comment: comment, trailer: trace)")
       and "return finish(.failure(UploadError.notRecent))" in app)
 check("build 562's automatic setting and session marker are cleared",
       'UserDefaults.standard.removeObject(forKey: "madeira.bcd.logs.autosend")' in app and '"bcd-log-session.json"' in app
@@ -150,10 +150,10 @@ comp_src = (APPDIR / "BCDComponents.swift").read_text()
 check("BCDLogComment asks with one text field, Send and Cancel, over the topmost screen",
       "enum BCDLogComment" in comp_src and "alert.addTextField" in comp_src and 'UIAlertAction(title: "Cancel", style: .cancel)' in comp_src
       and 'UIAlertAction(title: "Send", style: .default)' in comp_src and "while let presented = top?.presentedViewController" in comp_src)
-sites = {"AutoTuneViews.swift": "BCDLogComment.ask { LogUpload.send(log, game: offer.title, comment: $0) }",
-         "BCDSettingsSections.swift": "BCDLogComment.ask { backend.send(log, comment: $0) }",
-         "BCDGamePage.swift": "guard let comment = await backend.logComment() else { return }",
-         "BCDGamePageLive.swift": "BCDLogComment.ask({ continuation.resume(returning: $0) }, cancelled: { continuation.resume(returning: nil) })"}
+sites = {"AutoTuneViews.swift": "BCDLogComment.ask(for: log) { LogUpload.send(log, game: offer.title, comment: $0) }",
+         "BCDSettingsSections.swift": "BCDLogComment.ask(for: URL(fileURLWithPath: log.id)) { backend.send(log, comment: $0) }",
+         "BCDGamePage.swift": "guard let comment = await backend.logComment(for: log) else { return }",
+         "BCDGamePageLive.swift": "BCDLogComment.ask(for: file, { continuation.resume(returning: $0) }, cancelled: { continuation.resume(returning: nil) })"}
 for name, want in sites.items():
     check(f"{name}: Send Log asks for the comment first", want in (APPDIR / name).read_text())
 calls = {}
@@ -161,7 +161,8 @@ for f in sorted(APPDIR.glob("*.swift")):
     for line in f.read_text().splitlines():
         if "LogUpload.send(" in line and "static func send" not in line:
             calls.setdefault(f.name, []).append(line.strip())
-missing = {k: v for k, v in calls.items() for l in v if "comment:" not in l and k != "BCDSettingsLive.swift"}
+# the two feedback forms (Settings > Feedback, and the game page's "How did it run?", round 604) send the attached log without the comment box: the message is the comment
+missing = {k: v for k, v in calls.items() for l in v if "comment:" not in l and k not in ("BCDSettingsLive.swift", "BCDGamePageLiveHelp.swift")}
 live = (APPDIR / "BCDSettingsLive.swift").read_text()
 check("every hand-sent log carries the comment (Settings, the game page, auto-tune); only the feedback form's log goes without",
       not missing and live.count("LogUpload.send(") == 2 and "comment: comment, progress:" in live, (missing, calls))
@@ -176,8 +177,9 @@ else:
         main.write_text(
             "import Foundation\n"
             "let a = CommandLine.arguments\n"
+            "let trailer = a.count > 4 && !a[4].isEmpty ? a[4].split(separator: \"\\n\", omittingEmptySubsequences: false).map(String.init) : []\n"
             "do { let r = try LogUploadCore.pack(URL(fileURLWithPath: a[1]), to: URL(fileURLWithPath: a[2]),\n"
-            "                                    comment: a.count > 3 ? a[3] : nil)\n"
+            "                                    comment: a.count > 3 ? a[3] : nil, trailer: trailer)\n"
             "     print(\"\\(r.raw) \\(r.packed)\") } catch { print(\"error \\(error)\"); exit(1) }\n")
         exe = t / "pack"
         b = subprocess.run([swiftc, "-O", "-o", str(exe), str(R / "app/Madeira/LogUploadCore.swift"), str(main)],
@@ -211,6 +213,25 @@ else:
             r = subprocess.run([str(exe), str(src), str(dst), "x" * 5000], capture_output=True, text=True)
             got = gzip.decompress(dst.read_bytes()).decode("utf-8") if r.returncode == 0 else ""
             check("a comment is cut at 2000 characters", got.split("\n")[0] == "[user-comment] " + "x" * 2000)
+            # Round 604: the performance trace goes after the log's last line (a trailer), scrubbed like the rest; no trailer adds nothing,
+            # and a log that did not end with a newline gets its line ended first.
+            trailer = "[trace] begin v1 rows=2\\n[trace] 0,,,,,,812,5100,0,25,0,0,\\n[trace] 1,58.1,17.2,33,41.0,22.3,1024,4890,0,40,0,0,71\\n[trace] end"
+            trailer = trailer.replace("\\n", "\n")
+            for name, text in (("ended", "line one\nline two\n"), ("unended", "line one\nline two")):
+                src, dst = t / "t.txt", t / "t.gz"
+                src.write_text(text)
+                r = subprocess.run([str(exe), str(src), str(dst), "", trailer], capture_output=True, text=True)
+                got = gzip.decompress(dst.read_bytes()).decode("utf-8") if r.returncode == 0 else ""
+                check(f"a trailer follows the last line of a log that is {name}, one line each, with a final newline",
+                      got == "line one\nline two\n" + trailer + "\n", got[:300])
+            r = subprocess.run([str(exe), str(src), str(dst), "a comment", trailer], capture_output=True, text=True)
+            got = gzip.decompress(dst.read_bytes()).decode("utf-8") if r.returncode == 0 else ""
+            check("with a comment too: the comment first, the trace last (no line number of the log moves because of the trace)",
+                  got.split("\n")[0] == "[user-comment] a comment" and got.split("\n")[1:3] == ["line one", "line two"]
+                  and got.endswith("[trace] end\n"), got[:300])
+            r = subprocess.run([str(exe), str(src), str(dst), "", ""], capture_output=True, text=True)
+            got = gzip.decompress(dst.read_bytes()).decode("utf-8") if r.returncode == 0 else ""
+            check("an empty trailer adds nothing (the log's own end is kept as it was)", got == "line one\nline two", got[:200])
             check("a line that needs no scrub passes byte for byte, and the prefilter misses nothing a rule changes",
                   all(fx.scrub(l) == l for l in corpus if "Handled self" in l or l.startswith("[xp]") or l.startswith("self-")))
 

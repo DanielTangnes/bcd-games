@@ -174,9 +174,12 @@ check("model.setFPS(mode)" in choose and "ProMotionIntent.has30Cap || mode == 3"
       "the frame-rate limit: LibraryModel.setFPS, 30 and 40 only where DXMT has them")
 check('MadeiraConfig.flag("MADEIRA_SESSION_TOOLS")' in lib_menu and "if sessionTools {" in lib_menu
       and "model.displayMode = mode" in choose, "Aspect & scaling: the session's display mode, behind MADEIRA_SESSION_TOOLS")
-check('case "overlay": model.performance = on' in toggle and "model.overlayFields.removeAll { $0 == value }" in choose
-      and all(f'("{f}",' in live for f in ("FPS", "Frame time", "CPU", "GPU", "RAM", "Battery", "Thermal")),
-      "the performance overlay and every field the classic one had")
+hud_core = (APP / "BCDHUDCore.swift").read_text()
+check("if BCDHUDMenu.owns(row) { return applyHUD(BCDHUDMenu.toggle(row, on, BCDHUDState.shared.setup)) }" in toggle
+      and "if BCDHUDMenu.owns(row) { return applyHUD(BCDHUDMenu.choose(" in choose
+      and "out += BCDHUDMenu.sections(BCDHUDState.shared.setup, screen: hudScreen)" in lib_menu
+      and all(f'case "{f}": return .' in hud_core for f in ("FPS", "Frame time", "CPU", "GPU", "RAM", "Battery", "Thermal")),
+      "the performance HUD (Off, 1 to 4, Custom: tests/host/check-bcd-hud.py) and every field the classic overlay had, each an item of it")
 check("madeira_set_eco(on ? 1 : 0)" in toggle and "private var eco = madeira_get_eco() != 0" in lib_menu, "Eco mode: the engine's switch")
 check("model.controllerMode = value.isEmpty ? nil : value\n            model.saveCurrentProfile()" in choose
       and "GamepadInput.keyboardMouseAvailable" in lib_menu, "the controller's mode, saved to the game")
@@ -236,8 +239,8 @@ check(all(s in desk for s in ("FrameLimit.apply(next)", "DisplayFit.current = ne
 sampler = block(live, "@MainActor final class BCDOverlaySampler {")
 check("ProMotionIntent.apply(mode: madeira_get_vsync_locked())" in sampler and '"[present] count=' in sampler
       and "madeira_set_vsync_locked(next)" in sampler and "ProMotionIntent.apply(mode: next)" in sampler
-      and "madeira_gpu_meter_enable(0)" in sampler and "os_proc_available_memory()" in sampler,
-      "the developer overlay holds ProMotion, logs [present] and keeps FPSOverlay's switches")
+      and "os_proc_available_memory()" in sampler and "libraryReadings" not in sampler,
+      "the developer overlay holds ProMotion, logs [present] and keeps FPSOverlay's switches (a library session's HUD is BCDHUDLive.swift)")
 host = block(live, "@MainActor enum BCDStartingHost {")
 watch = block(live, "@MainActor final class BCDDeskStartingWatch: ObservableObject {")
 check("w.windowLevel = .normal + 102" in host and "if framesSeen >= 2 { BCDStartingHost.hide(); stop() }" in watch
@@ -246,7 +249,7 @@ check("w.windowLevel = .normal + 102" in host and "if framesSeen >= 2 { BCDStart
 # ---- 5. nothing alive while closed --------------------------------------------------------------
 layer = block(src["BCDSession.swift"], "struct BCDSessionLayer: View {")
 check("if let menu = hud.menu {" in layer and "if let starting = hud.starting {" in layer
-      and "if hud.starting == nil, let overlay = hud.overlay {" in layer, "the menu, the starting screen and the overlay exist only while shown")
+      and "if hud.starting == nil, let performance = hud.performance {" in layer, "the menu, the starting screen and the performance HUD exist only while shown")
 check("hud.menu = nil" in block(session, "private func closeMenuModel(save: Bool) {")
       and "startingTimer?.invalidate()" in block(session, "private func stopStarting() {")
       and "if running && model.launching { startStarting() } else { stopStarting() }" in session,
@@ -286,6 +289,10 @@ else:
     harness += block(overlay_src, "enum BCDFrameRate {") + "\n"
     harness += rules + "\n"
     lc = block(library, "final class LibraryController: ObservableObject, @unchecked Sendable {")
+    # Round 604: the controller's chord (hold Start / hold Home) types LibraryController.sample reads.
+    feel = (APP / "BCDSessionFeel.swift").read_text()
+    for header in ("struct BCDFeelChoice: Equatable {", "enum BCDMenuChord: String, CaseIterable {", "struct BCDChordTracker {", "enum BCDChordSetting {"):
+        harness += block(feel, header) + "\n"
     harness += """
 #if canImport(Combine)
 import Combine
@@ -382,6 +389,44 @@ on.sample(buttons: 0x0400, lx: 0, ly: 0); pump()
 expect(got.filter { $0 == "home" }.count == 2, "on: a new hold sends it again")
 on.sample(buttons: 0x30, lx: 0, ly: 0); pump()
 expect(got.last == "menu", "Back + Start still opens the menu")
+
+// Round 604, the in-game menu's "Open this menu from a controller with": Back + Start is the default; hold Start and hold Home are chosen.
+BCDChordSetting.mode = .backStart
+LibraryController.homeHold = false
+let plain = LibraryController()
+got = []
+#if canImport(Combine)
+subs.append(plain.commands.sink { got.append($0) })
+#endif
+plain.configure(enabled: true, ownsInput: false)
+plain.sample(buttons: 0x0010, lx: 0, ly: 0); Thread.sleep(forTimeInterval: 0.95); plain.sample(buttons: 0x0010, lx: 0, ly: 0); pump()
+plain.sample(buttons: 0x0400, lx: 0, ly: 0); Thread.sleep(forTimeInterval: 0.6); plain.sample(buttons: 0x0400, lx: 0, ly: 0); pump()
+expect(got.isEmpty, "default: holding Start or Home opens nothing")
+BCDChordSetting.mode = .holdStart
+let startHold = LibraryController()
+got = []
+#if canImport(Combine)
+subs.append(startHold.commands.sink { got.append($0) })
+#endif
+startHold.configure(enabled: true, ownsInput: false)
+startHold.sample(buttons: 0x0010, lx: 0, ly: 0); Thread.sleep(forTimeInterval: 0.3); startHold.sample(buttons: 0x0010, lx: 0, ly: 0); pump()
+expect(got.isEmpty, "hold Start: a short press reaches the game and opens nothing")
+Thread.sleep(forTimeInterval: 0.6); startHold.sample(buttons: 0x0010, lx: 0, ly: 0); startHold.sample(buttons: 0x0010, lx: 0, ly: 0); pump()
+expect(got == ["menu"], "hold Start: 0.8 s held opens the menu, once")
+startHold.configure(enabled: true, ownsInput: true)
+startHold.sample(buttons: 0, lx: 0, ly: 0)
+startHold.sample(buttons: 0x0010, lx: 0, ly: 0); Thread.sleep(forTimeInterval: 0.95); startHold.sample(buttons: 0x0010, lx: 0, ly: 0); pump()
+expect(got.filter { $0 == "menu" }.count == 2, "hold Start: while the menu is open Start is the menu's own button (one press, no hold)")
+BCDChordSetting.mode = .holdGuide
+let guide = LibraryController()
+got = []
+#if canImport(Combine)
+subs.append(guide.commands.sink { got.append($0) })
+#endif
+guide.configure(enabled: true, ownsInput: false)
+guide.sample(buttons: 0x0400, lx: 0, ly: 0); Thread.sleep(forTimeInterval: 0.6); guide.sample(buttons: 0x0400, lx: 0, ly: 0); pump()
+expect(got == ["home"], "hold Home (chosen in the menu): half a second held sends home once")
+BCDChordSetting.mode = .backStart
 exit(failed == 0 ? 0 : 1)
 '''
     with tempfile.TemporaryDirectory() as tmp:

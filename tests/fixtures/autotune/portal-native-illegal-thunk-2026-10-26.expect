@@ -1,0 +1,14 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "portal-d3d9-native-illegal-thunk"
+ ],
+ "next": [
+  "env.MADEIRA_D3D9 = emulated"
+ ],
+ "note": "MX074P, build 600: native D3D9, kernelbase thunk word 00000036, c000001d. Propose the existing per-game emulated frontend only after this exact failure; device result unproven.",
+ "outcome": "crashed",
+ "stage": 2,
+ "status": "trying"
+}

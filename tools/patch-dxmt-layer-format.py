@@ -21,6 +21,11 @@ built from the same layer_props_ field, matches it. Formats on the list pass
 unchanged (with their swizzle bits, as before), so only a chain that would
 have thrown changes. "[layer-format]" logs the first four.
 
+Build 607: Invalid (0) also falls back. LEGO City Undercover, Send Log BHZRNE,
+build 600, ended in CAMetalLayerInvalid / invalid pixel format 0. The original
+patch mistakenly treated Invalid as a displayable format. Upgrade that older
+patched source as well, so a warm build cannot retain the bad pass-through.
+
 Idempotent; fails by name if the anchor moves. Run from the repository root.
 """
 import pathlib
@@ -40,7 +45,6 @@ NEW_FN = """/* madeira-bcd: layer-safe format (tools/patch-dxmt-layer-format.py)
 static WMTPixelFormat
 madeira_layer_format(WMTPixelFormat format) {
   switch ((uint32_t)ORIGINAL_FORMAT(format)) {
-  case WMTPixelFormatInvalid:
   case WMTPixelFormatBGRA8Unorm:
   case WMTPixelFormatBGRA8Unorm_sRGB:
   case WMTPixelFormatRGBA16Float:
@@ -75,6 +79,17 @@ NEW_INC = '#include "dxmt_mem_census.hpp"\n#include "log/log.hpp"   /* madeira-b
 def main():
     s = PATH.read_text()
     if MARKER in s:
+        start = s.find("static WMTPixelFormat\nmadeira_layer_format(")
+        end = s.find("\nbool\nPresenter::changeLayerProperties(", start)
+        if start < 0 or end < 0:
+            print(f"::error::{PATH}: layer-format helper moved; review this patch")
+            return 1
+        helper = s[start:end]
+        if "  case WMTPixelFormatInvalid:\n" in helper:
+            helper = helper.replace("  case WMTPixelFormatInvalid:\n", "", 1)
+            PATH.write_text(s[:start] + helper + s[end:])
+            print("dxmt_presenter.cpp: upgraded Invalid pixel format to the BGRA8Unorm fallback")
+            return 0
         print("dxmt_presenter.cpp: layer-safe format already patched")
         return 0
     for old in (OLD_FN, OLD_SET, OLD_INC):

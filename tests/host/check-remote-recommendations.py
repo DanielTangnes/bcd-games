@@ -257,7 +257,7 @@ let support = work.appendingPathComponent("support", isDirectory: true)
 UserDefaults.standard.removeObject(forKey: RecommendationsSource.lastCheckKey)
 RecommendationsStore.builtInURL = repoJSON
 RecommendationsStore.directory = support
-RecommendationsStore.build = 600
+RecommendationsStore.build = 602
 let builtInData = try! Data(contentsOf: repoJSON)
 
 // MARK: 1. The built-in list is the Swift literals it replaced

@@ -217,6 +217,8 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="build and scan, write nothing")
     ap.add_argument("--draft", action="store_true", help="allow an unadopted LICENSE-BCD.md (never publish)")
     ap.add_argument("--source-archive", type=Path, help="also write the release's complete source archive (.tar.xz)")
+    ap.add_argument("--co-author", action="append", default=[],
+                    help="a contributor whose work is in this release, 'Name <id+login@users.noreply.github.com>' (a Co-Authored-By line)")
     a = ap.parse_args()
 
     global SOURCE_COMMIT
@@ -312,6 +314,11 @@ def main():
         parents.append(base)
     message = (f"BCD {a.version}{' (DRAFT, do not publish)' if a.draft else ''}\n\n"
                f"BCD, a fork of Madeira. Built from the private tree's {source[:12]}; upstream base {base[:12]}.\n")
+    for who in a.co_author:   # 0.1.600: the authors of the ported pull requests (noreply addresses only)
+        if not re.fullmatch(r"[\w.-]+ <\d+\+[\w.-]+@users\.noreply\.github\.com>", who):
+            sys.exit(f"export-public: --co-author must be 'Name <id+login@users.noreply.github.com>': {who!r}")
+    if a.co_author:
+        message += "\n" + "".join(f"Co-Authored-By: {who}\n" for who in a.co_author)
     args = ["commit-tree", tree] + sum((["-p", p] for p in parents), []) + ["-m", message]
     commit = git(SOURCE_REPO, *args, env={"GIT_AUTHOR_NAME": "BCD", "GIT_AUTHOR_EMAIL": BCD_EMAIL,
                                           "GIT_COMMITTER_NAME": "BCD", "GIT_COMMITTER_EMAIL": BCD_EMAIL})

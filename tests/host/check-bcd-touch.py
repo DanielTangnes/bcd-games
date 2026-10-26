@@ -182,6 +182,26 @@ for what, needle in (("a cancelled touch", "override func touchesCancelled"), ("
                      ("SwiftUI removing it", "static func dismantleUIView(_ view: BCDTouchKeyView, coordinator: ()) { view.finish() }")):
     check(needle in key_view or needle in src["BCDTouchControls.swift"], f"a key control lets go on {what}")
 
+# ---- locking and layer order (upstream port 2026-10-25) --------------------------------------
+check("    var locked: Bool?\n}" in block(content, "struct TouchControl: Codable, Identifiable, Equatable {"),
+      "the stored control gains one optional key (so a layout written before it, or with nothing locked, is the same file)")
+check("guard m.editing, let i = m.index(of: m.selected), m.controls[i].locked != true else { return }" in content,
+      "the pinch does not resize a locked control")
+check("update(id) { if $0.locked != true { $0.nx = x; $0.ny = y } }" in live
+      and "update(id) { if $0.locked != true { $0.scale = BCDTouchGeometry.clampScale(scale) } }" in live
+      and "if let i = model.index(of: id), model.controls[i].locked == true { return }" in block(live, "func remove(_ id: UUID) {"),
+      "a locked control is not moved, resized or removed by the editor's calls either")
+check("if item.locked { return }" in block(control, "private var editDrag: some Gesture {"),
+      "dragging a locked control selects it and moves nothing")
+check("c.locked = locked ? true : nil" in live, "the view value writes the key only when it is set")
+check("let moved = BCDTouchLayering.moved(model.controls, id, toFront: toFront)" in live
+      and "func bringToFront(_ id: UUID) { reorder(id, toFront: true) }" in live and "func sendToBack(_ id: UUID) { reorder(id, toFront: false) }" in live,
+      "the layer order is the stored list's order: nothing new is stored")
+inspector = block(src["BCDTouchEditor.swift"], "struct BCDTouchInspector: View {")
+check("actions.setLocked(item.id, !item.locked)" in inspector and "actions.bringToFront(item.id)" in inspector
+      and "actions.sendToBack(item.id)" in inspector and ".disabled(item.locked)" in inspector,
+      "the panel has Lock, To front and To back, and a locked control's size and Remove are off")
+
 # ---- the bar over a game outside the library -----------------------------------------------
 bar = block(src["BCDTouchControls.swift"], "struct BCDTouchPlayBar: View {")
 model_hit = block(content, "func hitsInteractive(_ p: CGPoint, in bounds: CGRect, topBar: Bool = true) -> Bool {")

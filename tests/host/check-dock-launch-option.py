@@ -55,7 +55,7 @@ page = (app / 'BCDGamePageLive.swift').read_text()
 workflow = (root / '.github/workflows/build-ipa.yml').read_text()
 
 direct = games[games.index('enum SteamDirectStart {'):games.index('// MARK: - Model')]
-launch_option = info[info.index("/// One entry of an app's launch configuration"):]
+launch_option = info[info.index("/// One entry of an app's launch configuration"):info.index("// MARK: - Download language")]   # the game language (SteamLanguage) is not part of this slice
 
 harness = r'''
 import Foundation

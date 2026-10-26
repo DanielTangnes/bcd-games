@@ -1,0 +1,16 @@
+{
+ "dialogs": [
+  "Critical Error"
+ ],
+ "end": {},
+ "matched": [
+  "d3d8-to-d3d9"
+ ],
+ "next": [
+  "env.MADEIRA_D3D8 = d3d9"
+ ],
+ "note": "POSTAL 2 (Steam 223470, Unreal Engine 2.5, Direct3D 8 renderer), build 592, iPhone15,4, Send Log EN0AAS: d3d8.dll loads, Wine's wined3d finds no OpenGL (wined3d_adapter_gl_init Failed to get a GL context), the engine throws and shows its Critical Error box (IDC_CrashBox). UNPROVEN: env.MADEIRA_D3D8 = d3d9 gives it Direct3D 8 on DXMT's Direct3D 9.",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "trying"
+}

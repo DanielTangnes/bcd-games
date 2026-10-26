@@ -100,7 +100,7 @@ final class DepotDownloader {
         let depots = app.installDepots(including: dlc.selected)
         guard !depots.isEmpty else { throw SteamError.depotNotFound(app.appID) }
         // Before the key requests, so a refused depot still has its selection logged.
-        SteamLog.event("[steam-depot] selection app=\(app.appID) build=\(app.buildID) \(app.depotSelectionSummary())")
+        SteamLog.event("[steam-depot] selection app=\(app.appID) build=\(app.buildID) language=\(app.depotLanguage)/\(app.gameLanguage) \(app.depotSelectionSummary())")
         if dlc.hasWork || dlc.owned > 0 { SteamLog.event(SteamDLC.summaryLine(app: app.appID, request: dlc, depots: depots)) }
 
         let folderName = SteamInstallFiles.safeFolderName(app.installDir.isEmpty ? "app_\(app.appID)" : app.installDir)
@@ -278,7 +278,7 @@ final class DepotDownloader {
             steamID: accountID, sizeOnDisk: prepared.totalUncompressed + carried.reduce(UInt64(0)) { $0 &+ UInt64(max(0, $1.size ?? 0)) },
             steamAppsPath: steamApps.path, installedDepots: own,
             sharedDepots: shared.map { ($0.depotID, Int(owners[UInt32($0.depotID)]!)) },
-            customExecutables: custom)
+            customExecutables: custom, language: app.gameLanguage)
         if !shared.isEmpty {
             var written = 0, skipped = 0
             for ownerID in Set(owners.values).sorted() {
@@ -296,7 +296,7 @@ final class DepotDownloader {
                 try AppManifestWriter.mergeOwnerManifest(ownerAppID: ownerID, ownerName: owner.name, ownerBuildID: owner.buildID,
                                                          installDir: ownerFolder.isEmpty ? folderName : ownerFolder,
                                                          steamID: accountID, steamAppsPath: steamApps.path,
-                                                         depots: depots)
+                                                         depots: depots, language: app.gameLanguage)
                 written += 1
             }
             SteamLog.event("[steam-shared-record] app=\(app.appID) shared=\(shared.count) owners-written=\(written) owners-skipped=\(skipped)")

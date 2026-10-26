@@ -1,0 +1,172 @@
+[19:17:48.939] [INFO] Checking entitlements...
+[19:17:48.940] [INFO] [build] v0.1.600 (600)
+[19:17:48.940] [INFO] [device] model=iPad17,4 idiom=pad os=iPadOS Version 27.0.1 (Build 24A446) ram=11443MB available=12268MB cores=9
+[19:17:48.940] [INFO] [device] address-map=[0x1009c0000,0x8000000000) 512GB increased-memory=1 extended-va=1
+[19:17:48.965] [INFO] [device] gpu="Apple M5 GPU" family=apple10 argument-buffers=tier2 mesh=1 bc=1 atomics64=1 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[19:17:50.417] [INFO] [bcd] library launch LEGO City Undercover: avx=0 wine-vcrt=0 nvidia=0 game-config=1 metalfx=off
+[19:17:50.418] [INFO] Requesting JIT with Built-in StikJIT...
+[19:17:52.787] [INFO] [dock-launch] image-retire=1
+[19:17:52.787] [INFO] [dock-launch] image-map-guard=1
+[19:17:52.793] [INFO] [dock-installers] app=578330 scripts=0 programs=0
+[19:17:52.794] [INFO] [madeira-dock] starting the host for app 578330; Valve's client authenticates and authorizes the launch
+[19:17:52.804] [INFO] Running full Wine sequence...
+[19:17:52.804] [INFO] [device] launch: cs-flags=0x32003005 get-task-allow=1 cs-debugged=1 debugger-attached=1 traced=1 address-map=[0x1009c0000,0x8000000000) 512GB available=12253MB low-power=0 thermal=nominal
+[19:17:52.807] [INFO] Allocating 896MB JIT pool (BRK will suspend process)...
+[19:17:52.807] [INFO] Allocating 896MB JIT pool via debugger...
+[19:17:52.807] [INFO] [jit-pool] path: debugger (attached at the pool request; it makes every region)
+[19:17:52.807] [INFO] [jit-debugger] attached=1 at the pool request
+[19:17:52.809] [ERR] ml1036: no hole fits a 896MB pool — SHRINKING to 624MB (the alternative is a pool in the guest window or on top of 0x140000000, both of which are fatal)
+[19:17:53.478] [INFO] RX pool at 0x148000000
+[19:17:53.494] [INFO] Detaching debugger...
+[phase] wine-start             t+  0.732s rev=ml526
+[shell-dir] user folders for madeira, mobile: 0 created (Start Menu included)
+[cage] holdback reserved 0x7200000000+0x1ffff0000 rev=ml433
+[19:17:53.735] [Wine init_process] reply_pipe=41, sending init_first_thread...
+ml992: os_proc_available_memory=11611 MB + phys_footprint=676 MB = 12288 MB (hw.memsize says 11443 MB)
+ml985: preferred base 0x140000000+0x70000 REFUSED status=0xc0000018 image_flags=0x4 charact=0x22 map_addr=0 info_base=0x140000000 | STAGE=fixed-map err=3 at 0x140000000+0x70000 rev=ajan5-motor
+[wow-rwx] ml1279 MADEIRA_WOW_RWX_PLAIN=(unset) -> 32-bit guest RWX memory is plain read/write in a window once Wine Mono is mapped there
+[copy-verify] ?: OK, 4 .text pages executable (copy @0x148004000)
+[copy-verify] ntdll.dll: OK, 29 .text pages executable (copy @0x148078000)
+0024:err:seh:init_syscall_frame page0: trying debugger (BRK #0xf00d, x16=3)...
+[copy-verify] KERNEL32.dll: OK, 12 .text pages executable (copy @0x148190000)
+[copy-verify] kernelbase.dll: OK, 30 .text pages executable (copy @0x148238000)
+[nls-getptr] type=11 id=1252 peb=0x71ffff0000
+[nls-getptr] type=11 id=437 peb=0x71ffff0000
+[copy-verify] rpcrt4.dll: OK, 18 .text pages executable (copy @0x1483b8000)
+[copy-verify] advapi32.dll: OK, 9 .text pages executable (copy @0x14848c000)
+[nls-getptr] type=11 id=20127 peb=0x71ffff0000
+[gdi-shared] session table 0x7027f50000 (1572864 bytes, section-backed, name=L"\\KernelObjects\\__wine_ios_gdi_shared")
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[footprint] rev=ml358 phys=687 MB (peak 687) internal=686 MB compressed=0 MB external=79 MB reusable=6 MB (cycle=1)
+0024:err:module:load_dll [dll-missing] ml718 UNCAPPED L"winemac.drv" status=c0000135 (subsystem dependency)
+0024:err:module:load_dll [dll-missing] rev=ml336 #1 L"winemac.drv" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] ml718 UNCAPPED L"winex11.drv" status=c0000135 (subsystem dependency)
+0024:err:module:load_dll [dll-missing] rev=ml336 #2 L"winex11.drv" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] ml718 UNCAPPED L"winewayland.drv" status=c0000135 (subsystem dependency)
+0024:err:module:load_dll [dll-missing] rev=ml336 #3 L"winewayland.drv" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[win-name] #3 hwnd=0x10020 class='' text="madeira - Wine Desktop" rev=ml853
+[win-name] #6 hwnd=0x10032 class='' text="WineAppBar" rev=ml853
+[win-name] #11 hwnd=0x1003e class='' text="Default IME" rev=ml853
+[phase] spawn:L"C:\\windows\\system32\\dockhost.exe" t+  1.076s rev=ml526
+[Wine child thread] calling wine_ios_child_main...
+[copy-verify] libarm64ecfex.dll: OK, 131 .text pages executable (copy @0x149a0e000)
+[copy-verify] actxprxy.dll: OK, 1 .text pages executable (copy @0x149e28000)
+[file-wfail] ml669 #2 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[phase] spawn:L"C:\\windows\\system32\\conhost.exe" t+  1.125s rev=ml526
+[Wine child thread] calling wine_ios_child_main...
+[copy-verify] win32u.dll: OK, 9 .text pages executable (copy @0x14ae70000)
+D 38 Load module dockhost.exe (dockhost.exe-09dbbefb7c42a67b): 119E40000
+D 38 Load module ntdll.dll (ntdll.dll-391ab96a83e82f14): 71FE610000
+[nls-getptr] type=11 id=437 peb=0x10792c000
+D 38 Load module ADVAPI32.dll (advapi32.dll-e40c14e1190b1df2): 71FC190000
+D 38 Load module sechost.dll (sechost.dll-b36ef44c04b21a0b): 71FC110000
+D 38 Load module msvcrt.dll (msvcrt.dll-237acf236e8130e9): 71FC000000
+D 38 Load module rsaenh.dll (rsaenh.dll-6cd5b371ff05d55f): 71FBF40000
+[free-delay] #1 release of 0x702c5c0000+0x100000 held for 2000 ms (1 in flight)
+[free-delay] #2 release of 0x702c6c0000+0x200000 held for 2000 ms (2 in flight)
+[free-delay] #3 release of 0x702c8c0000+0x400000 held for 2000 ms (3 in flight)
+[free-delay] #4 release of 0x702ccc0000+0x800000 held for 2000 ms (4 in flight)
+[file-wfail] ml669 #4 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[alloc-fail] ml814 #1 status=c000000d hint=0xffeeffeeffeeffee size=0x1 type=0x2000 protect=0x1 tid=0038 | STAGE=none err=3 at 0x73fff60000+0x90000
+[nt-fail] #1 NtAllocateVirtualMemory status=c000000d proc=dockhost.exe tid=0038 size=0x1 type=0x2000 prot=0x1 hint=0xffeeffeeffeeffee zb=0x0 hits=1 rev=ajan5-rockstar
+[copy-verify] dxgi.dll: OK, 50 .text pages executable (copy @0x14ee8d000)
+[xp-names] m4460123 "wine-x18-exc"
+[file-wfail] ml669 #6 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:seh:ios_exc_dump_str [exc] ml812   OutputDebugStringW: ".......................l"
+[file-wfail] ml669 #9 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[file-wfail] ml669 #10 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[file-wfail] ml669 #11 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:seh:NtGetContextThread [ec-getctx] ml715 #1 handle=0000000000000204 status=c0000022 native_pc=0000000000000000 is_ec=-1 -> returned rip=0000000000000000 rsp=0000000000000000 flags=00000000
+0050:err:module:import_dll Library libavcodec-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavfilter-11.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavformat-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavutil-60.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libswresample-6.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libswscale-9.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavcodec-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavfilter-11.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavformat-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavutil-60.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libswresample-6.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libswscale-9.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+[footprint] rev=ml358 phys=1035 MB (peak 1035) internal=1034 MB compressed=0 MB external=150 MB reusable=6 MB (cycle=2)
+0050:err:seh:NtGetContextThread [ec-getctx] ml715 #2 handle=00000000000002C4 status=c0000022 native_pc=0000000000000000 is_ec=-1 -> returned rip=0000000000000000 rsp=0000000000000000 flags=00000000
+[footprint] rev=ml358 phys=1137 MB (peak 1137) internal=1135 MB compressed=0 MB external=153 MB reusable=6 MB (cycle=3)
+[file-wfail] ml669 #82 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[file-wfail] ml669 #83 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[unixlib] opengl32 (GL-absent stub table) (module 0x71f51b0000) -> 64-bit table (0x1033a73d8)
+[win-name] #31 hwnd=0x1005e class='' text="Default IME" rev=ml853
+[win-name] #32 hwnd=0x20056 class='' text="WineD3D fake window" rev=ml853
+0050:err:d3d:wined3d_adapter_gl_init Failed to get a GL context for adapter 000000702DC33C00.
+0050:err:d3d9:d3d9_ios_probe [d3d9-probe] rev=ml700 Direct3DCreate9 called -> d3d9_init FAILED
+[file-wfail] ml669 #84 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[file-wfail] ml669 #85 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[footprint] rev=ml358 phys=1187 MB (peak 1187) internal=1185 MB compressed=0 MB external=154 MB reusable=6 MB (cycle=4)
+[footprint] rev=ml358 phys=1180 MB (peak 1187) internal=1178 MB compressed=0 MB external=154 MB reusable=6 MB (cycle=5)
+[phase] spawn:L"C:\\Program Files (x86)\\Steam\\steamapps\\common\\LEGO City Undercover\\LEGOLCUR_DX11.exe" t+ 10.284s rev=ml526
+[Wine child thread] calling wine_ios_child_main...
+[nls-getptr] type=11 id=1252 peb=0x107b58000
+[nls-getptr] type=11 id=437 peb=0x107b58000
+[nls-getptr] type=11 id=20127 peb=0x107b58000
+[nls-getptr] type=11 id=1252 peb=0x107b58000
+[nls-getptr] type=11 id=437 peb=0x107b58000
+[copy-verify] msvcrt.dll: OK, 29 .text pages executable (copy @0x1556a0000)
+[unixlib] opengl32 (GL-absent stub table) (module 0x71f4480000) -> 64-bit table (0x1033a73d8)
+[free-delay] #5 release of 0x703e010000+0x1000000 held for 2000 ms (1 in flight)
+[free-delay] #6 release of 0x703f010000+0x800000 held for 2000 ms (2 in flight)
+[free-delay] #7 release of 0x703f810000+0x400000 held for 2000 ms (3 in flight)
+[free-delay] #8 release of 0x703fc10000+0x200000 held for 2000 ms (4 in flight)
+[file-wfail] ml669 #86 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[copy-verify] psapi.dll: OK, 1 .text pages executable (copy @0x159de0000)
+00b4:err:module:load_dll [dll-missing] rev=ml336 #2 L"Kerberos.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+00b4:err:module:load_dll [dll-missing] rev=ml336 #3 L"MSV1_0.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[alloc-fail] ml814 #2 status=c000000d hint=0xffeeffeeffeeffee size=0x1 type=0x2000 protect=0x1 tid=00b4 | STAGE=fixed-map err=3 at 0x73fff60000+0x90000
+[nt-fail] #2 NtAllocateVirtualMemory status=c000000d proc=legolcur_dx11.exe tid=00b4 size=0x1 type=0x2000 prot=0x1 hint=0xffeeffeeffeeffee zb=0x0 hits=1 rev=ajan5-rockstar
+[footprint] rev=ml358 phys=1424 MB (peak 1424) internal=1422 MB compressed=0 MB external=209 MB reusable=6 MB (cycle=6)
+0050:err:module:load_dll [dll-missing] rev=ml336 #47 L"C:\\Program Files (x86)\\Steam\\bin\\steamservice.dll" status=c000007b -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0050:err:module:load_dll [dll-missing] rev=ml336 #48 L"C:\\Program Files (x86)\\Steam\\bin\\steamservice.dll" status=c000007b -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0050:err:module:load_dll [dll-missing] rev=ml336 #49 L"steamservice.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0050:err:module:load_dll [dll-missing] rev=ml336 #50 L"steamservice.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[file-wfail] ml669 #87 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[alloc-fail] ml814 #3 status=c0000018 hint=0x71f51a2000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[nt-fail] #3 NtAllocateVirtualMemory status=c0000018 proc=legolcur_dx11.exe tid=00b4 size=0x1000 type=0x3000 prot=0x40 hint=0x71f51a2000 zb=0x0 hits=1 rev=ajan5-rockstar
+[alloc-fail] ml814 #4 status=c0000018 hint=0x71f51a3000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[nt-fail] #4 NtAllocateVirtualMemory status=c0000018 proc=legolcur_dx11.exe tid=00b4 size=0x1000 type=0x3000 prot=0x40 hint=0x71f51a3000 zb=0x0 hits=2 rev=ajan5-rockstar
+[alloc-fail] ml814 #5 status=c0000018 hint=0x71f51a4000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[nt-fail] #5 NtAllocateVirtualMemory status=c0000018 proc=legolcur_dx11.exe tid=00b4 size=0x1000 type=0x3000 prot=0x40 hint=0x71f51a4000 zb=0x0 hits=3 rev=ajan5-rockstar
+[alloc-fail] ml814 #6 status=c0000018 hint=0x71f51a5000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[nt-fail] #6 NtAllocateVirtualMemory status=c0000018 proc=legolcur_dx11.exe tid=00b4 size=0x1000 type=0x3000 prot=0x40 hint=0x71f51a5000 zb=0x0 hits=4 rev=ajan5-rockstar
+[alloc-fail] ml814 #7 status=c0000018 hint=0x71f51a6000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #8 status=c0000018 hint=0x71f51a7000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #9 status=c0000018 hint=0x71f51a8000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #10 status=c0000018 hint=0x71f51a9000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[nt-fail] #7 NtAllocateVirtualMemory status=c0000018 proc=legolcur_dx11.exe tid=00b4 size=0x1000 type=0x3000 prot=0x40 hint=0x71f51a9000 zb=0x0 hits=8 rev=ajan5-rockstar
+[alloc-fail] ml814 #11 status=c0000018 hint=0x71f51aa000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #12 status=c0000018 hint=0x71f51ab000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #13 status=c0000018 hint=0x71f51ac000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #14 status=c0000018 hint=0x71f51ad000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #15 status=c0000018 hint=0x71f51ae000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #16 status=c0000018 hint=0x71f51af000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #17 status=c0000018 hint=0x71f5347000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #18 status=c0000018 hint=0x71f5348000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[nt-fail] #8 NtAllocateVirtualMemory status=c0000018 proc=legolcur_dx11.exe tid=00b4 size=0x1000 type=0x3000 prot=0x40 hint=0x71f5348000 zb=0x0 hits=16 rev=ajan5-rockstar
+[alloc-fail] ml814 #19 status=c0000018 hint=0x71f5349000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #20 status=c0000018 hint=0x71f534a000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #21 status=c0000018 hint=0x71f534b000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #22 status=c0000018 hint=0x71f534c000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #23 status=c0000018 hint=0x71f534d000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #24 status=c0000018 hint=0x71f534e000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+[alloc-fail] ml814 #25 status=c0000018 hint=0x71f534f000 size=0x1000 type=0x3000 protect=0x40 tid=00b4 | STAGE=none err=3 at 0x73ffe40000+0x1ac000
+D B4 Load module d3d11.dll (d3d11.dll-8ad678a9894b5214): 71EEEE0000
+D B4 Load module DXGI.dll (dxgi.dll-ba28aa35b054c084): 71EEDA0000
+D B4 Load module winemetal.dll (winemetal.dll-5dde309614d342ae): 71EED70000
+[win-name] #37 hwnd=0x10066 class='' text="Default IME" rev=ml853
+[win-name] #38 hwnd=0x10064 class='' text="LEGO City Undercover" rev=ml853
+D B4 Load module wbemprox.dll (wbemprox.dll-32727b2744fb579d): 71EEA70000
+D B4 Load module winspool.drv (winspool.drv-1d86ae048b0921a6): 71EE940000
+D B4 Load module compstui.dll (compstui.dll-6caceb67ab4f8333): 71EE8A0000
+[win-name] #41 hwnd=0x10064 class='' text="LEGO City Undercover" rev=ml853
+[win-name] #42 hwnd=0x10064 class='' text="LEGO City Undercover" rev=ml853
+*** Terminating app due to uncaught exception 'CAMetalLayerInvalid', reason: 'invalid pixel format 0'

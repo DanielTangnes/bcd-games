@@ -91,6 +91,7 @@ enum FrameLimit: Int32, CaseIterable, Identifiable {
     }
 
     static func apply(_ limit: FrameLimit) {
+        ThermalPacing.shared.userChose()   // env.MADEIRA_THERMAL_CAP: a cap chosen by hand is never replaced or restored
         madeira_set_vsync_locked(Int32(limit.rawValue))
         ProMotionIntent.apply(mode: limit.rawValue)
     }

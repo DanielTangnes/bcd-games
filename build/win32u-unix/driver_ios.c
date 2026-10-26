@@ -246,6 +246,56 @@ void winios_drv_post_key(unsigned short vk, unsigned int flags)
     }
 }
 
+/* Same key input as the hardware bridge, without logging pasted text. */
+static void winios_text_key(unsigned short vk, unsigned int flags)
+{
+    INPUT input = {0};
+    input.type = INPUT_KEYBOARD;
+    input.ki.wVk = vk;
+    input.ki.wScan = NtUserMapVirtualKeyEx( vk, MAPVK_VK_TO_VSC_EX, NtUserGetKeyboardLayout(0) ) & 0xff;
+    input.ki.dwFlags = flags;
+    send_hardware_message( NULL, 0, &input, 0 );
+}
+
+/* A complete pasted character is emitted on the Wine event-pump thread. */
+void winios_drv_post_text(unsigned int scalar, unsigned short vk, int shift)
+{
+    INPUT input = {0};
+    unsigned short units[2];
+    unsigned int count, i;
+
+    if (vk)
+    {
+        if (vk >= 'A' && vk <= 'Z' && (NtUserGetKeyState( VK_CAPITAL ) & 1)) shift = !shift;
+        ios_foreground_if_none( "pasted text" );
+        if (shift) winios_text_key( VK_SHIFT, 0 );
+        winios_text_key( vk, 0 );
+        winios_text_key( vk, KEYEVENTF_KEYUP );
+        if (shift) winios_text_key( VK_SHIFT, KEYEVENTF_KEYUP );
+        return;
+    }
+    if (scalar > 0x10ffff || (scalar >= 0xd800 && scalar <= 0xdfff)) return;
+    if (scalar > 0xffff)
+    {
+        scalar -= 0x10000;
+        units[0] = 0xd800 + (scalar >> 10);
+        units[1] = 0xdc00 + (scalar & 0x3ff);
+        count = 2;
+    }
+    else { units[0] = scalar; count = 1; }
+
+    input.type = INPUT_KEYBOARD;
+    ios_foreground_if_none( "pasted text" );
+    for (i = 0; i < count; i++)
+    {
+        input.ki.wScan = units[i];
+        input.ki.dwFlags = KEYEVENTF_UNICODE;
+        send_hardware_message( NULL, 0, &input, 0 );
+        input.ki.dwFlags |= KEYEVENTF_KEYUP;
+        send_hardware_message( NULL, 0, &input, 0 );
+    }
+}
+
 /* [winios-tree] window-tree dump: every top-level window with class,
  * title, style and rects. Driven from the app side (Winios.m
  * ProcessEvents drain) every few seconds in desktop mode — ground truth
@@ -428,6 +478,7 @@ extern void winios_window_frame( HWND hwnd, int x, int y, int w, int h, int visi
 extern void winios_window_visibility( HWND hwnd, int visible ) __attribute__((weak));
 extern void winios_window_geometry( HWND hwnd, int x, int y, int w, int h,
                                     int cx, int cy, int cw, int ch ) __attribute__((weak));
+extern void winios_window_lineage( HWND hwnd, HWND root, int depth ) __attribute__((weak));
 extern void winios_cursor_set( unsigned int id, int w, int h, int hot_x, int hot_y,
                                const void *bgra ) __attribute__((weak));
 extern void winios_cursor_show( int show ) __attribute__((weak));
@@ -644,6 +695,107 @@ static int ios_fullscreen_foreground_enabled(void)
     return on;
 }
 
+/* The in-game menu's window list and its commands (round 604; app/Madeira/Winios/Winios.h, BCDWindowsLive.swift). Nothing runs unless the app has
+ * switched it on (the menu's Windows page is open): winios_windows_wanted is one relaxed load per message poll. The first Wine thread to poll
+ * after a refresh was asked for lists the desktop's top-level windows through the server (no message is sent to any window, so a thread that
+ * is busy cannot hold this up); a command is carried out by the window's own thread (bring to front: only that thread takes the foreground)
+ * or by any (minimize, restore: posted). */
+#include "../../app/Madeira/Winios/Winios.h"   /* struct winios_listed_window, WINIOS_WINCMD_* */
+extern int winios_windows_wanted(void) __attribute__((weak));
+extern int winios_windows_take_refresh(void) __attribute__((weak));
+extern void winios_windows_publish( const struct winios_listed_window *list, int n ) __attribute__((weak));
+extern int winios_windows_peek_command( unsigned long long *hwnd, int *kind ) __attribute__((weak));
+extern int winios_windows_consume_command( unsigned long long hwnd ) __attribute__((weak));
+
+/* UTF-16 to UTF-8 for the characters of the Basic Multilingual Plane; anything else (surrogates) becomes '?'. */
+static void ios_window_menu_utf8( const WCHAR *text, char *out, unsigned int size )
+{
+    unsigned int j = 0;
+
+    for (; *text && j + 4 < size; text++)
+    {
+        WCHAR c = *text;
+        if (c < 0x80) out[j++] = (char)c;
+        else if (c < 0x800) { out[j++] = (char)(0xc0 | (c >> 6)); out[j++] = (char)(0x80 | (c & 0x3f)); }
+        else if (c >= 0xd800 && c < 0xe000) out[j++] = '?';
+        else { out[j++] = (char)(0xe0 | (c >> 12)); out[j++] = (char)(0x80 | ((c >> 6) & 0x3f)); out[j++] = (char)(0x80 | (c & 0x3f)); }
+    }
+    out[j] = 0;
+}
+
+static void ios_window_menu_list(void)
+{
+    struct winios_listed_window *out;
+    HWND *list, fg;
+    int n = 0, i;
+
+    if (!winios_windows_publish) return;
+    if (!(out = calloc( WINIOS_WINLIST_MAX, sizeof(*out) ))) return;
+    fg = NtUserGetForegroundWindow();
+    list = list_window_children( get_desktop_window() );
+    for (i = 0; list && list[i] && n < WINIOS_WINLIST_MAX; i++)
+    {
+        HWND hwnd = list[i];
+        struct winios_listed_window *w = &out[n];
+        DWORD style, pid = 0;
+        WCHAR title[WINIOS_WINLIST_TITLE];
+        RECT rect = {0};
+
+        if (!is_window( hwnd )) continue;
+        style = get_window_long( hwnd, GWL_STYLE );
+        if (!(style & (WS_VISIBLE | WS_MINIMIZE))) continue;   /* hidden windows are not on the player's screen */
+        title[0] = 0;
+        NtUserInternalGetWindowText( hwnd, title, ARRAY_SIZE(title) );
+        title[ARRAY_SIZE(title) - 1] = 0;
+        get_window_thread( hwnd, &pid );
+        get_window_rect( hwnd, &rect, get_thread_dpi() );
+        w->hwnd = (unsigned long long)(UINT_PTR)hwnd;
+        w->pid = pid;
+        w->x = rect.left; w->y = rect.top;
+        w->w = rect.right - rect.left; w->h = rect.bottom - rect.top;
+        w->minimized = (style & WS_MINIMIZE) != 0;
+        w->visible = (style & WS_VISIBLE) && !w->minimized;
+        w->foreground = hwnd == fg;
+        ios_window_menu_utf8( title, w->title, sizeof(w->title) );
+        winios_drv_process_image( pid, w->image, sizeof(w->image) );
+        n++;
+    }
+    free( list );
+    winios_windows_publish( out, n );
+    free( out );
+}
+
+static void ios_window_menu_poll(void)
+{
+    unsigned long long cmd_hwnd;
+    int kind;
+
+    if (!winios_windows_wanted || !winios_windows_wanted()) return;
+    if (winios_windows_peek_command && winios_windows_peek_command( &cmd_hwnd, &kind ))
+    {
+        HWND hwnd = (HWND)(UINT_PTR)cmd_hwnd;
+
+        if (!is_window( hwnd ))
+            winios_windows_consume_command( cmd_hwnd );
+        else if (kind == WINIOS_WINCMD_FRONT)
+        {
+            if (get_window_thread( hwnd, NULL ) == GetCurrentThreadId() && winios_windows_consume_command( cmd_hwnd ))
+            {
+                if (get_window_long( hwnd, GWL_STYLE ) & WS_MINIMIZE) NtUserPostMessage( hwnd, WM_SYSCOMMAND, SC_RESTORE, 0 );
+                NtUserSetWindowPos( hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW );
+                set_foreground_window( hwnd, FALSE, TRUE );
+                dprintf( 2, "[window-menu] window %p brought to the front\n", hwnd );
+            }
+        }
+        else if (winios_windows_consume_command( cmd_hwnd ))
+        {
+            NtUserPostMessage( hwnd, WM_SYSCOMMAND, kind == WINIOS_WINCMD_MINIMIZE ? SC_MINIMIZE : SC_RESTORE, 0 );
+            dprintf( 2, "[window-menu] window %p %s\n", hwnd, kind == WINIOS_WINCMD_MINIMIZE ? "minimized" : "restored" );
+        }
+    }
+    if (winios_windows_take_refresh && winios_windows_take_refresh()) ios_window_menu_list();
+}
+
 /* From winios_drv_window_pos_changed, on the window's own thread. */
 static void ios_note_fullscreen_show( HWND hwnd, UINT swp_flags, const RECT *visible )
 {
@@ -840,6 +992,7 @@ static BOOL winios_drv_process_events( DWORD mask )
     if (ios_show_foreground) ios_apply_fullscreen_foreground();
     ios_foreground_if_none( "a message poll" );
     ios_tiny_window_poll();
+    ios_window_menu_poll();   /* madeira-bcd (round 604): the in-game menu's window list; one relaxed load while its page is closed */
     return winios_pProcessEvents ? winios_pProcessEvents( mask ) : FALSE;
 }
 
@@ -1054,6 +1207,48 @@ static BOOL winios_drv_screen_rects( HWND hwnd, const struct window_rects *new_r
     return TRUE;
 }
 
+static void winios_drv_note_lineage( HWND hwnd )
+{
+    HWND desktop, cur, parent, root = 0;
+    int depth = 0;
+
+    if (!winios_window_lineage || !hwnd) return;
+    desktop = get_desktop_window();
+    for (cur = hwnd; depth < 16; depth++)
+    {
+        parent = NtUserGetAncestor( cur, GA_PARENT );
+        if (!parent || parent == desktop || parent == cur) break;
+        root = parent;
+        cur = parent;
+    }
+    winios_window_lineage( hwnd, depth > 0 ? root : 0, depth );
+}
+
+static void winios_drv_note_lineage_tree( HWND hwnd, UINT swp_flags )
+{
+    HWND *children;
+    ULONG capacity = 128, count, i;
+    NTSTATUS status;
+
+    if (!winios_window_lineage || !hwnd) return;
+    winios_drv_note_lineage( hwnd );
+    if ((swp_flags & SWP_NOMOVE) && (swp_flags & SWP_NOSIZE) &&
+        !(swp_flags & (SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_HIDEWINDOW)))
+        return;
+    for (;;)
+    {
+        if (!(children = malloc( capacity * sizeof(*children) ))) return;
+        status = NtUserBuildHwndList( 0, hwnd, TRUE, TRUE, 0, capacity, children, &count );
+        if (!status) break;
+        free( children );
+        if (status != STATUS_BUFFER_TOO_SMALL || count <= capacity) return;
+        capacity = count;
+    }
+    for (i = 0; i + 1 < count; i++)
+        winios_drv_note_lineage( children[i] );
+    free( children );
+}
+
 /* A parent move/show/hide does not send WindowPosChanged to every child.
  * Refresh existing independent layers without recreating their surfaces or
  * Metal layers. Query screen coordinates through Wine for nested children. */
@@ -1244,6 +1439,7 @@ static void winios_drv_window_pos_changed( HWND hwnd, HWND insert_after, HWND ow
      * insert_after names the z-order move; surface tells us which windows
      * share one. Skip empty rects (the 1x1 IME/message windows) so the
      * signal is not buried. */
+    if (winios_desktop_mode()) winios_drv_note_lineage_tree( hwnd, swp_flags );
     if (!IsRectEmpty( &new_rects->visible ))
     {
         static unsigned pos_n;

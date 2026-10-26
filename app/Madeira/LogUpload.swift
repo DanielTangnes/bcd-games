@@ -25,6 +25,9 @@ import UIKit
 
 enum LogUpload {
     static let endpoint = URL(string: "https://bcd.bcd-logs.workers.dev/v1/logs")!
+    /// A screenshot sent with a log (2026-10-25): its own route, JPEG only, 160 KB at most (bcd-logs/worker/worker.js). What goes is a small
+    /// copy made for the upload (BCDScreenshotShrink), about 100 KB; the kept picture is not touched.
+    static let shotEndpoint = URL(string: "https://bcd.bcd-logs.workers.dev/v1/shots")!
     static let intake = "madeira-bcd/2"
     static let maxPacked = 25 << 20
     /// The newest logs the list offers; nothing older can be sent.
@@ -42,6 +45,29 @@ enum LogUpload {
         guard let d = UserDefaults.standard.data(forKey: historyKey),
               let list = try? JSONDecoder().decode([Sent].self, from: d) else { return [] }
         return list
+    }
+
+    // MARK: A screenshot with the log
+
+    /// The pictures the player chose to send with a log, by the log's file (BCDLogComment): taken by `send` for that log and no other.
+    private static var chosenShots: [String: URL] = [:]
+    private static let chosenLock = NSLock()
+    /// What became of the picture the last send carried ("The screenshot went too."), or nil when it carried none. Set before `done` runs.
+    static var lastShotNote: String?
+
+    static func attach(_ shot: URL, to log: URL) {
+        chosenLock.lock(); defer { chosenLock.unlock() }
+        chosenShots[log.standardizedFileURL.path] = shot
+    }
+
+    private static func takeShot(for log: URL) -> URL? {
+        chosenLock.lock(); defer { chosenLock.unlock() }
+        return chosenShots.removeValue(forKey: log.standardizedFileURL.path)
+    }
+
+    /// "Sent. Your code: K7Q2MX", and how the picture fared if one went along.
+    static func sentWords(_ code: String) -> String {
+        "Sent. Your code: \(code)" + (lastShotNote.map { ". " + $0 } ?? "")
     }
 
     private static func remember(_ s: Sent) {
@@ -88,8 +114,21 @@ enum LogUpload {
                 remember(Sent(name: log.lastPathComponent, code: code, date: Date()))
                 let commented = LogUploadCore.commentLines(comment).isEmpty ? "" : " (with the sender's comment)"
                 LogStore.shared.log("[bcd-logs] sent \(log.lastPathComponent): code \(code)\(commented)")
+                if let shot = takeShot(for: log) {
+                    // The picture follows the log, under the log's code. It cannot undo the log's success: whatever happens to it is a note.
+                    if let progress { DispatchQueue.main.async { progress("Sending the screenshot…") } }
+                    sendShot(shot, logCode: code, game: game) { note in
+                        DispatchQueue.main.async {
+                            lastShotNote = note
+                            done?(r)
+                        }
+                    }
+                    return
+                }
+                DispatchQueue.main.async { lastShotNote = nil }
             case .failure(let e):
                 LogStore.shared.log("[bcd-logs] could not send \(log.lastPathComponent): \(e.localizedDescription)", level: .error)
+                _ = takeShot(for: log)   // a picture chosen for a log that did not go is not kept for a later send
             }
             if let done { DispatchQueue.main.async { done(r) } }
         }
@@ -100,9 +139,12 @@ enum LogUpload {
             }
             let gz = FileManager.default.temporaryDirectory.appendingPathComponent("bcd-log-\(UUID().uuidString).gz")
             let packed: (raw: Int, packed: Int)
+            // Round 604: the session's performance trace, when the player asked for one, goes after the log's last line (BCDPerfTraceLive.swift).
+            let trace = BCDPerfTraceSend.lines(for: log)
+            if !trace.isEmpty { LogStore.shared.log("[bcd-logs] the performance trace goes with \(log.lastPathComponent): \(max(0, trace.count - 2)) lines") }
             do {
                 say("Compressing…")
-                packed = try LogUploadCore.pack(log, to: gz, comment: comment) { f in say("Compressing… \(Int(f * 100))%") }
+                packed = try LogUploadCore.pack(log, to: gz, comment: comment, trailer: trace) { f in say("Compressing… \(Int(f * 100))%") }
             } catch {
                 try? FileManager.default.removeItem(at: gz)
                 return finish(.failure(error))
@@ -136,6 +178,55 @@ enum LogUpload {
                 guard status == 200 else { return finish(.failure(UploadError.refused(status, body["error"] as? String ?? ""))) }
                 guard let code = body["code"] as? String, !code.isEmpty else { return finish(.failure(UploadError.noCode)) }
                 finish(.success(code))
+            }.resume()
+        }
+    }
+
+    /// Sends a screenshot under the code of the log it went with. `note` says how it fared, for the person. What is sent is not the kept file
+    /// but a small copy made from it now (BCDScreenshotShrink: 1280 px and quality 0.75 down to 640 px and 0.4, until it is 100 KB or less).
+    private static func sendShot(_ shot: URL, logCode: String, game: String, note: @escaping (String) -> Void) {
+        // The search decodes and encodes a few pictures: not the URLSession callback's thread. The utility queue is free by now (the log's
+        // upload task has been handed over).
+        queue.async {
+            guard let copy = BCDScreenshotShrink.smallCopy(of: shot), !copy.data.isEmpty else {
+                LogStore.shared.log("[bcd-logs] screenshot not sent: \(shot.lastPathComponent) could not be read or made smaller", level: .error)
+                return note("The screenshot was not sent: the picture could not be read.")
+            }
+            let kb = String(format: "%.1f", Double(copy.data.count) / 1024)
+            LogStore.shared.log("[bcd-logs] screenshot copy for upload: \(copy.width)x\(copy.height), \(kb) KB (\(copy.data.count) bytes), "
+                                + "quality \(String(format: "%.2f", copy.quality)), \(copy.tries) tries\(copy.fits ? "" : ", over the target")")
+            guard copy.data.count <= BCDScreenshotRules.maxSendBytes else {
+                LogStore.shared.log("[bcd-logs] screenshot not sent: \(copy.data.count) bytes (limit \(BCDScreenshotRules.maxSendBytes))", level: .error)
+                return note("The screenshot was not sent: it is too large even made small.")
+            }
+            var req = URLRequest(url: shotEndpoint)
+            req.httpMethod = "POST"
+            req.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+            req.setValue(intake, forHTTPHeaderField: "X-BCD-Intake")
+            let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+            let os = ProcessInfo.processInfo.operatingSystemVersion
+            for (k, v) in ["Build": build, "Game": game, "Device": deviceModel, "Os": "\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)",
+                           "Log": logCode, "Kind": "screenshot"] {
+                req.setValue(v, forHTTPHeaderField: "X-Madeira-" + k)
+            }
+            let config = URLSessionConfiguration.ephemeral
+            config.timeoutIntervalForResource = 120
+            let session = URLSession(configuration: config)
+            session.uploadTask(with: req, from: copy.data) { data, response, error in
+                session.finishTasksAndInvalidate()
+                if let error {
+                    LogStore.shared.log("[bcd-logs] screenshot not sent: \(error.localizedDescription)", level: .error)
+                    return note("The screenshot did not go: \(error.localizedDescription)")
+                }
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                let body = (data.flatMap { try? JSONSerialization.jsonObject(with: $0) } as? [String: Any]) ?? [:]
+                guard status == 200, let code = body["code"] as? String, !code.isEmpty else {
+                    LogStore.shared.log("[bcd-logs] screenshot refused: \(status) \(body["error"] as? String ?? "")", level: .error)
+                    return note(status == 404 ? "The screenshot did not go: the server does not take pictures yet."
+                                              : "The screenshot did not go (\(status)\((body["error"] as? String).map { ": " + $0 } ?? "")).")
+                }
+                LogStore.shared.log("[bcd-logs] sent the screenshot \(shot.lastPathComponent) with log \(logCode): code \(code), \(copy.data.count) bytes")
+                note("The screenshot went too.")
             }.resume()
         }
     }

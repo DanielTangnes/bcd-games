@@ -2973,12 +2973,56 @@ void reset_monitor_update_serial(void)
  * same GPU). */
 static const char ios_video_guidA[] = "{8C0C2A5B-0E7E-4B0E-9E3F-1D0A6B5C4D21}";
 
+/* madeira-bcd (2026-10-25, round 603): "Look like this GPU" (app/Madeira/BCDGPUCards.swift). A game that
+ * picked a card gets MADEIRA_GPU_VENDOR and MADEIRA_GPU_DEVICE (four hex digits) and MADEIRA_GPU_NAME in the
+ * launch's environment, the same values DXMT's dxgi.custom* and d3d9.custom* options carry, so DXGI, Direct3D 9
+ * and Windows' own adapter name one GPU. Unset (every game that did not pick one), nothing here is read and
+ * the identity is Apple's or, with DXMT_ENABLE_NVEXT=1, the GeForce RTX 3060, exactly as before. */
+static int ios_gpu_pick( UINT16 *vendor, UINT16 *device )
+{
+    const char *v = getenv( "MADEIRA_GPU_VENDOR" ), *d = getenv( "MADEIRA_GPU_DEVICE" );
+    char *end;
+    unsigned long vv, dd;
+
+    if (!v || !d || !*v || !*d) return 0;
+    vv = strtoul( v, &end, 16 );
+    if (*end || !vv || vv > 0xffff) return 0;
+    dd = strtoul( d, &end, 16 );
+    if (*end || dd > 0xffff) return 0;
+    *vendor = vv;
+    *device = dd;
+    return 1;
+}
+
+/* The picked card's name, or NULL (also when the card has none, as Apple's). */
+static const char *ios_gpu_pick_name(void)
+{
+    UINT16 vendor, device;
+    const char *name = getenv( "MADEIRA_GPU_NAME" );
+    return (name && *name && ios_gpu_pick( &vendor, &device )) ? name : NULL;
+}
+
 static void ios_virtual_gpu_ids( UINT16 *vendor, UINT16 *device )
 {
     const char *nv = getenv( "DXMT_ENABLE_NVEXT" );
+    if (ios_gpu_pick( vendor, device )) return;
     if (nv && nv[0] == '1') { *vendor = 0x10de; *device = 0x2544; }
     else { *vendor = 0x106b; *device = 0x0001; }
 }
+
+/* The adapter name the registry, D3DKMT and EnumDisplayDevices say. */
+static const char *ios_virtual_gpu_name( UINT16 vendor, UINT16 device )
+{
+    const char *picked = ios_gpu_pick_name();
+    return picked ? picked : gpu_device_name( vendor, device, "BCD Display" );
+}
+
+/* Every identity this port has registered for the virtual adapter (the table in BCDGPUCards.swift, plus the
+ * two before it): a saved prefix may hold any of them. tests/host/check-gpu-cards.py compares this list with it. */
+static const struct { UINT16 vendor, device; } ios_known_gpus[] =
+{
+    { 0x106b, 0x0001 }, { 0x10de, 0x2544 }, { 0x1002, 0x73df }, { 0x1002, 0x67df }, { 0x8086, 0x3e92 }, { 0x8086, 0x56a0 },
+};
 
 /* Every game shares one prefix and the registry is saved, so a launch with the
  * other identity left its adapter behind: two display devices under Enum\PCI,
@@ -3031,6 +3075,8 @@ static void ios_register_virtual_gpu(void)
     DWORD len;
     HKEY hkey;
     int kmt;
+    unsigned int i;
+    ULONGLONG memory = (ULONGLONG)4096 * 1024 * 1024;
 
     if (done) return;
     done = 1;
@@ -3039,9 +3085,11 @@ static void ios_register_virtual_gpu(void)
     if (!enum_key || !control_key) return;
 
     ios_virtual_gpu_ids( &pci.vendor, &pci.device );
-    if (pci.vendor == 0x10de) ios_forget_virtual_gpu( 0x106b, 0x0001 );
-    else ios_forget_virtual_gpu( 0x10de, 0x2544 );
-    name = gpu_device_name( pci.vendor, pci.device, "BCD Display" );
+    /* madeira-bcd (2026-10-25, round 603): every identity this launch does not report, the picked cards' too. */
+    for (i = 0; i < ARRAY_SIZE(ios_known_gpus); i++)
+        if (ios_known_gpus[i].vendor != pci.vendor || ios_known_gpus[i].device != pci.device)
+            ios_forget_virtual_gpu( ios_known_gpus[i].vendor, ios_known_gpus[i].device );
+    name = ios_virtual_gpu_name( pci.vendor, pci.device );
     RtlUTF8ToUnicodeN( gpu.name, sizeof(gpu.name) - sizeof(WCHAR), &len, name, strlen( name ) );
     gpu.refcount = 1;
     gpu.index = 0;
@@ -3053,7 +3101,13 @@ static void ios_register_virtual_gpu(void)
     if (!kmt) NtAllocateLocallyUniqueId( &gpu.luid );
     snprintf( gpu.path, sizeof(gpu.path), "PCI\\VEN_%04X&DEV_%04X&SUBSYS_00000000&REV_00\\%08X",
               pci.vendor, pci.device, gpu.index );
-    if (!write_gpu_to_registry( &gpu, &pci, kmt ? madeira_kmt_dedicated_bytes() : (ULONGLONG)4096 * 1024 * 1024 ))
+    /* madeira-bcd (2026-10-25, round 603): a picked card's memory is the game's video memory (vram-mb, else 4096 MB),
+     * as the D3DKMT adapter's is; a game that picked none keeps 4096 MB. */
+    {
+        UINT16 picked_vendor, picked_device;
+        if (kmt || ios_gpu_pick( &picked_vendor, &picked_device )) memory = madeira_kmt_dedicated_bytes();
+    }
+    if (!write_gpu_to_registry( &gpu, &pci, memory ))
     {
         dprintf( 2, "[vgpu] could not write the virtual GPU to the registry\n" );
         return;
@@ -3101,7 +3155,7 @@ void madeira_kmt_identity( struct madeira_kmt_identity *id )
     ios_virtual_gpu_ids( &pci.vendor, &pci.device );
     id->vendor = pci.vendor;
     id->device = pci.device;
-    snprintf( id->name, sizeof(id->name), "%s", gpu_device_name( pci.vendor, pci.device, "BCD Display" ) );
+    snprintf( id->name, sizeof(id->name), "%s", ios_virtual_gpu_name( pci.vendor, pci.device ) );
     snprintf( id->driver_version, sizeof(id->driver_version), "%s", driver_vendor_to_version( pci.vendor ) );
     snprintf( id->path, sizeof(id->path), "PCI\\VEN_%04X&DEV_%04X&SUBSYS_00000000&REV_00\\%08X",
               pci.vendor, pci.device, 0 );
@@ -4727,7 +4781,8 @@ NTSTATUS WINAPI NtUserEnumDisplayDevices( UNICODE_STRING *device, DWORD index,
                                is_adapter ? "\\\\.\\DISPLAY1" : "\\\\.\\DISPLAY1\\Monitor0" );
         if (info->cb >= offsetof(DISPLAY_DEVICEW, DeviceString) + sizeof(info->DeviceString))
             asciiz_to_unicode( info->DeviceString,
-                               is_adapter ? "BCD Display" : "Generic Non-PnP Monitor" );
+                               is_adapter ? (ios_gpu_pick_name() ? ios_gpu_pick_name() : "BCD Display")   /* madeira-bcd (2026-10-25, round 603): a picked card's name */
+                                          : "Generic Non-PnP Monitor" );
         if (info->cb >= offsetof(DISPLAY_DEVICEW, StateFlags) + sizeof(info->StateFlags))
         {
             if (is_adapter)

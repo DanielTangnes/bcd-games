@@ -1,0 +1,21 @@
+cnc-ddraw (a DirectDraw replacement for old 2D games)
+
+  Project:   https://github.com/FunkyFr3sh/cnc-ddraw  (FunkyFr3sh)
+  Licence:   MIT, LICENSE in this folder, kept exactly as received. Copyright (c) 2022 github.com/FunkyFr3sh
+  Version:   tag v7.1.0.0 (2024-12-28), commit 541b5de218ec3fbd6ea91e606ebfadc07c1786b0
+  Taken from the project's own repository: https://github.com/FunkyFr3sh/cnc-ddraw/archive/refs/tags/v7.1.0.0.tar.gz, SHA-256
+      25f910ddee138f3fbed7584ddd88239d1c9bec326cb5a993df3b7a96aa8b57b1
+  What is here (SHA256SUMS lists every file; tests/host/check-cnc-ddraw.py compares them): LICENSE, README.md, Makefile, exports.def,
+  res.rc, src/ and inc/, byte for byte. Changes by BCD to these files: none.
+  What is NOT here, on purpose:
+    - inc/ddraw.h and inc/d3dcaps.h: Microsoft DirectX SDK headers ("Copyright (C) Microsoft Corporation. All Rights Reserved.", no licence
+      grant). tools/build-cnc-ddraw-dll.sh compiles against llvm-mingw's own (mingw-w64) ddraw.h and d3dcaps.h instead, with bcd/ddraw_dx1.h
+      (BCD's file) for the one structure mingw-w64 lacks, DDCAPS_DX1, and d3dtypes.h pre-included for the Direct3D 7 emulation files.
+    - src/detours/ (Microsoft Detours, MIT; used only by the Visual Studio build) and config/ (the Borland C++ Builder settings program).
+    - action.yml, build.cmd, build_debug.cmd and the Visual Studio files.
+  Parts of the tree with their own terms, kept as received: src/lodepng.c and inc/lodepng.h (LodePNG, zlib licence, Lode Vandevenne),
+  inc/glcorearb.h, inc/wglext.h and inc/KHR/khrplatform.h (The Khronos Group, MIT), util_enumerate_modules in src/utils.c (from
+  Microsoft Detours, MIT), src/crc32.c (public domain, Craig Bruce), inc/versionhelpers.h (the mingw-w64 runtime).
+  tools/build-cnc-ddraw-dll.sh builds it for i686 with llvm-mingw as the project's Makefile does (-O2 -std=c99, -static, stdcall fixup) and
+  ships cnc-ddraw.dll in the i386 farm; BCD's WineProcessBridge.m (BCDGraphicsRoutes.c) links it as C:\windows\syswow64\ddraw.dll only
+  for a game whose file says env.MADEIRA_DDRAW = cnc.

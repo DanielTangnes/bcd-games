@@ -108,7 +108,7 @@ struct BCDLauncherSpec: Identifiable, Hashable {
     /// Build 600 (the owner, 2026-10-24: the public release goes out without Battle.net and the EA app, "komple gizle, anahtarla da
     /// açılamasın"; the next local build turns them back on): no launcher chip, no launcher card, no library tile of a launcher's own
     /// entry, and no setting to bring them back. The engine, the lines and the checks stay as they are. Set to false to show them again.
-    static let hiddenInThisBuild = true
+    static let hiddenInThisBuild = false
     /// The launchers the interface offers: all of them, or none while they are hidden.
     static var shown: [BCDLauncherSpec] { hiddenInThisBuild ? [] : all }
     /// A launcher's own library entry (its program's or its installer's), which the library leaves out while they are hidden.
@@ -220,6 +220,10 @@ struct BCDLauncherSpec: Identifiable, Hashable {
         // switches. Only this entry sets them; every other program takes the paths it took before.
         sessionConfig: Self.commonSessionConfig + ["env.LC_ALL = en_US.UTF-8", "env.MADEIRA_APC_BUSY_QUEUE = 1",
                                                    "env.MADEIRA_OPTIN_DLLS = msi,mspatcha,odbccp32,sxs,rstrtmgr,dxva2",
+                                                   "env.MADEIRA_WOW_MIN_FREE_GB = 2",
+                                                   "env.MADEIRA_TLS_CLEAR_OWN_PROCESS = 1",
+                                                   "env.MADEIRA_SPAWN_BLOCK = vc_redist-",
+                                                   "env.MADEIRA_EA_CEF_FLAGS = --disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows",
                                                    "env.MADEIRA_X64_IMAGE_NOCOPY = 1", "pool-split = 1"],
         launcherOnlyConfig: ["env.MADEIRA_SC_PA_POOLS = 2", "env.MADEIRA_EA_CEF = 1"], needsGecko: true, needsArticle: true)
 }

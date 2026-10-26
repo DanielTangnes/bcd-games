@@ -215,6 +215,44 @@ let old = try! JSONDecoder().decode(Stored.self, from: Data(written.utf8))
 let again = Stored(controls: old.controls.map(BCDTouchItem.init(stored:)).map(\.stored))
 require(try! encoder.encode(again) == (try! encoder.encode(old)), "a controls file the old editor wrote comes back byte for byte")
 
+// ---- locking and layer order (upstream port 2026-10-25) -------------------------------------
+// The stored control gains one optional key, written only when a control is locked: a layout with
+// nothing locked is the file it always was (above), and a locked one survives the conversion.
+var plain = TouchControl()
+plain.nx = 0.3; plain.ny = 0.4; plain.action = .key(0x57)
+let plainJSON = String(data: try! encoder.encode(plain), encoding: .utf8)!
+require(!plainJSON.contains("locked"), "a control that is not locked is written without the key")
+var pinned = plain
+pinned.locked = true
+require(String(data: try! encoder.encode(pinned), encoding: .utf8)!.contains("\"locked\":true"), "a locked control is written with it")
+let pinnedItem = BCDTouchItem(stored: pinned)
+require(pinnedItem.locked && !BCDTouchItem(stored: plain).locked, "the view value says whether the control is locked")
+require(pinnedItem.stored == pinned && (try! JSONDecoder().decode(TouchControl.self, from: try! encoder.encode(pinned))) == pinned,
+        "a locked control comes back unchanged, through the view value and through its own file")
+var released = pinnedItem
+released.locked = false
+require(released.stored == plain && released.stored.locked == nil, "unlocking it writes no key again: the file is as if it was never locked")
+let oldFile = #"{"id":"6F1B5E2A-1C1D-4B7E-9C84-0A0B0C0D0E0F","nx":0.25,"ny":0.75,"scale":1,"action":{"mouseLeft":{}}}"#
+let oldControl = try! JSONDecoder().decode(TouchControl.self, from: Data(oldFile.utf8))
+require(oldControl.locked == nil && !BCDTouchItem(stored: oldControl).locked, "a control saved before locking existed is not locked")
+
+let layers = (0..<4).map { i in BCDTouchItem(id: UUID(), x: 0.2 * Double(i + 1), y: 0.5, scale: 1, action: .mouseLeft) }
+let ids = layers.map(\.id)
+require(BCDTouchLayering.moved(layers, ids[1], toFront: true).map(\.id) == [ids[0], ids[2], ids[3], ids[1]], "to front: last in the list")
+require(BCDTouchLayering.moved(layers, ids[2], toFront: false).map(\.id) == [ids[2], ids[0], ids[1], ids[3]], "to back: first in the list")
+require(BCDTouchLayering.moved(layers, ids[3], toFront: true) == layers && BCDTouchLayering.moved(layers, ids[0], toFront: false) == layers,
+        "already in front / at the back: the list is untouched")
+require(BCDTouchLayering.moved(layers, UUID(), toFront: true) == layers, "a control that is not there changes nothing")
+require(BCDTouchLayering.isFront(layers, ids[3]) && !BCDTouchLayering.isFront(layers, ids[0])
+        && BCDTouchLayering.isBack(layers, ids[0]) && !BCDTouchLayering.isBack(layers, ids[3]) && !BCDTouchLayering.isFront([BCDTouchItem](), UUID()),
+        "which control is in front and which at the back")
+let reordered = BCDTouchLayering.moved(layers, ids[0], toFront: true)
+require(Set(reordered.map(\.id)) == Set(ids) && reordered.count == 4 && reordered.first { $0.id == ids[0] } == layers[0],
+        "reordering loses nothing and changes no control")
+let storedReordered = BCDTouchLayering.moved(controls, controls[5].id, toFront: true)
+require(storedReordered.count == controls.count && storedReordered.last == controls[5] && Set(storedReordered.map(\.id)) == Set(controls.map(\.id)),
+        "the stored list reorders the same way, every control as it was")
+
 var store = ControlPresetStore()
 var n = 0
 _ = store.save(name: "Racing", controls: controls, newID: { n += 1; return "user-\(n)" })

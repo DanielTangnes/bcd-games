@@ -33,6 +33,8 @@ struct BCDSessionLiveLayer: View {
             .onAppear { live.appeared() }
             .onDisappear { live.disappeared() }
             .onReceive(LibraryController.shared.commands) { live.command($0) }
+            .modifier(BCDGyroSessionHook())   // madeira-bcd (2026-10-25, round 603): gyro aim looks when the session, its menu or the app changes
+            .modifier(BCDInputSessionHook())   // madeira-bcd (2026-10-25, round 604): the input features look when the session, its menu or the app changes
     }
 }
 
@@ -43,7 +45,7 @@ struct BCDSessionLiveLayer: View {
     private var watchers = Set<AnyCancellable>()
     private var startingTimer: Timer?
     private var startingGame: BCDGame?
-    private var sampler: BCDOverlaySampler?
+    private var hudLive: BCDHUDLive?
     private var logWatch: AnyCancellable?
     private var menuSource: BCDLibraryMenuSource?
 
@@ -53,6 +55,8 @@ struct BCDSessionLiveLayer: View {
             model.$launching.map { _ in () }.eraseToAnyPublisher(),
             model.$menu.map { _ in () }.eraseToAnyPublisher(),
             model.$performance.map { _ in () }.eraseToAnyPublisher(),
+            BCDHUDState.shared.$setup.map { _ in () }.eraseToAnyPublisher(),
+            BCDHUDState.shared.$moving.map { _ in () }.eraseToAnyPublisher(),
             model.$sessionMessage.map { _ in () }.eraseToAnyPublisher(),
             model.$liveLogs.map { _ in () }.eraseToAnyPublisher(),
             model.$launchLogs.map { _ in () }.eraseToAnyPublisher(),
@@ -88,7 +92,7 @@ struct BCDSessionLiveLayer: View {
         hud.showsMenuButton = running && !model.launching
         if running && model.launching { startStarting() } else { stopStarting() }
         if running && model.menu { openMenuModel() } else { closeMenuModel(save: true) }
-        if running && !model.launching && model.performance { startOverlay() } else { stopOverlay() }
+        if running && !model.launching && BCDHUDState.shared.setup.layout.shown { startOverlay() } else { stopOverlay() }
         if running && !model.launching && model.liveLogs { startLog() } else { stopLog() }
         tickStarting()
     }
@@ -162,7 +166,10 @@ struct BCDSessionLiveLayer: View {
 
     /// How to open the game menu, as the starting screen says it.
     static var menuTip: String {
-        LibraryController.homeHold
+        if BCDChordSetting.mode == .holdStart {   // madeira-bcd (round 604): the menu's "Open this menu from a controller with"
+            return "The game menu: hold Start on a controller, press Back + Start, or tap the menu button."
+        }
+        return LibraryController.homeHold || BCDChordSetting.mode == .holdGuide
             ? "The game menu: hold the controller's Home button, press Back + Start, or tap the menu button."
             : "The game menu: Back + Start on a controller, or the menu button on the screen."
     }
@@ -187,6 +194,7 @@ struct BCDSessionLiveLayer: View {
         let source = BCDLibraryMenuSource()
         let menu = BCDSessionMenuModel(source: source)
         menu.custom["touch"] = { AnyView(BCDTouchMenuSectionLive(closeMenu: { LibraryModel.shared.menu = false })) }
+        menu.custom[BCDInputMenu.lookCustom] = { AnyView(BCDTouchLookSampleLive()) }   // madeira-bcd (2026-10-25, round 604): the touch look's sample
         source.menu = menu
         menuSource = source
         hud.menu = menu
@@ -225,18 +233,22 @@ struct BCDSessionLiveLayer: View {
 
     // MARK: Overlay and log
 
+    /// The performance HUD (BCDHUDLive.swift): made when a layout is on, told when the player changes it, dropped when it goes off.
     private func startOverlay() {
-        guard sampler == nil else { return }
-        let sampler = BCDOverlaySampler(kind: .library)
-        self.sampler = sampler
-        hud.overlay = sampler.feed
-        sampler.start()
+        if let hudLive {
+            hudLive.setupChanged()
+            return
+        }
+        let live = BCDHUDLive()
+        hudLive = live
+        hud.performance = live.feed
+        live.start()
     }
 
     private func stopOverlay() {
-        sampler?.stop()
-        sampler = nil
-        hud.overlay = nil
+        hudLive?.stop()
+        hudLive = nil
+        hud.performance = nil
     }
 
     private func startLog() {
@@ -332,6 +344,7 @@ struct BCDSessionLiveLayer: View {
     }
 
     func dispose() {
+        BCDMenuMore.menuClosed()   // madeira-bcd (round 604): the Windows and Task Manager pages stop their timers
         pageShown(nil)
         watchers.removeAll()
     }
@@ -352,12 +365,14 @@ struct BCDSessionLiveLayer: View {
     private var appID: Int? { model.activeEntry?.steamAppID }
 
     func sections(_ tab: BCDSessionTab) -> [BCDMenuSection] {
+        let own: [BCDMenuSection]
         switch tab {
-        case .game: return gameSections
-        case .display: return displaySections
-        case .controls: return controlSections
-        case .tools: return toolSections
+        case .game: own = gameSections
+        case .display: own = displaySections
+        case .controls: own = controlSections
+        case .tools: own = toolSections
         }
+        return BCDMenuMore.arrange(own, tab: tab)   // madeira-bcd (2026-10-25, round 604): pause, windows, picture, touch feel, debug channels (BCDMenuMore.swift)
     }
 
     // MARK: Game
@@ -365,8 +380,9 @@ struct BCDSessionLiveLayer: View {
     private var gameSections: [BCDMenuSection] {
         var out = [BCDMenuSection(id: "resume", rows: [BCDMenuRow(id: "resume", title: "Resume", symbol: "play.fill", kind: .action(primary: true))])]
         out.append(BCDMenuSection(id: "quick", rows: [
-            BCDMenuRow(id: "keyboard", title: "Keyboard", detail: "Type into the game; Esc, Ctrl, Alt and the arrows are above the keys.",
+            BCDMenuRow(id: "keyboard", title: "Keyboard", detail: "Type into the game; Esc, Ctrl, Alt and the arrows are above the keys. Fn there has F1 to F12, Win and Alt+Tab.",
                        symbol: "keyboard", kind: .action()),
+            BCDExtraKeysMenu.row(),   // madeira-bcd (2026-10-25, round 603): the key bar over the game
         ]))
         if let cloud = cloudSection { out.append(cloud) }
         out.append(BCDMenuSection(id: "quit", rows: [
@@ -424,6 +440,7 @@ struct BCDSessionLiveLayer: View {
             guard case .done(let count) = steam.cloudQuit else { return }
             LogStore.shared.log("[steam-cloud] app=\(appID) quit-upload done files=\(count): closing BCD")
             try? await Task.sleep(nanoseconds: 1_200_000_000)   // long enough to read the result
+            BCDSessionRecorder.closingOnPurpose()   // BCD closes on purpose: the open session is no crash to ask about
             exit(0)
         }
     }
@@ -447,14 +464,8 @@ struct BCDSessionLiveLayer: View {
                            kind: .choice(choices, selected: model.displayMode.rawValue)),
             ]))
         }
-        var overlay = [BCDMenuRow(id: "overlay", title: "Performance overlay", detail: "Drag it where you want it.",
-                                  kind: .toggle(model.performance))]
-        if model.performance {
-            overlay.append(BCDMenuRow(id: "overlay.fields", title: "Shows",
-                                      kind: .multi(BCDLiveMenuWords.fields.map { BCDChoice(id: $0.0, title: $0.1) },
-                                                   selected: Set(model.overlayFields))))
-        }
-        out.append(BCDMenuSection(id: "overlay", title: "Overlay", rows: overlay))
+        // The performance HUD: Off, 1 to 4 or Custom, and where it sits (BCDHUDMenu.swift).
+        out += BCDHUDMenu.sections(BCDHUDState.shared.setup, screen: hudScreen)
         out.append(BCDMenuSection(id: "eco", title: "Battery & heat", rows: [
             BCDMenuRow(id: "eco", title: "Eco mode",
                        detail: "The game's threads run on the efficiency cores: the phone stays cooler, the game runs slower. Handy while a game loads; off again for play.",
@@ -495,6 +506,8 @@ struct BCDSessionLiveLayer: View {
             controller.append(BCDMenuRow(id: "pad.api.note", title: BCDLivePadMode.note(), kind: .note(.soft)))
         }
         if !controller.isEmpty { out.append(BCDMenuSection(id: "controller", title: "Controller", rows: controller)) }
+        if let gyro = BCDGyroMenu.section(for: model.activeEntry) { out.append(gyro) }   // madeira-bcd (2026-10-25, round 603): gyro aim
+        out += BCDInputMenuLive.sections(model.activeEntry)   // madeira-bcd (2026-10-25, round 604): turbo and macros and the other input features
 
         let pointer = input.touchMode ? "touch" : (input.relative ? "relative" : "absolute")
         let speed = input.relative ? input.sensRel : input.sensAbs
@@ -519,6 +532,13 @@ struct BCDSessionLiveLayer: View {
                 BCDMenuRow(id: "diagnostics.note", title: "Both affect Direct3D 12 games only.", kind: .note(.soft)),
             ]))
         }
+        out.append(BCDMenuSection(id: "screenshot", title: "Screenshot", rows: [
+            BCDMenuRow(id: "shot", title: "Take a screenshot",
+                       detail: "The game's picture, without the menu, the HUD or the touch controls. It is kept in Files › BCD › Screenshots, and you can send it with a log from Settings › Logs.",
+                       symbol: "camera", kind: .action()),
+            BCDMenuRow(id: "shot.photos", title: "Also add it to Photos",
+                       detail: "BCD only adds pictures; it never reads your photos. The first time, iOS asks you.", kind: .toggle(BCDScreenshotLive.toPhotos)),
+        ]))
         out.append(BCDMenuSection(id: "log", title: "Log", rows: [
             BCDMenuRow(id: "log", title: "Live log", symbol: "text.alignleft", kind: .page("log", value: nil)),
             BCDMenuRow(id: "share", title: "Share logs", kind: .share(LogStore.shared.exportableLogs)),
@@ -526,12 +546,29 @@ struct BCDSessionLiveLayer: View {
         return out
     }
 
+    // MARK: Performance HUD (BCDHUDMenu.swift)
+
+    /// The kind of window the HUD's place is kept for: from the size of the window now.
+    private var hudScreen: BCDHUDScreenClass { BCDHUDScreenClass.of(BCDHUDLive.windowSize()) }
+
+    private func applyHUD(_ outcome: BCDHUDMenu.Outcome) {
+        BCDHUDState.shared.change(outcome.setup, why: "the in-game menu")
+        if outcome.moving {
+            // The menu closes and the HUD waits for a drag, with Auto and Done beside it.
+            BCDHUDState.shared.beginMoving()
+            model.menu = false
+        }
+    }
+
     // MARK: Pages
 
     func page(_ id: String) -> BCDMenuPage? {
+        if let own = BCDMenuMore.page(id) { return own }   // madeira-bcd (round 604)
+        if BCDInputMenu.handles(id) { return BCDInputMenuLive.page(id, model.activeEntry) }   // madeira-bcd (2026-10-25, round 604)
         switch id {
         case "binds": return bindsPage
-        case "log": return BCDMenuPage(id: "log", title: "Live log", kind: .log)
+        case "log": return BCDMenuMore.logPage()   // madeira-bcd (round 604): pause, clear and export on the live log page
+        case BCDHUDMenu.customPage: return BCDHUDMenu.page(id, BCDHUDState.shared.setup)
         default:
             if id.hasPrefix("bind.") { return BCDLiveBinds.page(input: String(id.dropFirst(5)), binds: model.controllerBinds, controls: controls.controls) }
             return nil
@@ -542,9 +579,10 @@ struct BCDSessionLiveLayer: View {
         BCDLiveBinds.overview(binds: model.controllerBinds, mouseVertical: model.padMouseVertical, controls: controls.controls)
     }
 
-    func logLines() -> [BCDLogLine] { BCDLiveSessionLog.lines(120) }
+    func logLines() -> [BCDLogLine] { BCDMenuMore.logLines() }
 
     func pageShown(_ id: String?) {
+        BCDMenuMore.pageShown(id) { [weak self] in self?.menu?.changed() }   // madeira-bcd (round 604): the Windows and Task Manager pages keep themselves fresh while open
         let wantLog = id == "log"
         guard wantLog != logShown else { return }
         logShown = wantLog
@@ -565,12 +603,21 @@ struct BCDSessionLiveLayer: View {
     // MARK: Doing
 
     func act(_ row: String) {
+        if BCDMenuMore.handles(row) { return BCDMenuMore.act(row) { [weak self] in self?.menu?.changed() } }   // madeira-bcd (round 604)
+        if BCDInputMenu.handles(row), BCDInputMenuLive.act(row) { menu?.changed(); return }   // madeira-bcd (2026-10-25, round 604): choosing a controller for a player
         switch row {
         case "resume": close()
         case "keyboard":
             model.menu = false
             LibraryKeyboard.show()
+        case BCDExtraKeysMenu.rowID:
+            model.menu = false   // madeira-bcd (2026-10-25, round 603): the key bar
+            BCDExtraKeysHost.shared.toggle()
         case "cloud.upload": uploadAndClose(replace: false)
+        case "shot":
+            model.menu = false
+            // After the menu has gone, so the picture is the game as the player sees it.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { BCDScreenshotLive.take() }
         case "capture":
             model.menu = false
             // After the menu has gone, so the frame shows what the player saw.
@@ -587,8 +634,11 @@ struct BCDSessionLiveLayer: View {
     }
 
     func toggle(_ row: String, _ on: Bool) {
+        if BCDMenuMore.handles(row) { return BCDMenuMore.toggle(row, on) { [weak self] in self?.menu?.changed() } }   // madeira-bcd (round 604)
+        if BCDInputMenu.handles(row) { return BCDInputMenuLive.change(row, on ? "1" : "0", entry: model.activeEntry) }   // madeira-bcd (2026-10-25, round 604)
+        if BCDHUDMenu.owns(row) { return applyHUD(BCDHUDMenu.toggle(row, on, BCDHUDState.shared.setup)) }
         switch row {
-        case "overlay": model.performance = on
+        case "shot.photos": BCDScreenshotLive.toPhotos = on
         case "eco":
             eco = on
             madeira_set_eco(on ? 1 : 0)
@@ -597,13 +647,12 @@ struct BCDSessionLiveLayer: View {
     }
 
     func choose(_ row: String, _ value: String) {
+        if BCDMenuMore.handles(row) { return BCDMenuMore.choose(row, value) { [weak self] in self?.menu?.changed() } }   // madeira-bcd (round 604)
+        if BCDInputMenu.handles(row) { return BCDInputMenuLive.change(row, value, entry: model.activeEntry) }   // madeira-bcd (2026-10-25, round 604)
+        if BCDHUDMenu.owns(row) { return applyHUD(BCDHUDMenu.choose(row, value, BCDHUDState.shared.setup, screen: hudScreen)) }
         switch row {
         case "fps": if let mode = Int(value) { model.setFPS(mode) }
         case "scale": if let mode = DisplayMode(rawValue: value) { model.displayMode = mode }
-        case "overlay.fields":
-            let on = !model.overlayFields.contains(value)
-            model.overlayFields.removeAll { $0 == value }
-            if on { model.overlayFields.append(value) }
         case "pad.mode":
             model.controllerMode = value.isEmpty ? nil : value
             model.saveCurrentProfile()
@@ -621,6 +670,7 @@ struct BCDSessionLiveLayer: View {
             FPSOverlayFenceMode.current = mode
             madeira_set_fence_mode(Int32(mode == 0 ? 7 : mode))
         default:
+            if BCDGyroMenu.handles(row) { BCDGyroMenu.choose(row, value, entry: model.activeEntry); return }   // madeira-bcd (2026-10-25, round 603): gyro aim
             if row.hasPrefix("bind.") {
                 var table = model.controllerBinds
                 BCDLiveBinds.apply(value, input: String(row.dropFirst(5)), to: &table)
@@ -631,6 +681,7 @@ struct BCDSessionLiveLayer: View {
     }
 
     func slide(_ row: String, _ value: Double) {
+        if BCDHUDMenu.owns(row) { return applyHUD(BCDHUDMenu.slide(row, value, BCDHUDState.shared.setup)) }
         switch row {
         case "speed": if input.relative { input.sensRel = value } else { input.sensAbs = value }
         case "bind.vertical":
@@ -641,6 +692,8 @@ struct BCDSessionLiveLayer: View {
     }
 
     func answer(_ row: String, _ answer: String) {
+        if BCDMenuMore.handles(row) { return BCDMenuMore.answer(row, answer) { [weak self] in self?.menu?.changed() } }   // madeira-bcd (round 604)
+        if BCDHUDMenu.owns(row) { return applyHUD(BCDHUDMenu.answer(row, answer, BCDHUDState.shared.setup)) }
         switch (row, answer) {
         case ("quit", "quit"): model.requestQuit()
         case ("cloud.replace", "replace"): uploadAndClose(replace: true)
@@ -679,9 +732,10 @@ struct BCDSessionLiveLayer: View {
         }
     }
 
-    /// The choices, plus a value typed into the game's file by hand.
+    /// The choices (BCDPadModel.swift: the Xbox pad through XInput, a DualSense, a generic gamepad, the controller itself), plus a value typed
+    /// into the game's file by hand.
     static func choices(_ current: String) -> [(String, String)] {
-        var modes = [("xinput", "XInput"), ("hid", "DirectInput / HID")]
+        var modes = BCDPadModel.choices().map { ($0 == .xbox ? "xinput" : $0.line, $0.title) }
         if !modes.contains(where: { $0.0 == current }) { modes.append((current, current)) }
         return modes
     }
@@ -697,9 +751,9 @@ struct BCDSessionLiveLayer: View {
         default: session = "an XInput pad"
         }
         return "This session shows player 1 as \(session). A game looks for its controllers when it starts, so a change "
-            + "applies from its next start. XInput makes every controller an Xbox pad, which almost every game knows. "
-            + "DirectInput / HID shows player 1 as what it is: a DualSense to Sony's PC games, a HID pad to DirectInput "
-            + "games; an XInput-only game then sees no controller."
+            + "applies from its next start. The Xbox controller (XInput) is what almost every game knows; a 360 and an One are the same to it. "
+            + "DualSense shows Sony's PC games the controller they look for, Generic gamepad is what DirectInput games list, and The controller "
+            + "itself is a DualSense when the paired one is and a generic gamepad otherwise; a game that reads only XInput then sees no controller."
     }
 }
 
@@ -848,8 +902,6 @@ struct BCDSessionLiveLayer: View {
 
 /// The menu's words for the engine's choices.
 enum BCDLiveMenuWords {
-    static let fields: [(String, String)] = [("FPS", "FPS"), ("Frame time", "Frame time"), ("CPU", "CPU"), ("GPU", "GPU"),
-                                             ("RAM", "Memory"), ("Battery", "Battery"), ("Thermal", "Heat")]
     static let pointers = [BCDChoice(id: "absolute", title: "Trackpad"), BCDChoice(id: "touch", title: "Tap to click"),
                            BCDChoice(id: "relative", title: "Mouse-look")]
     static let gpuSyncs = [BCDChoice(id: "1", title: "F1"), BCDChoice(id: "6", title: "F6"), BCDChoice(id: "5", title: "F5"),
@@ -901,44 +953,28 @@ enum BCDLiveMenuWords {
     }
 }
 
-// MARK: - The overlay's readings
+// MARK: - The developer overlay's readings
 
-/// Samples the engine's counters for the overlay twice a second, only while it is shown. The
-/// library's overlay shows the fields the game's page chose; the developer interface's shows
-/// memory against the limit, the present count, the frame-rate limit and the heat, with its
-/// switches (as the classic overlay did, which also held ProMotion for the limit and logged [present]).
+/// Samples the engine's counters for the developer interface's overlay twice a second, only while it is shown: memory against the limit, the
+/// present count, the frame-rate limit and the heat, with its switches (as the classic overlay did, which also held ProMotion for the limit
+/// and logged [present]). A library session's performance HUD is BCDHUDLive.swift.
 @MainActor final class BCDOverlaySampler {
-    enum Kind { case library, desk }
-    let kind: Kind
     let feed = BCDPerformanceFeed()
     private var timer: Timer?
     private var samples: [(t: Double, count: UInt64)] = []
-    private let cpuMeter = CPUMeter()
-    private var cpu: (total: Double, top: Double)?
-    private var gpuOn = false
-    private var lastGPUBusy = 0.0
-    private var lastGPUBuffers: UInt64 = 0
-    private var lastGPUTime = 0.0
-    private var lastGPUCount: UInt64 = 0
-    private var gpu = -1.0
-    private var gpuFrameMs = 0.0
     private var thermal = ProcessInfo.processInfo.thermalState
     private var ticks = 0
     private var lastLoggedPresent: UInt64 = .max
     private var captureUntil = 0.0
 
-    init(kind: Kind) {
-        self.kind = kind
-        if kind == .desk { feed.tapChip = { [weak self] id in self?.tap(id) } }
+    init() {
+        feed.tapChip = { [weak self] id in self?.tap(id) }
     }
 
     func start() {
         guard timer == nil else { return }
-        if kind == .library { UIDevice.current.isBatteryMonitoringEnabled = true }
-        if kind == .desk {
-            // The classic overlay held the panel's rate for the limit in force when it appeared.
-            ProMotionIntent.apply(mode: madeira_get_vsync_locked())
-        }
+        // The classic overlay held the panel's rate for the limit in force when it appeared.
+        ProMotionIntent.apply(mode: madeira_get_vsync_locked())
         samples = [(CACurrentMediaTime(), madeira_get_present_count())]
         tick()
         let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.tick() } }
@@ -949,8 +985,6 @@ enum BCDLiveMenuWords {
     func stop() {
         timer?.invalidate()
         timer = nil
-        if gpuOn { madeira_gpu_meter_enable(0); gpuOn = false }
-        if kind == .library { UIDevice.current.isBatteryMonitoringEnabled = false }
     }
 
     private func tick() {
@@ -966,58 +1000,17 @@ enum BCDLiveMenuWords {
         }
         let footprint = Self.footprintMB()
         var reading = BCDPerformanceReading()
-        switch kind {
-        case .library: reading.readings = libraryReadings(fps: fps, count: count, now: now, footprint: footprint)
-        case .desk:
-            let limit = Self.limitMB(footprint: footprint)
-            reading.readings = deskReadings(fps: fps, count: count, footprint: footprint, limit: limit)
-            reading.chips = chips()
-            ticks += 1
-            // The present count in the log: every 2 s while it changes or is still zero.
-            if ticks % 4 == 0, count != lastLoggedPresent || count == 0 {
-                LogStore.shared.log("[present] count=\(count) fps=\(String(format: "%.1f", fps)) mem=\(footprint)/\(limit)MB thermal=\(Self.shortHeat(thermal))\(ProcessInfo.processInfo.isLowPowerModeEnabled ? " lowpower" : "")",
-                                    level: count == 0 ? .debug : .info)
-                lastLoggedPresent = count
-            }
+        let limit = Self.limitMB(footprint: footprint)
+        reading.readings = deskReadings(fps: fps, count: count, footprint: footprint, limit: limit)
+        reading.chips = chips()
+        ticks += 1
+        // The present count in the log: every 2 s while it changes or is still zero.
+        if ticks % 4 == 0, count != lastLoggedPresent || count == 0 {
+            LogStore.shared.log("[present] count=\(count) fps=\(String(format: "%.1f", fps)) mem=\(footprint)/\(limit)MB thermal=\(Self.shortHeat(thermal))\(ProcessInfo.processInfo.isLowPowerModeEnabled ? " lowpower" : "")",
+                                level: count == 0 ? .debug : .info)
+            lastLoggedPresent = count
         }
         if feed.reading != reading { feed.reading = reading }
-    }
-
-    private func libraryReadings(fps: Double, count: UInt64, now: Double, footprint: Int) -> [BCDReading] {
-        let fields = LibraryModel.shared.overlayFields
-        var out: [BCDReading] = []
-        if fields.contains("FPS") { out.append(BCDReading(id: "fps", text: String(format: "%.0f FPS", fps), tone: BCDFrameRate.tone(fps))) }
-        if fields.contains("Frame time") { out.append(BCDReading(id: "ms", text: fps > 0 ? String(format: "%.1f ms", 1000 / fps) : "– ms")) }
-        if fields.contains("CPU") {
-            cpu = cpuMeter.sample() ?? cpu
-            out.append(BCDReading(id: "cpu", text: cpu.map { String(format: "CPU %.0f%% (top %.0f%%)", $0.total, $0.top) } ?? "CPU –"))
-        }
-        let wantGPU = fields.contains("GPU")
-        if wantGPU != gpuOn {
-            gpuOn = wantGPU
-            madeira_gpu_meter_enable(wantGPU ? 1 : 0)
-            lastGPUBusy = madeira_gpu_meter_busy_seconds(); lastGPUBuffers = madeira_gpu_meter_cmdbufs()
-            lastGPUTime = now; lastGPUCount = count; gpu = -1
-        } else if wantGPU {
-            // ml1174: the GPU's busy time against the wall clock, per frame.
-            let busy = madeira_gpu_meter_busy_seconds(), buffers = madeira_gpu_meter_cmdbufs()
-            let used = max(0, busy - lastGPUBusy), dt = max(0.001, now - lastGPUTime)
-            let frames = count >= lastGPUCount ? count - lastGPUCount : 0
-            gpu = buffers > lastGPUBuffers ? min(100, used / dt * 100) : -1
-            gpuFrameMs = frames > 0 ? used * 1000 / Double(frames) : 0
-            lastGPUBusy = busy; lastGPUBuffers = buffers; lastGPUTime = now; lastGPUCount = count
-        }
-        if wantGPU {
-            let text = gpu < 0 ? "GPU –" : gpuFrameMs > 0 ? String(format: "GPU %.0f%% (%.1f ms)", gpu, gpuFrameMs) : String(format: "GPU %.0f%%", gpu)
-            out.append(BCDReading(id: "gpu", text: text))
-        }
-        if fields.contains("RAM") { out.append(BCDReading(id: "ram", text: "\(footprint) MB")) }
-        if fields.contains("Battery") {
-            let level = UIDevice.current.batteryLevel
-            if level >= 0 { out.append(BCDReading(id: "battery", text: "\(Int((level * 100).rounded()))%", tone: level < 0.2 ? .warm : .normal)) }
-        }
-        if fields.contains("Thermal") { out.append(heat()) }
-        return out
     }
 
     private func deskReadings(fps: Double, count: UInt64, footprint: Int, limit: Int) -> [BCDReading] {
@@ -1091,6 +1084,7 @@ enum BCDLiveMenuWords {
         case "limit":
             let next = Self.nextLimit(madeira_get_vsync_locked())
             fputs("[hud] tap fps-cap -> \(Self.limitLabel(next))\n", stderr)
+            ThermalPacing.shared.userChose()   // env.MADEIRA_THERMAL_CAP: a cap chosen by hand is never replaced or restored
             madeira_set_vsync_locked(next)
             ProMotionIntent.apply(mode: next)
         case "eco":
@@ -1151,7 +1145,7 @@ struct BCDDeskOverlay: View {
 }
 
 @MainActor final class BCDDeskSamplerHolder: ObservableObject {
-    let sampler = BCDOverlaySampler(kind: .desk)
+    let sampler = BCDOverlaySampler()
 }
 
 /// The in-game menu of the touch controls' window: on the
@@ -1213,6 +1207,7 @@ struct BCDDeskSessionMenu: View {
                 BCDMenuSection(id: "resume", rows: [BCDMenuRow(id: "resume", title: "Resume", symbol: "play.fill", kind: .action(primary: true))]),
                 BCDMenuSection(id: "quick", rows: [
                     BCDMenuRow(id: "keyboard", title: "Keyboard", symbol: "keyboard", kind: .action()),
+                    BCDExtraKeysMenu.row(),   // madeira-bcd (2026-10-25, round 603): the key bar over the game
                 ]),
             ]
         case .display:
@@ -1283,6 +1278,9 @@ struct BCDDeskSessionMenu: View {
         case "keyboard":
             close()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { MetalBackedView.toggleKeyboard() }
+        case BCDExtraKeysMenu.rowID:
+            close()   // madeira-bcd (2026-10-25, round 603): the key bar
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { BCDExtraKeysHost.shared.toggle() }
         case "capture":
             close()
             // After the menu has gone, so the frame shows what the player saw.
@@ -1466,6 +1464,9 @@ struct BCDDeskStarting: View {
     static func view(for input: LibraryKeyInput) -> UIView {
         let model = BCDKeyboardBarModel()
         let bar = BCDKeyboardBar(model: model, press: { [weak input] key in
+            // Paste types the clipboard text (read only now, on this tap); any other key of the bar ends a paste still being delivered.
+            if key.id == "paste" { HardwareInput.shared.pasteClipboard(); return }
+            HardwareInput.shared.cancelPaste()
             guard let input, let vk = codes[key.id] else { return }
             if key.latches {
                 if input.held.contains(vk) { input.held.remove(vk); winios_post_key(vk, 0) } else { input.held.insert(vk); winios_post_key(vk, 1) }
@@ -1473,7 +1474,12 @@ struct BCDDeskStarting: View {
             } else {
                 input.press(vk)
             }
-        }, done: { LibraryKeyboard.hide() })
+        }, done: { LibraryKeyboard.hide() }, extra: { [weak input] key in
+            // madeira-bcd (2026-10-25, round 603): the second page's keys (BCDExtraKeys.swift) go out with the held modifiers left alone;
+            // its Ctrl, Shift and Alt are the first page's latches (above), and the first page's keys are posted as before.
+            guard let input, let extra = BCDExtraKeys.key(key.id), !extra.isModifier else { return }
+            BCDKeySender.send(extra.action, held: input.held)
+        })
         return BCDHostedBar(host: UIHostingController(rootView: bar))
     }
 }

@@ -1,0 +1,14 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "exe-window-fixed-base"
+ ],
+ "next": [
+  "exe-window-mb = 512"
+ ],
+ "note": "The Adventures of Elliot: The Millennium Tales (copy outside Steam started through Elliot.exe), build 592, iPad17,4 (Send Log 8Q0SJ8): Elliot-Win64-Shipping.exe is 473 MiB with its relocations stripped (\"ml985: map_image_view size=0x1d91c000 base=0x140000000 ... charact=0x23\"); the 128 MB window and the pool overlap: failed to create main module, c0000018. The rule proposes the 512 MB window, as for Hogwarts Legacy; the Steam copy's list (build 603) carries exe-window-mb = 480 and the pool lines",
+ "outcome": "crashed",
+ "stage": 2,
+ "status": "trying"
+}

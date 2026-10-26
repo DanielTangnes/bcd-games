@@ -192,6 +192,7 @@ private enum BCDLiveKey {
     @Published private(set) var metalFX = ""
     @Published private(set) var direct3D9 = ""
     @Published private(set) var orientation = ""
+    @Published private(set) var hudEveryGame = BCDHUDState.everyGame == .off ? "" : BCDHUDState.everyGame.rawValue
     let resolutions: [BCDResolution]
     let defaultResolution = ResolutionChoices.defaultValue
     let displayRate = ProMotionIntent.panelMaxFPS
@@ -237,6 +238,13 @@ private enum BCDLiveKey {
     func setDirect3D9(_ value: String) { write(BCDLiveKey.direct3D9, value) }
     /// Only a word BCDOrientationChoice knows is written, and "off" is the key removed (it is what no key means).
     func setOrientation(_ value: String) { write(BCDLiveKey.orientation, BCDOrientationChoice(setting: value).setting) }
+
+    /// The performance HUD for every game without one of its own (BCDHUDState.everyGame); "" is Off.
+    func setHUDEveryGame(_ value: String) {
+        BCDHUDState.everyGame = BCDHUDLayout(rawValue: value) ?? .off
+        hudEveryGame = BCDHUDState.everyGame == .off ? "" : BCDHUDState.everyGame.rawValue
+        LogStore.shared.log("[bcd-settings] performance HUD for every game = \(hudEveryGame.isEmpty ? "off" : hudEveryGame)")
+    }
 
     func setHoldMaximumRate(_ on: Bool) {
         MadeiraConfig.set(BCDLiveKey.promote, on ? "1" : nil)
@@ -302,6 +310,9 @@ private enum BCDLiveKey {
     func dismissMouseHint() { mouse.dismissAssistiveTouchHint() }
 
     func newLayout() -> Bool { presets.createLayout() }
+    var canShareLayouts: Bool { ControlPresetsModel.enabled }   // round 604: BCDControlShareLive.swift
+    func shareLayout(_ id: String) { BCDControlShareLive.share(layoutID: id) }
+    func importLayoutFromFile() { BCDControlShareLive.importFile() }
     func deleteLayout(_ id: String) { presets.delete(id) }
     func editor(close: @escaping () -> Void) -> AnyView? { AnyView(BCDTouchEditorHost(close: close)) }
 
@@ -462,6 +473,7 @@ struct BCDTouchEditorHost: View {
     private var pickerAnswered = false
 
     var externalGamesSavedFolder: String? { ExternalGameStorage.shared.savedFolderName }
+    var prefixToolsView: AnyView? { AnyView(BCDPrefixToolsGroup(backend: BCDPrefixToolsLive.shared)) }   // round 604: BCDGameSetup/BCDPrefixToolsLive.swift
 
     var canConnectExternalGames: Bool {
         !externalGamesBusy && wine_process_is_running() == 0 && LibraryModel.shared.current == nil && !savesBusy && !addingGames && !model.busy
@@ -791,7 +803,7 @@ struct BCDLiveSwitch {
             guard let self else { return }
             sending = false
             switch result {
-            case .success(let code): sendStatus = "Sent. Your code: \(code)"
+            case .success(let code): sendStatus = LogUpload.sentWords(code)
             case .failure(let error): sendStatus = "Not sent: \(error.localizedDescription)"
             }
             refresh()
@@ -842,6 +854,36 @@ struct BCDLiveSwitch {
     var crashTuningRunning: Bool { tune.running }
     func setCrashTuning(_ on: Bool) {
         tune.write(on)
+        configTick += 1
+    }
+
+    var asksAfterUnexpectedClose: Bool {
+        _ = configTick
+        return BCDSessionRecorderLive.asks
+    }
+    func setAsksAfterUnexpectedClose(_ on: Bool) {
+        BCDSessionRecorderLive.asks = on
+        LogStore.shared.log("[bcd-settings] the question about a session that closed unexpectedly = \(on ? "on" : "off")")
+        configTick += 1
+    }
+
+    var screenshotsToPhotos: Bool {
+        _ = configTick
+        return BCDScreenshotLive.toPhotos
+    }
+    func setScreenshotsToPhotos(_ on: Bool) {
+        BCDScreenshotLive.toPhotos = on
+        LogStore.shared.log("[bcd-settings] screenshots also go to Photos = \(on ? "on" : "off")")
+        configTick += 1
+    }
+
+    var perfTrace: Bool {
+        _ = configTick
+        return BCDPerfTraceLive.switchOn
+    }
+    func setPerfTrace(_ on: Bool) {
+        BCDPerfTraceLive.switchOn = on
+        LogStore.shared.log("[bcd-settings] the performance trace = \(on ? "on" : "off")")
         configTick += 1
     }
 }
@@ -1070,6 +1112,7 @@ struct BCDLiveSwitch {
         "FEX-MIT.txt": "FEX-Emu · MIT license", "MIT-FEX.txt": "FEX-Emu · MIT license",
         "LGPL-2.1.txt": "GNU Lesser General Public License 2.1",
         "LGPL-3.0.txt": "GNU Lesser General Public License 3.0",
+        "GPL-2.0.txt": "GNU General Public License 2.0 · the MIDI sound bank",
         "LLVM-Apache-2.0-with-exception.txt": "LLVM · Apache 2.0 with the LLVM exception",
         "ZSTD-BSD.txt": "Zstandard · BSD license",
         "rpmalloc-0BSD.txt": "rpmalloc · 0BSD license",

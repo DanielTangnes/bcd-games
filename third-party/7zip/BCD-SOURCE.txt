@@ -1,0 +1,27 @@
+7-Zip (file archiver)
+
+  Project:   https://www.7-zip.org/ , source repository https://github.com/ip7z/7zip  (Igor Pavlov)
+  Licence:   GNU LGPL-2.1-or-later for the program; BSD 3-clause for the LZFSE and Zstandard decoders (CPP/7zip/Compress/LzfseDecoder.cpp,
+             C/ZstdDec.c); BSD 2-clause for C/Xxh64.c; parts public domain (the LZMA SDK files). The files of CPP/7zip/Compress/Rar* are
+             "LGPL with the unRAR licence restriction": BCD does not build them (below). The project's License.txt is kept exactly as
+             received in LICENSES/7-Zip-License.txt. Copyright (C) 1999-2026 Igor Pavlov.
+  Version:   7-Zip 26.05 (released 2026-10-21), tag 26.05, commit b88c6bc09339de32f7d18bbab900686b244f42ba.
+  Taken from the project's own release page https://github.com/ip7z/7zip/releases/tag/26.05 (linked from https://www.7-zip.org/download.html):
+  the source package 7z2605-src.tar.xz, 1565688 bytes, SHA-256
+      0b6080b8c3e7a579161d2d495224c0e51c467576cb4c7048b0ab485ef44cc22e
+  which is the checksum GitHub lists for that release asset. The file is here byte for byte (SHA256SUMS; tools/build-7zip.py checks it before
+  it unpacks anything). 26.05 is the newest release at the time of writing; earlier ones (up to 26.01) fix several memory-safety bugs in
+  the archive handlers, so no older version is used.
+  Changes by BCD to the source: none. tools/build-7zip.py unpacks the archive into build/7zip, reads the object lists out of the
+  project's own nmake makefiles (Bundles/Fm/makefile for the File Manager, Bundles/Alone2/makefile for the console program), compiles
+  them for x86-64 Windows with llvm-mingw and links two programs, shipped next to Wine's programs in arm64ec-windows (a session's
+  C:\windows\system32):
+      7zFM.exe  the File Manager (every archive format built in; no 7z.dll)
+      7z.exe    the command-line program ("7zz" of the project, Bundles/Alone2)
+  RAR: the code for RAR archives is not built, as with the project's own `DISABLE_RAR=1` and `DISABLE_RAR_COMPRESS=1` (Format7zF/Arc_gcc.mak):
+  no RarHandler, no Rar5Handler, no Rar1/2/3/5 decoder, no Rar crypto. Without it the unRAR licence restriction does not apply to
+  anything BCD ships, and .rar archives are not supported.
+  What comes from outside the source: tools/7zip-shim.c (a stand-in for HtmlHelpW, linked into 7zFM.exe) and the statically linked
+  llvm-mingw runtime (libc++, libunwind; Apache-2.0 with LLVM exception, see LICENSES).
+  The programs are separate Windows programs that BCD starts from the Wine desktop's Start menu ("7-Zip" folder and "BCD Tools"). Nothing
+  of 7-Zip is linked into BCD.

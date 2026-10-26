@@ -195,6 +195,14 @@ struct BCDResolution: Hashable {
     /// The build can hide the display switch.
     var displaySwitchesShown: Bool { get }
     var restartNeeded: Bool { get }
+    /// The performance HUD every game takes that has none of its own (BCDHUDCore.swift): "" for none, else "1" to "4".
+    var hudEveryGame: String { get }
+    func setHUDEveryGame(_ value: String)
+}
+
+extension BCDGraphicsBackend {
+    var hudEveryGame: String { "" }
+    func setHUDEveryGame(_ value: String) {}
 }
 
 struct BCDGraphicsSettings<Backend: BCDGraphicsBackend>: View {
@@ -227,6 +235,14 @@ struct BCDGraphicsSettings<Backend: BCDGraphicsBackend>: View {
                                     note: "How the screen turns while a game runs. Landscape keeps it in landscape however you hold the device, lying down, say; it goes back to following the device when the game ends.",
                                     choices: BCDOrientationChoice.offered.map { BCDSettingsChoice(value: $0.setting ?? "", label: $0.label) },
                                     value: backend.orientation) { backend.setOrientation($0) }
+            }
+            BCDSettingsGroup(title: "Performance HUD",
+                             footer: "1 is the frame rate alone, 2 one line, 3 adds the load and a graph, 4 is everything for a bug report. A game's own choice, made in its in-game menu under Display, comes first, and so does an overlay a game already had on. Custom is built there too.") {
+                BCDSettingsValueRow(id: BCDSettingsID.control(.graphics, "hud"), title: "For every game",
+                                    note: "It stays out of the way of the touch controls and the picture. Off unless you choose.",
+                                    choices: [BCDSettingsChoice(value: "", label: "Off"), BCDSettingsChoice(value: "1", label: "1"), BCDSettingsChoice(value: "2", label: "2"),
+                                              BCDSettingsChoice(value: "3", label: "3"), BCDSettingsChoice(value: "4", label: "4")],
+                                    value: backend.hudEveryGame) { backend.setHUDEveryGame($0) }
             }
             if backend.displaySwitchesShown && backend.displayRate > 60 {
                 BCDSettingsGroup(title: "Display") {
@@ -315,6 +331,10 @@ struct BCDSettingsBinding: Hashable {
     /// A new empty layout; true when it was made (the editor opens on it).
     func newLayout() -> Bool
     func deleteLayout(_ id: String)
+    /// Round 604: a custom layout as a small file to send to someone, and a layout from such a file added to the list (BCDControlShareLive.swift).
+    var canShareLayouts: Bool { get }
+    func shareLayout(_ id: String)
+    func importLayoutFromFile()
     /// The on-screen layout editor, full screen; nil where there is none (the preview app).
     func editor(close: @escaping () -> Void) -> AnyView?
     var pointer: BCDPointerMode { get }
@@ -355,6 +375,12 @@ struct BCDSettingsBinding: Hashable {
     var restartNeeded: Bool { get }
 }
 
+extension BCDControlsBackend {
+    var canShareLayouts: Bool { false }
+    func shareLayout(_ id: String) {}
+    func importLayoutFromFile() {}
+}
+
 struct BCDControlsSettings<Backend: BCDControlsBackend>: View {
     @ObservedObject var backend: Backend
     @EnvironmentObject private var model: BCDSettingsModel
@@ -383,6 +409,17 @@ struct BCDControlsSettings<Backend: BCDControlsBackend>: View {
                     if let active = backend.layouts.first(where: { $0.id == backend.activeLayout && !$0.builtIn }), backend.canSaveLayouts {
                         BCDSettingsActionRow(id: id("delete-layout"), title: "Delete \u{201C}\(active.name)\u{201D}", symbol: "trash",
                                              destructive: true) { confirmDelete(active) }
+                    }
+                    if backend.canShareLayouts {
+                        if let active = backend.layouts.first(where: { $0.id == backend.activeLayout && !$0.builtIn }) {
+                            BCDSettingsActionRow(id: id("share-layout"), title: "Share \u{201C}\(active.name)\u{201D}",
+                                                 note: "Saves it as a small file to send to a friend.", symbol: "square.and.arrow.up") { backend.shareLayout(active.id) }
+                        }
+                        if backend.canSaveLayouts {
+                            BCDSettingsActionRow(id: id("import-layout"), title: "Add a layout from a file",
+                                                 note: "A layout someone shared with you, a .json file from Files. BCD checks it first and adds it as a new layout; yours stay as they are.",
+                                                 symbol: "square.and.arrow.down") { backend.importLayoutFromFile() }
+                        }
                     }
                 }
                 BCDSettingsActionRow(id: id("edit"), title: "Edit the on-screen layout",
@@ -595,9 +632,12 @@ struct BCDStorageItem: Identifiable, Hashable {
     func reconnectExternalGames(chooseAgain: @escaping () -> Void)
     /// What the folder picker did ("opened", "answered", "failed: ...", "closed"), for the log.
     func noteExternalPicker(_ what: String)
+    var prefixToolsView: AnyView? { get }
 }
 
 extension BCDStorageBackend {
+    /// Round 604: copies, export, import and a fresh registry for the Windows prefix (BCDPrefixTools.swift); nil: the group is left out.
+    var prefixToolsView: AnyView? { nil }
     var supportsExternalGames: Bool { false }
     var externalGamesMessage: String? { nil }
     var externalGamesFree: Int64? { nil }
@@ -641,6 +681,7 @@ struct BCDStorageSettings<Backend: BCDStorageBackend>: View {
                 BCDSettingsActionRow(id: BCDSettingsID.control(.storage, "restore"), title: "Restore from a backup",
                                      symbol: "arrow.uturn.backward.circle", enabled: !backend.savesBusy) { choosingBackup = true }
             }
+            if let tools = backend.prefixToolsView { tools }   // round 604: BCDPrefixTools.swift
             BCDSettingsGroup(title: "Shared files",
                              footer: "What each takes on this device" + (backend.measuring ? ", measuring now." : ".")
                                 + " Clearing never touches your games or their saves.") {
@@ -997,10 +1038,25 @@ enum BCDDiagnostic: String, CaseIterable, Identifiable {
     func setCrashTuning(_ on: Bool)
     var restartNeeded: Bool { get }
     func refresh()
+    /// After a session that closed unexpectedly, BCD asks once whether to send its log (BCDSessionRecorderLive.swift).
+    var asksAfterUnexpectedClose: Bool { get }
+    func setAsksAfterUnexpectedClose(_ on: Bool)
+    /// A screenshot from the in-game menu is also added to Photos (BCDScreenshotLive.swift).
+    var screenshotsToPhotos: Bool { get }
+    func setScreenshotsToPhotos(_ on: Bool)
+    /// A line a second (frame rate, CPU, memory, heat) kept for the session and sent with its log (BCDPerfTraceLive.swift). Off unless turned on.
+    var perfTrace: Bool { get }
+    func setPerfTrace(_ on: Bool)
 }
 
 extension BCDLogsBackend {
     var sendLogAdvice: String? { nil }
+    var asksAfterUnexpectedClose: Bool { true }
+    func setAsksAfterUnexpectedClose(_ on: Bool) {}
+    var screenshotsToPhotos: Bool { true }
+    func setScreenshotsToPhotos(_ on: Bool) {}
+    var perfTrace: Bool { false }
+    func setPerfTrace(_ on: Bool) {}
 }
 
 struct BCDLogsSettings<Backend: BCDLogsBackend>: View {
@@ -1050,6 +1106,9 @@ struct BCDLogsSettings<Backend: BCDLogsBackend>: View {
                 BCDSettingsToggleRow(id: BCDSettingsID.control(.logs, "extended"), title: "Detailed logs",
                                      note: "More detail in each game's log. It slows games a little: turn it on to report a problem.",
                                      isOn: backend.extendedLogging) { backend.setExtendedLogging($0) }
+                BCDSettingsToggleRow(id: BCDSettingsID.control(.logs, "perftrace"), title: "Performance trace",
+                                     note: "While a game runs, BCD writes one line a second (frame rate, the slowest frame, CPU, memory left, heat) to a small file, an hour at most. When you send that game's log, the trace goes with it, so a slowdown can be seen in time. Costs nothing while off.",
+                                     isOn: backend.perfTrace) { backend.setPerfTrace($0) }
                 ForEach(BCDDiagnostic.allCases) { item in
                     BCDSettingsToggleRow(id: BCDSettingsID.control(.logs, item.rawValue), title: item.title, note: item.note,
                                          isOn: backend.diagnostic(item)) { backend.setDiagnostic(item, $0) }
@@ -1063,6 +1122,15 @@ struct BCDLogsSettings<Backend: BCDLogsBackend>: View {
                 BCDSettingsToggleRow(id: BCDSettingsID.control(.logs, "autotune"), title: "Auto-tune",
                                      note: "On by default for every game (each game's page has its own switch). When a game crashes, freezes or is closed by iOS, BCD looks through its log afterwards and tries one known fix at its next start, and keeps it if the game gets further. Your own settings always win.",
                                      isOn: backend.crashTuning) { backend.setCrashTuning($0) }
+                BCDSettingsToggleRow(id: BCDSettingsID.control(.logs, "crashprompt"), title: "Ask about a session that closed unexpectedly",
+                                     note: "When BCD was closed while a game was running (iOS ran out of memory, or it crashed), BCD asks once at the next start whether to send that session's log. It never asks twice about the same session.",
+                                     isOn: backend.asksAfterUnexpectedClose) { backend.setAsksAfterUnexpectedClose($0) }
+            }
+            BCDSettingsGroup(title: "Screenshots",
+                             footer: "Take one from a game's menu under Tools. They are kept in Files › BCD › Screenshots. When you send a log, you can send the screenshot taken during that session too: a small copy of it (about 100 KB) goes as it is, because BCD cannot take anything out of a picture the way it does from a log. The picture kept in Files stays full size.") {
+                BCDSettingsToggleRow(id: BCDSettingsID.control(.logs, "shotphotos"), title: "Also add them to Photos",
+                                     note: "BCD only adds pictures and never reads your photos. The first screenshot asks iOS for permission.",
+                                     isOn: backend.screenshotsToPhotos) { backend.setScreenshotsToPhotos($0) }
             }
             if backend.restartNeeded || backend.crashTuning != backend.crashTuningRunning {
                 BCDSettingsNotice(text: bcdSettingsRestartNote)
@@ -1078,7 +1146,7 @@ struct BCDLogsSettings<Backend: BCDLogsBackend>: View {
         model.ask(BCDSettingsConfirm(title: "Send \(BCDSettingsText.logName(log.name))?",
                                      message: "\(BCDFormat.bytes(log.bytes)), cleaned on this device before it leaves."
                                         + (backend.sendLogAdvice.map { "\n\n" + $0 } ?? ""),
-                                     choices: [.init(title: "Send") { BCDLogComment.ask { backend.send(log, comment: $0) } }]))
+                                     choices: [.init(title: "Send") { BCDLogComment.ask(for: URL(fileURLWithPath: log.id)) { backend.send(log, comment: $0) } }]))
     }
 }
 

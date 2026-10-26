@@ -38,7 +38,7 @@ struct AutoTuneAlert: ViewModifier {
                    let name = offer.state.attempts.last?.log, let log = LogUpload.log(named: name) {
                     Button("Send Log") {
                         offers.offer = nil
-                        BCDLogComment.ask { LogUpload.send(log, game: offer.title, comment: $0) }
+                        BCDLogComment.ask(for: log) { LogUpload.send(log, game: offer.title, comment: $0) }
                     }
                 }
                 Button("Stop for this game", role: .destructive) {

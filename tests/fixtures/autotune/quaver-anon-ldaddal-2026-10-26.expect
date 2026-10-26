@@ -1,0 +1,14 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "quaver-anon-ldaddal-word"
+ ],
+ "next": [
+  "env.MADEIRA_ANON_LDADDAL32 = 1"
+ ],
+ "note": "B9N8Z4, build 600: first validated aligned LDADDAL W22,W6,[X8] alias fault. Build 608 offers the default-off workaround only to this game/signature. No default change, no verified gameplay claim.",
+ "outcome": "exited-early",
+ "stage": 2,
+ "status": "trying"
+}

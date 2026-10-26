@@ -206,7 +206,9 @@ check('its other lines are the standard comments and the standard EC-hook line',
                                                   'env.MADEIRA_EC_HOOK_TRACE = 0'] and len(rule['config']) == 4)
 standard = next(r for r in recs['rules'] if r['id'] == 'standard')
 check('the standard list does not have it', NAME not in json.dumps(standard))
-check('the rule stands before "standard" (the last rule)', [r['id'] for r in recs['rules']].index('glyphica-typing-survival') == len(recs['rules']) - 2)
+# Round 602 (ajan41): seven lists (Direct3D 8 and 64-bit Direct3D 9 games) were added between this rule and "standard".
+# The Adventures of Elliot (upstream port, build 602) stands last before "standard".
+check('the rule stands before "standard" (the last rule), after it only the round-602 lists and The Adventures of Elliot', [r['id'] for r in recs['rules']][-10:] == ['glyphica-typing-survival', 'grand-theft-auto-iii', 'postal-2', 'hotline-miami', 'max-payne-2', 'pico-park', 'dont-starve-together', 'a-hat-in-time', 'the-adventures-of-elliot', 'standard'])
 pol = (root / 'app/Madeira/GameRecommendationsList.swift').read_text()
 check('the list policy knows the name', pol.count('"%s"' % NAME) == 2)
 case = re.search(r'case "MADEIRA_WINTYPES"[^\n]*"%s":(.*?)guard value == "0" \|\| value == "1"' % NAME, pol, re.S)

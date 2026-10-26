@@ -1486,6 +1486,37 @@ static int ios_mach_emulate_cas(uint32_t insn, uintptr_t rw_addr, uint64_t gpr[2
     return 1;
 }
 
+/* madeira-bcd (build 608, 2026-10-26): env.MADEIRA_ANON_LDADDAL32 = 1,
+ * default off. Unknown Mach writes can reach a guest handler and continue;
+ * preserve that route for every game that has not opted into this workaround.
+ * Read the current session's value, not a process-lifetime cached value. */
+static int ios_anon_ldaddal32_on(void)
+{
+    const char *value = getenv( "MADEIRA_ANON_LDADDAL32" );
+    return value && value[0] == '1' && !value[1];
+}
+
+/* madeira-bcd (build 608, 2026-10-26): Slay the Spire 2 GTBQHV/DCE9MT/9X8JNF
+ * reached LDADDAL W21,W6,[X8] (b8f50106) on an anonymous RX alias. This is the
+ * 32-bit acquire/release fetch-add family only, not a speculative LSE decoder.
+ * Caller establishes full alias coverage. Keep the operation genuinely atomic;
+ * SEQ_CST is stronger than the instruction's acquire/release ordering. */
+static int ios_mach_emulate_ldaddal32(uint32_t insn, uintptr_t rw_addr, uint64_t gpr[29])
+{
+    unsigned rs, rt;
+    uint32_t value, old;
+    if (!ios_anon_ldaddal32_on()) return 0;
+    if ((insn & 0xffe0fc00u) != 0xb8e00000u) return 0;
+    rs = (insn >> 16) & 31;
+    rt = insn & 31;
+    if ((rs >= 29 && rs != 31) || (rt >= 29 && rt != 31)) return 0;
+    if (!rw_addr || (rw_addr & 3)) return 0;
+    value = rs == 31 ? 0 : (uint32_t)gpr[rs];
+    old = __atomic_fetch_add((uint32_t *)rw_addr, value, __ATOMIC_SEQ_CST);
+    if (rt != 31) gpr[rt] = old;
+    return 1;
+}
+
 /* ml938/ml939: defined far below, next to the store emulator they reuse.
  * Declared here because the Mach exception thread is the primary caller and
  * sits earlier in the file. */
@@ -2477,6 +2508,19 @@ static int ios_fault_loop_guest_progress( struct ios_fault_progress *last, uintp
 
 static struct ios_fault_progress ios_fault_progress_last;
 
+/* madeira-bcd: env.MADEIRA_KUSER_KEEP_REGS = 1 -- see step 1 of ios_mach_exception_thread. Read once. */
+static int ios_kuser_keep_regs( void )
+{
+    static int on = -1;
+
+    if (on < 0)
+    {
+        const char *e = getenv( "MADEIRA_KUSER_KEEP_REGS" );
+        on = (e && e[0] == '1');
+    }
+    return on;
+}
+
 static void *ios_mach_exception_thread( void *arg )
 {
     mach_port_t port = (mach_port_t)(uintptr_t)arg;
@@ -3176,8 +3220,19 @@ static void *ios_mach_exception_thread( void *arg )
             int srcwatch_hit = ios_srcwatch_handle( &state, fault_addr );
             if (srcwatch_hit) handled = 1;
 
-            /* 1. Redirect user_shared_data accesses (0x7FFE0000) */
-            if (!srcwatch_hit && fault_addr >= 0x7FFE0000 && fault_addr < 0x7FFF0000 && ios_exc_usd)
+            /* 1. Redirect user_shared_data accesses (0x7FFE0000)
+             *
+             * madeira-bcd: with env.MADEIRA_KUSER_KEEP_REGS = 1 (OFF unless set) only when the sub-floor service
+             * above did NOT already emulate the access. The service runs first (ml953) and handles KUSER, after
+             * which this scan used to run anyway on the resumed state and rebase every register holding a
+             * 0x7FFE**** value -- including registers that were only data. A protected game (The Adventures of
+             * Elliot, Denuvo) keeps the constant 0x7ffe0283 in rcx while it reads KUSER through another
+             * register; rcx came back as the real address and the pointer it computed was off by exactly
+             * ios_exc_usd - 0x7FFE0000. The rebase is also what makes the next read through a rebased register
+             * go straight to the real page instead of faulting into the service again, which every game that
+             * reads KUSER often has been running with, so the default stays as it was. */
+            if (!srcwatch_hit && (!handled || !ios_kuser_keep_regs()) &&
+                fault_addr >= 0x7FFE0000 && fault_addr < 0x7FFF0000 && ios_exc_usd)
             {
                 for (int reg = 0; reg <= 28; reg++)
                 {
@@ -3680,6 +3735,79 @@ static void *ios_mach_exception_thread( void *arg )
                                 "[x18-emul3] UNRECOGNIZED insn=%08x pc=%p teb+0x%llx\n",
                                 insn, (void*)(uintptr_t)fault_pc,
                                 (unsigned long long)fault_addr);
+                        }
+                    }
+                }
+            }
+
+            /* 3.4. Unity IL2CPP GC-marked vtable pointer (klass | 1) recovery at DispatcherLoopTop.
+             *
+             * In Unity IL2CPP games (Megabonk RWCK31/6WBSNG, Big Walk 7F27M4, Vampire Survivors
+             * WZNPSA/MSQJWT, art of rally 6TGCE6), Boehm GC's stop-the-world mark pass temporarily
+             * sets bit 0 of Il2CppObject::klass (e.g. 0x7c737be990 -> 0x7c737be991). Because
+             * MADEIRA_REAL_SUSPEND is off by default on iOS, a mutator thread can execute
+             *   mov rax, [rcx]          ; loads RAX = klass | 1
+             *   mov rdx, [rax + 0x210]  ; 1-byte misaligned read -> (slot1 >> 8) | (slot2 << 56)
+             *   call [rax + 0x208]      ; 1-byte misaligned read -> (slot0 >> 8) | (slot1 << 56)
+             * while bit 0 is set. The shifted read places the low byte of slot1 (MethodInfo*) into
+             * the top byte of RipReg (x12), which immediately faults 4 instructions into
+             * DispatcherLoopTop at `ldr x10, [x10, x11, lsl #3]` (0xf86b794a) after
+             * `lsr x11, x12, #18` (0xd352fd8b). Verify that an odd pointer register's aligned table
+             * produces the exact misaligned 8-byte pattern in x12, restore the aligned call target
+             * (and RDX MethodInfo* if it came from the adjacent slot), and resume at fault_pc. */
+            if (!handled && state.__x[12] >= 0x0000800000000000ULL)
+            {
+                uint64_t fault_pc = (uint64_t)__darwin_arm_thread_state64_get_pc(state);
+                uint32_t insn = 0, prev_insn = 0;
+                if (fault_pc >= 0x100000000ULL &&
+                    ios_fault_read_insn( fault_pc, &insn ) && insn == 0xf86b794aU &&
+                    ios_fault_read_insn( fault_pc - 4, &prev_insn ) && prev_insn == 0xd352fd8bU)
+                {
+                    static const int cand_regs[] = { 8, 0, 1, 2, 3, 4, 5, 6, 7, 9, 13, 14, 15, 16, 17 };
+                    uint64_t bad_rip = state.__x[12];
+                    unsigned ci;
+                    for (ci = 0; ci < sizeof(cand_regs) / sizeof(cand_regs[0]) && !handled; ci++)
+                    {
+                        int r = cand_regs[ci];
+                        uint64_t rval = state.__x[r];
+                        uint64_t clean_base = rval & ~7ULL;
+                        uint64_t tbl[129];
+                        mach_vm_size_t got = 0;
+                        unsigned idx;
+
+                        if ((rval & 7ULL) != 1ULL || clean_base < 0x10000ULL || clean_base >= 0x0000800000000000ULL)
+                            continue;
+                        if (mach_vm_read_overwrite( mach_task_self(), (mach_vm_address_t)clean_base, sizeof(tbl),
+                                                    (mach_vm_address_t)&tbl[0], &got ) != KERN_SUCCESS || got < 16)
+                            continue;
+                        for (idx = 0; (idx + 1) * 8 < got; idx++)
+                        {
+                            uint64_t s0 = tbl[idx], s1 = tbl[idx + 1];
+                            if (((s0 >> 8) | (s1 << 56)) == bad_rip &&
+                                s0 >= 0x10000ULL && s0 < 0x0000800000000000ULL)
+                            {
+                                static volatile int gc_vt_fixes;
+                                int fn = __sync_add_and_fetch( &gc_vt_fixes, 1 );
+                                state.__x[r] = clean_base;
+                                if ((idx + 2) * 8 <= got &&
+                                    ((s1 >> 8) | (tbl[idx + 2] << 56)) == state.__x[1])
+                                    state.__x[1] = s1;
+                                if (state.__x[6] == bad_rip) state.__x[6] = s0;
+                                state.__x[12] = s0;
+                                state.__x[11] = s0 >> 18;
+                                if (state.__x[28] >= 0x100000ULL && state.__x[28] < 0x0000800000000000ULL)
+                                    mach_vm_write( mach_task_self(), (mach_vm_address_t)(state.__x[28] + 0x18),
+                                                   (vm_offset_t)(uintptr_t)&s0, sizeof(s0) );
+                                if (fn <= 16 || (fn % 256) == 0)
+                                    dprintf( STDERR_FILENO,
+                                             "[il2cpp-gc-vtable] #%d repaired odd vtable x%d=0x%llx+0x%x "
+                                             "bad_rip=0x%llx -> 0x%llx (rdx=0x%llx)\n",
+                                             fn, r, (unsigned long long)rval, idx * 8,
+                                             (unsigned long long)bad_rip, (unsigned long long)s0,
+                                             (unsigned long long)state.__x[1] );
+                                handled = 1;
+                                break;
+                            }
                         }
                     }
                 }
@@ -5268,6 +5396,26 @@ static void *ios_mach_exception_thread( void *arg )
                                         (unsigned long long)fault_addr,
                                         (unsigned long long)rw_addr, cas_width);
                         }
+                    }
+                    /* build 608: the first unhandled write in Slay the Spire 2
+                     * is LDADDAL W21,W6,[X8], before exception delivery begins.
+                     * Complete only that previously undecoded family, on a
+                     * naturally aligned word wholly inside this anonymous alias.
+                     * The helper requires MADEIRA_ANON_LDADDAL32=1. Off, the
+                     * old guest delivery remains exact; pool/CAS/SWP stay as-is. */
+                    if (!emulated && !in_jit && !anon_cas_handoff &&
+                        (insn & 0xffe0fc00u) == 0xb8e00000u &&
+                        !(fault_addr & 3) &&
+                        ios_jit_anon_alias_lookup( fault_addr + 3 ) == rw_addr + 3 &&
+                        ios_mach_emulate_ldaddal32(insn, rw_addr, state.__x))
+                    {
+                        static unsigned ldadd_anon_logs;
+                        emulated = 1;
+                        if (ldadd_anon_logs++ < 16)
+                            dprintf(STDERR_FILENO,
+                                    "[anon-ldadd] build608 insn=%08x pc=%llx addr=%llx rw=%llx width=4\n",
+                                    insn, (unsigned long long)fault_pc,
+                                    (unsigned long long)fault_addr, (unsigned long long)rw_addr);
                     }
                     /* ml350 DISCRIMINATOR: alias EXISTS but the instruction is not
                      * in this decode list — every such miss previously cost a full
@@ -9506,6 +9654,18 @@ dispatch:
      * progress. */
     if (!is_align)
     {
+        /* An intervening NtProtectVirtualMemory (FEX SMC untrap + recompile + retrap cycle,
+         * Warcraft II BNE P0Q7QD / PES 2013 DAN35T) is real guest progress: tag redeliv_guest_rip
+         * with the new sequence number so the consecutive delivery counter below starts a new run. */
+        extern volatile unsigned long long ios_vprotect_seq;
+        static uint64_t redeliv_vp_seq[16];
+        int vp_slot = (int)(((uint64_t)thread * 0x9E3779B97F4A7C15ull) >> 60);
+        uint64_t cur_vp_seq = ios_vprotect_seq;
+        if (redeliv_vp_seq[vp_slot] != cur_vp_seq)
+        {
+            redeliv_vp_seq[vp_slot] = cur_vp_seq;
+            if (!redeliv_guest_rip) redeliv_guest_rip = cur_vp_seq ? cur_vp_seq : 1;
+        }
         /* Count CONSECUTIVE identical deliveries per thread, not lifetime hits
          * of a (thread,pc,addr) key. Slots used to be chosen by the key itself,
          * so a fault that recurs once per frame with real progress in between
@@ -9521,7 +9681,7 @@ dispatch:
         static volatile int ios_redeliv_terminating;
         uint64_t rkey = ((uint64_t)thread << 48) ^ pc ^ ((uint64_t)fault_addr << 1);
         int rslot = (int)(((uint64_t)thread * 0x9E3779B97F4A7C15ull) >> 60);
-        /* A different guest instruction at the shared thunk starts a new run (always equal, 0 = 0, with the switch off). */
+        /* A different guest instruction at the shared thunk starts a new run; for every other fault redeliv_guest_rip is 0 as before. */
         if (redeliv[rslot].thread != (uint64_t)thread || redeliv[rslot].key != rkey || redeliv_rip[rslot] != redeliv_guest_rip)
         {
             redeliv[rslot].thread = (uint64_t)thread;
@@ -15405,6 +15565,7 @@ void init_syscall_frame( LPTHREAD_START_ROUTINE entry, void *arg, BOOL suspend, 
      * pLdrSystemDllInitBlock->pRtlUserThreadStart is already published guest.
      * Without a guest window wow_base is 0 and this is the upstream code. */
     ULONG_PTR wow_base = ios_wow_base_for_peb( teb->Peb );
+    void *proc_wow_peb = wow_base ? (char *)teb->Peb + page_size : (void *)wow_peb;
 #define IOS_WOW_GUEST_IN(ptr) ios_wow_guest_in( (ptr), wow_base )
 
     if ((i386_context = get_cpu_area( IMAGE_FILE_MACHINE_I386 )))
@@ -15412,7 +15573,7 @@ void init_syscall_frame( LPTHREAD_START_ROUTINE entry, void *arg, BOOL suspend, 
         XMM_SAVE_AREA32 *fpu = (XMM_SAVE_AREA32 *)i386_context->ExtendedRegisters;
         i386_context->ContextFlags = CONTEXT_I386_ALL;
         i386_context->Eax = IOS_WOW_GUEST_IN( entry );
-        i386_context->Ebx = IOS_WOW_GUEST_IN( arg == peb ? (void *)wow_peb : arg );
+        i386_context->Ebx = IOS_WOW_GUEST_IN( (arg == teb->Peb || arg == peb) ? proc_wow_peb : arg );
         i386_context->Esp = get_wow_teb( teb )->Tib.StackBase - 16;
         i386_context->Eip = pLdrSystemDllInitBlock->pRtlUserThreadStart;
         i386_context->SegCs = 0x23;
@@ -15430,7 +15591,7 @@ void init_syscall_frame( LPTHREAD_START_ROUTINE entry, void *arg, BOOL suspend, 
     {
         arm_context->ContextFlags = CONTEXT_ARM_ALL;
         arm_context->R0 = IOS_WOW_GUEST_IN( entry );
-        arm_context->R1 = IOS_WOW_GUEST_IN( arg == peb ? (void *)wow_peb : arg );
+        arm_context->R1 = IOS_WOW_GUEST_IN( (arg == teb->Peb || arg == peb) ? proc_wow_peb : arg );
         arm_context->Sp = get_wow_teb( teb )->Tib.StackBase;
         arm_context->Pc = pLdrSystemDllInitBlock->pRtlUserThreadStart;
         if (arm_context->Pc & 1) arm_context->Cpsr |= 0x20; /* thumb mode */

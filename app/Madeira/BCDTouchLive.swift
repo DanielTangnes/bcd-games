@@ -54,7 +54,8 @@ extension BCDTouchAction {
 
 extension BCDTouchItem {
     init(stored c: TouchControl) {
-        self.init(id: c.id, x: c.nx, y: c.ny, scale: c.scale, action: BCDTouchAction(stored: c.action), padLink: c.padBinding)
+        self.init(id: c.id, x: c.nx, y: c.ny, scale: c.scale, action: BCDTouchAction(stored: c.action), padLink: c.padBinding,
+                  locked: c.locked == true)
     }
 
     var stored: TouchControl {
@@ -65,6 +66,7 @@ extension BCDTouchItem {
         c.scale = scale
         c.action = action.stored
         c.padBinding = padLink
+        c.locked = locked ? true : nil   // never written as false: a layout with nothing locked is the file it always was
         return c
     }
 }
@@ -96,6 +98,7 @@ extension BCDTouchItem {
     // MARK: BCDTouchInput
 
     func send(_ event: BCDTouchEvent) {
+        if BCDTurboLive.touchNeeded, !BCDTurboLive.shared.passes(event) { return }   // madeira-bcd (2026-10-25, round 604): turbo on a touch control's key or mouse button
         switch event {
         case .key(let vk, let down): winios_post_key(vk, down ? 1 : 0)
         case .mouse(let flags): winios_pointer(0, 0, flags, 0)
@@ -153,7 +156,7 @@ extension BCDTouchItem {
     func select(_ id: UUID?) { if model.selected != id { model.selected = id } }
 
     func move(_ id: UUID, x: Double, y: Double) {
-        update(id) { $0.nx = x; $0.ny = y }
+        update(id) { if $0.locked != true { $0.nx = x; $0.ny = y } }
     }
 
     func add() {
@@ -166,12 +169,22 @@ extension BCDTouchItem {
     }
 
     func remove(_ id: UUID) {
+        if let i = model.index(of: id), model.controls[i].locked == true { return }   // a locked control stays until unlocked
         model.controls.removeAll { $0.id == id }
         model.selected = nil
     }
 
     func setAction(_ id: UUID, _ action: BCDTouchAction) { update(id) { $0.action = action.stored } }
-    func setScale(_ id: UUID, _ scale: Double) { update(id) { $0.scale = BCDTouchGeometry.clampScale(scale) } }
+    func setScale(_ id: UUID, _ scale: Double) { update(id) { if $0.locked != true { $0.scale = BCDTouchGeometry.clampScale(scale) } } }
+    func setLocked(_ id: UUID, _ locked: Bool) { update(id) { $0.locked = locked ? true : nil } }
+
+    /// In front of (last) or behind (first) the other controls: the list is the layer order.
+    func bringToFront(_ id: UUID) { reorder(id, toFront: true) }
+    func sendToBack(_ id: UUID) { reorder(id, toFront: false) }
+    private func reorder(_ id: UUID, toFront: Bool) {
+        let moved = BCDTouchLayering.moved(model.controls, id, toFront: toFront)
+        if moved != model.controls { model.controls = moved }
+    }
     func setPadLink(_ id: UUID, _ name: String?) { update(id) { $0.padBinding = name } }
 
     /// One change to one control: one write of the controls file.
@@ -283,13 +296,16 @@ struct BCDTouchControlsLive: View {
     let session: Bool
     @ObservedObject private var model = TouchControlsModel.shared
     @ObservedObject private var library = LibraryModel.shared
+    @ObservedObject private var feel = BCDTouchFeelModel.shared   // madeira-bcd (2026-10-25, round 604): the controls are drawn again when their colour changes
+    @ObservedObject private var looks = BCDTouchLookModel.shared   // round 604: how the controls look
 
     var body: some View {
         BCDTouchLayer(items: BCDTouchLive.shared.items, screen: screen, layoutScale: model.sizeScale,
                       // A library game's Control opacity; full while editing.
                       opacity: session && !model.editing ? library.opacity : 1,
                       editing: model.editing, selected: model.selected,
-                      input: BCDTouchLive.shared, arranging: BCDTouchLive.shared)
+                      input: BCDTouchLive.shared, arranging: BCDTouchLive.shared, look: looks.look)
+            .id(feel.revision)
     }
 }
 

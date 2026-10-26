@@ -53,7 +53,8 @@ extension SteamAppInfo {
     }
 
     /// The depots that add DLC content a Windows install could take, by DLC app, in depot order.
-    func dlcDepots(os: String = "windows", arch: String = "64", language: String = "english") -> [UInt32: [DepotInfo]] {
+    func dlcDepots(os: String = "windows", arch: String = "64", language: String? = nil) -> [UInt32: [DepotInfo]] {
+        let language = language ?? depotLanguage   // the game language (SteamLanguage); English unless the player chose another
         let chosen = installArch(os: os, arch: arch, language: language)
         var byDLC: [UInt32: [DepotInfo]] = [:]
         for d in depots.sorted(by: { $0.depotID < $1.depotID }) {
@@ -94,7 +95,8 @@ extension SteamAppInfo {
     /// The depots an install takes together with the content of the DLC apps in `dlc`. With none, this is
     /// `installDepots()` as it is.
     func installDepots(including dlc: Set<UInt32>, os: String = "windows", arch: String = "64",
-                       language: String = "english") -> [DepotInfo] {
+                       language: String? = nil) -> [DepotInfo] {
+        let language = language ?? depotLanguage
         let base = installDepots(os: os, arch: arch, language: language)
         guard !dlc.isEmpty else { return base }
         let extra = dlcDepots(os: os, arch: arch, language: language).filter { dlc.contains($0.key) }.flatMap(\.value)
@@ -156,8 +158,9 @@ enum SteamDLC {
     /// The DLC of `app` the account owns (`ownedApps`: the App IDs its licenses hold), with the depots each
     /// adds and its names (`names`: the DLC apps' own product info; a missing name reads "DLC <App ID>").
     static func report(for app: SteamAppInfo, ownedApps: Set<UInt32>, names: [UInt32: String] = [:],
-                       os: String = "windows", arch: String = "64", language: String = "english") -> SteamDLCReport {
+                       os: String = "windows", arch: String = "64", language: String? = nil) -> SteamDLCReport {
         var report = SteamDLCReport(appID: app.appID)
+        let language = language ?? app.depotLanguage
         let contents = app.dlcDepots(os: os, arch: arch, language: language)
         for dlc in app.dlcApps.sorted() {
             guard ownedApps.contains(dlc) else { report.notOwned += 1; continue }

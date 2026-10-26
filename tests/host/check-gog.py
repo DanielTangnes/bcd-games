@@ -108,7 +108,10 @@ for name in FILES:
     check("UserDefaults" not in code(text) and "setenv" not in code(text), f"{name}: nothing GOG keeps goes to UserDefaults or the environment")
 
 preview = (R / "tools/ui-preview.py").read_text()
-check('APP.glob("BCD*.swift")' in preview and "rglob" not in preview,
+# Recursive resource hashing does not change the compiler's source selection.
+# Keep this engine-file exclusion check on the actual compilation function.
+preview_build = preview.split("def _build(out):", 1)[-1].split("\ndef ", 1)[0]
+check('APP.glob("BCD*.swift")' in preview_build and "rglob" not in preview_build,
       "the preview build compiles app/Madeira's top-level BCD*.swift only, so the engine-bound GOG files stay out")
 screens = [p for p in APP.glob("BCD*.swift") if p.name not in ("BCDLiveStore.swift", "BCDLiveFrontEnd.swift", "BCDSetupView.swift")
            and not p.name.endswith("Live.swift")]

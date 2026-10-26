@@ -101,6 +101,7 @@ final class LibraryController: ObservableObject, @unchecked Sendable {
     private let holdHome = LibraryController.homeHold   // read once, on the main thread
     private var homeSince: TimeInterval?
     private var homeSent = false
+    private var chord = BCDChordTracker()   // madeira-bcd (round 604): hold Start opens the menu, when the player chose it in the menu (BCDSessionFeel.swift)
     var ownsInput: Bool { lock.lock(); defer { lock.unlock() }; return enabled && owns }
     func configure(enabled: Bool, ownsInput: Bool) {
         lock.lock(); self.enabled = enabled && allowed; owns = ownsInput; lock.unlock()
@@ -117,7 +118,9 @@ final class LibraryController: ObservableObject, @unchecked Sendable {
         let pressed = buttons & ~last; last = buttons
         let own = owns, announce = !announced; announced = true
         var homeHeld = false
-        if holdHome { homeHeld = holdingHome(buttons) }   // BCD: env.MADEIRA_MENU_HOME_HOLD (opt-in); off, nothing is timed
+        if holdHome || BCDChordSetting.mode == .holdGuide { homeHeld = holdingHome(buttons) }   // BCD: env.MADEIRA_MENU_HOME_HOLD (opt-in), or the menu's "Hold Home"; off, nothing is timed
+        var startHeld = false
+        if BCDChordSetting.mode == .holdStart { startHeld = !own && chord.update(buttons: buttons, now: ProcessInfo.processInfo.systemUptime, mode: .holdStart); if own { chord.reset() } }   // madeira-bcd (round 604)
         lock.unlock()
         if announce { DispatchQueue.main.async { self.connected = true; fputs("[frontend-controller] navigation active\n", stderr) } }
         var command: String?
@@ -131,6 +134,7 @@ final class LibraryController: ObservableObject, @unchecked Sendable {
             }
         }
         if homeHeld { command = "home" }
+        if startHeld { command = "menu" }
         if let command { DispatchQueue.main.async { self.commands.send(command) } }
     }
 
@@ -189,6 +193,10 @@ struct LibraryEntry: Codable, Identifiable {
     var metadataChecked: Date?
     var metadataRevision: Int?
     var overlayFields: [String]?
+    /// This game's performance HUD (BCDHUDCore.swift): the layout, the Custom list and where it sits. nil until the player changes the HUD:
+    /// the entry then follows `performance` and `overlayFields` (an old overlay becomes the same readings, BCDHUDMigration) or, with the
+    /// overlay off, the choice for every game (Settings). Optional, so older library files decode.
+    var hud: BCDHUDSetup?
     /// The Wine desktop (explorer and services in a virtual desktop).
     var desktop: Bool?
     /// Touch controls' opacity (0.15...1, nil = 0.7) and overall size (0.5...2,
@@ -583,6 +591,10 @@ struct LibraryEntry: Codable, Identifiable {
         } catch {
             LogStore.shared.log("[game-cfg] this game's config could not be written: \(error.localizedDescription)")
         }
+        // madeira-bcd (round 602): DXMT's Direct3D 9 is a 64-bit Direct3D 9 game's default when its folder shows nothing of Direct3D 11, DXGI or
+        // Direct3D 12 (BCDGraphicsDefaults.swift); the game's own env.MADEIRA_D3D9_X64 line, read just above, always wins.
+        BCDGraphicsDefaults.applyD3D9X64(for: self)
+        BCDGameSetup.prepare(self)   // madeira-bcd (round 604): the game's Windows version, Wine desktop settings and fixes, before the wineserver exists (BCDGameSetup/BCDGameSetupLaunch.swift)
         fputs("[frontend] launch profile applied\n", stderr)
         if usesLaunchOptions {
             fputs("[library] ml1163 start=\(runsInDesktop ? "desktop" : "direct") batch=\(isBatch ? 1 : 0) services=\(servicesScript != nil ? 1 : 0) cwd=\(launchDirectory)\n", stderr)
@@ -750,6 +762,7 @@ final class LibraryModel: ObservableObject {
         RecommendationsSource.start(idle: { [weak self] in self?.current == nil && wine_process_is_running() == 0 }, onChange: { [weak self] in self?.applyRecommendations() })   // BCD: the online recommended settings (GameRecommendationsSource.swift): at most one check in 6 hours; a newer list reaches the library's games at once, never a running game
         // madeira-bcd: a tuned session that never came back (AutoTune.swift); off, nothing.
         if AutoTune.enabled { AutoTune.recoverUnfinishedSession() }
+        BCDSessionRecorder.appStarted()   // madeira-bcd: a session that never came back asks once whether to send its log; Send Log learns screenshots (BCDSessionRecorderLive.swift)
     }
 
     /// madeira-bcd: games already in the library get Madeira's recommended settings
@@ -1135,6 +1148,10 @@ final class LibraryModel: ObservableObject {
         MetalHostView.shared.isHidden = false
         ProMotionIntent.apply(mode: entry.effectiveFPSMode)
         BCDOrientationLive.sessionBegan(entry)   // madeira-bcd: Settings › Graphics › Screen orientation, or the game's own choice; "follow the device" (the default) does nothing
+        ThermalPacing.shared.begin()
+        BCDHUDState.shared.sessionBegan(entry)   // madeira-bcd: the performance HUD this session takes (BCDHUDLive.swift): the game's own, an old overlay switch carried over, or the choice for every game (Off unless chosen)
+        BCDFeelLive.sessionBegan(entry)   // madeira-bcd (round 604): the game's saved menu settings (touch feel, picture filter, cooling, pointer ...), BCDSessionFeelLive.swift; a game with none saved changes nothing
+        BCDSessionRecorder.sessionBegan(entry)   // madeira-bcd: the frame statistics start and the open-session marker is written (BCDSessionRecorderLive.swift)
         if remember { var played = entry; played.lastPlayed = Date(); save(played) }
         launchDismissLogged = false
         DockStartScreen.shared.begin(dock, at: launchStarted)
@@ -1323,6 +1340,7 @@ final class LibraryModel: ObservableObject {
 
     func setFPS(_ mode: Int) {
         fpsMode = mode
+        ThermalPacing.shared.userChose()
         let applied = ProMotionIntent.supportedMode(mode)
         madeira_set_vsync_locked(applied)
         ProMotionIntent.apply(mode: applied)
@@ -1334,6 +1352,7 @@ final class LibraryModel: ObservableObject {
         menu = true
     }
     func requestQuit() {
+        BCDPauseLive.resume()   // madeira-bcd (round 604): a paused game could not answer Alt+F4; nothing when it is not paused
         LibraryKeyboard.hide()
         quitRequested = true
         // Ask the application to close (Alt+F4) through the normal input queue,
@@ -1354,6 +1373,7 @@ final class LibraryModel: ObservableObject {
             entry.touchControls = controls.visible
             entry.fpsMode = fpsMode; entry.performance = performance
             entry.overlayFields = overlayFields
+            BCDHUDState.shared.save(into: &entry)   // madeira-bcd: the HUD is kept with the entry once the player has changed it
             entry.controlOpacity = opacity; entry.controlSize = controls.sizeScale
             if GamepadInput.keyboardMouseAvailable { entry.controllerMode = controllerMode }
             if GamepadInput.keyboardMouseAvailable { entry.controllerBinds = controllerBinds.isEmpty ? nil : controllerBinds }
@@ -1378,8 +1398,11 @@ final class LibraryModel: ObservableObject {
         }
     }
     private func finish() {
+        BCDSessionRecorder.sessionEnded()   // madeira-bcd: the [session] summary line, and the open-session marker goes (BCDSessionRecorderLive.swift)
         // madeira-bcd: auto-tune reads this session's log afterwards (AutoTune.swift); off, nothing.
         if AutoTune.enabled { autoTuneSessionEnded() }
+        // madeira-bcd (round 603): the session's times for "Find where it saves", and, with the game's switch on, its saves backed up (BCDSaveBackups/GameSaveAuto.swift).
+        GameSaveAuto.sessionEnded(activeEntry, started: launchStarted)
         let report = sawProcess ? exitReport() : nil
         if let report { error = report }
         // madeira-bcd (round 579): a Steam game started without Dock that said it found no Steam: text only, read once from
@@ -1408,6 +1431,8 @@ final class LibraryModel: ObservableObject {
         ProMotionIntent.shared.setActive(false)
         SystemGestures.endSession()   // madeira-bcd: env.MADEIRA_PAD_SYSTEM_GESTURES; without it nothing to undo
         BCDOrientationLive.sessionEnded()   // madeira-bcd: the interface follows the device again; with no lock on, nothing to undo
+        BCDFeelLive.sessionEnded()   // madeira-bcd (round 604): the menu's session settings are put back; the gate of Pause opens
+        ThermalPacing.shared.end()
         fputs("[frontend] returned to library\n", stderr)
     }
     /// madeira-bcd: what auto-tune needs from a session that ended (AutoTune.swift).
@@ -1870,6 +1895,7 @@ enum LibraryKeyboard {
         fputs("[frontend-keyboard] key-window input activated\n", stderr)
     }
     static func hide() {
+        HardwareInput.shared.cancelPaste()
         if window != nil { fputs("[frontend-keyboard] key-window input deactivated\n", stderr) }
         input?.releaseModifiers(); input?.resignFirstResponder(); window?.isHidden = true
         window = nil; input = nil; previous?.makeKey(); previous = nil
@@ -1879,6 +1905,22 @@ final class LibraryKeyboardWindow: UIWindow {
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? { nil }
 }
 final class LibraryKeyInput: UIView, UIKeyInput {
+    /// Command-V is this view's paste command only with env.MADEIRA_PASTE_SHORTCUT = 1 (HardwareInput.pasteShortcut); the key bar's Paste
+    /// button does not need it.
+    override var keyCommands: [UIKeyCommand]? {
+        guard HardwareInput.pasteShortcut else { return super.keyCommands }
+        let command = UIKeyCommand(input: "v", modifierFlags: .command, action: #selector(paste(_:)))
+        command.wantsPriorityOverSystemBehavior = true
+        return [command]
+    }
+    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+        if action == #selector(paste(_:)) { return HardwareInput.pasteShortcut && HardwareInput.shared.canPaste && UIPasteboard.general.hasStrings }
+        return super.canPerformAction(action, withSender: sender)
+    }
+    override func paste(_ sender: Any?) {
+        HardwareInput.shared.pasteClipboard()
+    }
+
     var hasText: Bool { true }
     override var canBecomeFirstResponder: Bool { true }
     /// Ctrl, Shift and Alt held down by the key bar (BCDKeyboardAccessory).
@@ -1886,19 +1928,20 @@ final class LibraryKeyInput: UIView, UIKeyInput {
     var keyboardType: UIKeyboardType { get { .asciiCapable } set {} }
     var autocorrectionType: UITextAutocorrectionType { get { .no } set {} }
     var autocapitalizationType: UITextAutocapitalizationType { get { .none } set {} }
-    /// BCD's key bar over the keyboard (BCDSessionLive.swift): Esc, Ctrl, Shift, Alt, Tab, Enter,
+    /// BCD's key bar over the keyboard (BCDSessionLive.swift): Paste, Esc, Ctrl, Shift, Alt, Tab, Enter,
     /// the arrows and Done, posted as before.
     private lazy var keyBar: UIView = BCDKeyboardAccessory.view(for: self)
     override var inputAccessoryView: UIView? { keyBar }
     func press(_ vk: Int32) { winios_post_key(vk, 1); winios_post_key(vk, 0) }
     func insertText(_ text: String) {
+        HardwareInput.shared.cancelPaste()   // typing by hand ends a paste still being delivered
         for ch in text {
             guard let (vk, shift) = MetalBackedView.vkForChar(ch) else { continue }
             let temporary = shift && !held.contains(0x10)
             if temporary { winios_post_key(0x10, 1) }; press(vk); if temporary { winios_post_key(0x10, 0) }
         }
     }
-    func deleteBackward() { press(0x08) }
+    func deleteBackward() { HardwareInput.shared.cancelPaste(); press(0x08) }
     func releaseModifiers() { for key in held { winios_post_key(key, 0) }; held.removeAll() }
 }
 

@@ -1,0 +1,32 @@
+TimGM6mb.sf2: the General MIDI SoundFont BCD plays MIDI music with
+
+What it is
+  A 5.7 MB General MIDI bank (128 melodic instruments and the percussion kits).
+  A game's MIDI music is played by Apple's synthesizer (AUMIDISynth) using this
+  file, when a game opens a MIDI output device (env.MADEIRA_MIDI = 0 turns MIDI
+  off; Documents/SoundFonts/ in Files can hold another bank to use instead).
+
+Who made it, and under what licence
+  Copyright 2004 Tim Brechbill (https://www.timbrechbill.com), tidied for
+  MuseScore in 2010 by David Bolton. Licence: the GNU General Public License,
+  version 2 (GPL-2.0), the licence under which Debian ships it in main as the
+  package "timgm6mb-soundfont". The author told the MuseScore project that some
+  of the samples are his own and that all the others are public domain or fall
+  under the GPL. The licence text is LICENSES/GPL-2.0.txt (in the app:
+  legal/LICENSES/GPL-2.0.txt).
+
+How it is carried
+  This file is not part of BCD's source repository and is not changed in any way:
+  the build downloads it (tools/fetch-soundfont.sh), checks its SHA-256 and puts
+  it next to this notice. It is a data file read by Apple's synthesizer, not a
+  program linked with BCD, so it stays under its own licence beside BCD's (an
+  aggregate, as GPL-2.0 and GPL-3.0 section 5 describe). A SoundFont is its own
+  source: the file is the form in which it is edited (with Polyphone or Swami),
+  and you may copy, change and share it under GPL-2.0.
+
+Where it comes from (both give the same file)
+  SHA-256 c5378b62028c920cb11e4803327983fee2f2cdff5dc89c708e39da417e51c854
+  5,969,788 bytes
+  https://sources.debian.org/data/main/t/timgm6mb-soundfont/1.3-5/TimGM6mb.sf2
+  https://github.com/musescore/musescore-old (mscore/share/sound/TimGM6mb.sf2,
+  commit 90c33ef9d87b3f5ff92efd3b07d89eb455fb1fef)

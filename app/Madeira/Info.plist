@@ -94,6 +94,9 @@
 	<true/>
 	<key>UIFileSharingEnabled</key>
 	<true/>
+	<!-- BCD (2026-10-25): the in-game menu's screenshot is also saved to Photos when the player allows it (add-only access: BCD never reads the library). -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>BCD saves the screenshots you take in a game to your photo library. It never reads your photos.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiredDeviceCapabilities</key>

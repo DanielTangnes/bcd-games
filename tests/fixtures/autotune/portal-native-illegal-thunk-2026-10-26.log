@@ -1,0 +1,166 @@
+[14:13:00.971] [INFO] Checking entitlements...
+[14:13:00.972] [INFO] [build] v0.1.600 (600)
+[14:13:00.973] [INFO] [device] model=iPhone13,4 idiom=phone os=iOS Version 18.6.2 (Build 22G100) ram=5693MB available=4078MB cores=6
+[14:13:00.973] [INFO] [device] address-map=[0x104e20000,0xfc0000000) 63GB increased-memory=1 extended-va=0
+[14:13:00.974] [INFO] [jit-nodebug] debugger-less JIT pool: allowed (iOS 18: TXM restricts JIT memory only from iOS 26); env.MADEIRA_JIT_NO_DEBUGGER_POOL=1
+[14:13:00.993] [INFO] [device] gpu="Apple A14 GPU" family=apple7 argument-buffers=tier2 mesh=1 bc=0 atomics64=0 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[14:13:54.436] [INFO] [bcd] library launch Portal.exe: avx=1 wine-vcrt=1 nvidia=0 game-config=1 metalfx=off
+[14:13:54.438] [INFO] Session log: logs/Portal.exe-2026-10-25_14-13-54.txt
+[14:13:54.461] [INFO] Running full Wine sequence...
+[14:13:54.461] [INFO] [device] launch: cs-flags=0x32003005 get-task-allow=1 cs-debugged=1 debugger-attached=1 traced=1 address-map=[0x104e20000,0xfc0000000) 63GB available=4046MB low-power=0 thermal=nominal
+[14:13:54.466] [INFO] D3D9 frontend: MADEIRA_D3D9=native via bcd.cfg d3d9
+[14:13:54.467] [INFO] Allocating 256MB JIT pool (BRK will suspend process)...
+[14:13:54.467] [INFO] Allocating 256MB JIT pool via debugger...
+[14:13:54.468] [INFO] [jit-pool] path: debugger (attached at the pool request; it makes every region)
+[14:13:54.468] [INFO] [jit-debugger] attached=1 at the pool request
+[14:13:55.007] [INFO] RX pool at 0x148000000
+[14:13:55.049] [INFO] Detaching debugger...
+[14:13:55.096] [INFO] Starting wineserver...
+[phase] wine-start             t+  0.680s rev=ml526
+[shell-dir] user folders for madeira, mobile: 0 created (Start Menu included)
+[wow-window] session armed: a 32-bit process is expected
+[wow-window] small address map: it ends at 0xfc0000000, below the normal guest-window band -- candidates come from [0x400000000,0xb00000000), at most 2 window(s) at once
+[wow-window] B=0x400000000: reserved 4GB + own guard page (+0x4000)
+[wow-window] placeholder reserved B=0x400000000..0x500000000 (guard owned)
+[wow-window] adopted placeholder B=0x400000000..0x500000000 guard=owned
+[wow-window] reserved B=0x400000000..0x500000000 (slot 0) guard=owned
+[wow-window] slot 0 B=0x400000000 bound to peb=0x47ffd0000
+[14:13:55.599] [Wine init_process] reply_pipe=44, sending init_first_thread...
+[iOS env] INCLUDED: SteamAppId=356400
+ml992: os_proc_available_memory=3755 MB + phys_footprint=340 MB = 4096 MB (hw.memsize says 5693 MB)
+[wow-rwx] ml1279 MADEIRA_WOW_RWX_PLAIN=(unset) -> 32-bit guest RWX memory is plain read/write in a window once Wine Mono is mapped there
+[footprint] rev=ml358 phys=342 MB (peak 342) internal=342 MB compressed=0 MB external=106 MB reusable=16 MB (cycle=1)
+[copy-verify] ntdll.dll: OK, 29 .text pages executable (copy @0x148004000)
+0024:err:seh:init_syscall_frame page0: trying debugger (BRK #0xf00d, x16=3)...
+[nls-getptr] type=11 id=1252 peb=0x47ffd0000
+[nls-getptr] type=11 id=437 peb=0x47ffd0000
+[copy-verify] wow64.dll: OK, 5 .text pages executable (copy @0x14811c000)
+[file-fail] ml665 #1 NtCreateFile status=0xc0000034 disp=1 access=0x80100000 options=0x00000060 unix=(none) name=\??\C:\windows\system32\wow64cpu.dll
+0024:err:module:load_dll [dll-missing] rev=ml336 #1 L"\\??\\C:\\windows\\system32\\wow64cpu.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:wow:load_cpu_dll CPU backend wow64cpu.dll not available, falling back to the platform default xtajit.dll
+[copy-verify] libwow64fex.dll: OK, 119 .text pages executable (copy @0x148191000)
+[copy-verify] ucrtbase.dll: OK, 39 .text pages executable (copy @0x148554000)
+[copy-verify] KERNEL32.dll: OK, 12 .text pages executable (copy @0x148678000)
+[copy-verify] kernelbase.dll: OK, 30 .text pages executable (copy @0x148720000)
+[nls-getptr] type=11 id=20127 peb=0x47ffd0000
+[nt-fail] #1 NtAllocateVirtualMemoryEx status=c000000d proc=portal.exe tid=0024 size=0x10000 type=0x2000 prot=0x1 hint=0x0 zb=0x0 ext={addr[low=0x7c00000000 high=0x7fffffffff align=0x10000]} hits=1 rev=ajan5-rockstar
+D 24 Load module Portal.exe (portal.exe-1e1b1545a1942e40): 400400000
+D 24 Load module ntdll.dll (ntdll.dll-3903196a83f740e8): 4FFF40000
+D 24 Load module kernel32.dll (kernel32.dll-3a7c334be1eab410): 47BED0000
+D 24 Load module kernelbase.dll (kernelbase.dll-1bada4728a92a6c0): 47BC40000
+[nls-getptr] type=11 id=1252 peb=0x47ffd0000
+[nls-getptr] type=11 id=437 peb=0x47ffd0000
+D 24 Load module MSVCRT.dll (msvcrt.dll-23622f236dae94e6): 47BB90000
+D 24 Load module COMCTL32.dll (comctl32.dll-8c5c2d137b726b09): 47BA50000
+D 24 Load module cryptbase.dll (cryptbase.dll-e477656071adbe30): 47B390000
+D 24 Load module coml2.dll (coml2.dll-735e54df1780ab66): 47B360000
+D 24 Load module SHELL32.dll (shell32.dll-a228d6296b8c8f1c): 47AA40000
+D 24 Load module shlwapi.dll (shlwapi.dll-ce13fcc1d6bfa798): 47A9E0000
+D 24 Load module shcore.dll (shcore.dll-3f5d19270cc1850c): 47A9B0000
+[reserved-area] #1 MAP_FIXED over our own reservation refused: 0x401330000+0x8000 errno=12 (Cannot allocate memory) | OCCUPIED 0x401330000+0x8000 prot=0/0 shared=0 | the retry placed it (9 refused in all; small address map retry on) rev=ajan5-motor
+[reserved-area] #1 detail: 0x8000 bytes bottom-up; 9 candidate(s) refused [0x401330000 0x401340000 0x401350000 0x401360000 0x401370000 0x401380000 0x401390000 0x4013a0000 0x4013b0000]; kernel regions across the first refused range (p/m = protection/maximum): 0x401330000+0x8000 0/0; last candidate tried after a refusal, before it was mapped: 0x4013c0000: 0x4013c0000+0x6c40000 0/7 (it took the mapping)
+[nls-getptr] type=11 id=20127 peb=0x47ffd0000
+[reserved-area] #2 MAP_FIXED over our own reservation refused: 0x401330000+0x14000 errno=12 (Cannot allocate memory) | OCCUPIED 0x401330000+0x8000 prot=0/0 shared=0 | the retry placed it (8 refused in all; small address map retry on) rev=ajan5-motor
+[reserved-area] #2 detail: 0x14000 bytes bottom-up; 8 candidate(s) refused [0x401330000 0x401340000 0x401350000 0x401360000 0x401370000 0x401380000 0x401390000 0x4013a0000]; kernel regions across the first refused range (p/m = protection/maximum): 0x401330000+0x8000 0/0; 0x401338000+0x8000 0/0; 0x401340000+0x4000 0/0; last candidate tried after a refusal, before it was mapped: 0x4013d0000: 0x4013d0000+0x6c30000 0/7 (it took the mapping)
+[gdi-shared] session table 0x125890000 (1572864 bytes, section-backed, name=L"\\KernelObjects\\__wine_ios_gdi_shared")
+[reserved-area] #3 MAP_FIXED over our own reservation refused: 0x401330000+0x10000 errno=12 (Cannot allocate memory) | OCCUPIED 0x401330000+0x8000 prot=0/0 shared=0 | the retry placed it (9 refused in all; small address map retry on) rev=ajan5-motor
+[reserved-area] #3 detail: 0x10000 bytes bottom-up; 9 candidate(s) refused [0x401330000 0x401340000 0x401350000 0x401360000 0x401370000 0x401380000 0x401390000 0x4013a0000 0x4013b0000]; kernel regions across the first refused range (p/m = protection/maximum): 0x401330000+0x8000 0/0; 0x401338000+0x8000 0/0; last candidate tried after a refusal, before it was mapped: 0x401570000: 0x401570000+0x6a90000 0/7 (it took the mapping)
+[reserved-area] #6 MAP_FIXED over our own reservation refused: 0x401330000+0x8000 errno=12 (Cannot allocate memory) | OCCUPIED 0x401330000+0x8000 prot=0/0 shared=0 | the retry placed it (9 refused in all; small address map retry on) rev=ajan5-motor
+[reserved-area] #6 detail: 0x8000 bytes bottom-up; 9 candidate(s) refused [0x401330000 0x401340000 0x401350000 0x401360000 0x401370000 0x401380000 0x401390000 0x4013a0000 0x4013b0000]; kernel regions across the first refused range (p/m = protection/maximum): 0x401330000+0x8000 0/0; last candidate tried after a refusal, before it was mapped: 0x4015a0000: 0x4015a0000+0x6a60000 0/7 (it took the mapping)
+[reserved-area] #7 MAP_FIXED over our own reservation refused: 0x401330000+0x10000 errno=12 (Cannot allocate memory) | OCCUPIED 0x401330000+0x8000 prot=0/0 shared=0 | the retry placed it (9 refused in all; small address map retry on) rev=ajan5-motor
+[reserved-area] #7 detail: 0x10000 bytes bottom-up; 9 candidate(s) refused [0x401330000 0x401340000 0x401350000 0x401360000 0x401370000 0x401380000 0x401390000 0x4013a0000 0x4013b0000]; kernel regions across the first refused range (p/m = protection/maximum): 0x401330000+0x8000 0/0; 0x401338000+0x8000 0/0; last candidate tried after a refusal, before it was mapped: 0x4015b0000: 0x4015b0000+0x6a50000 0/7 (it took the mapping)
+[reserved-area] #8 MAP_FIXED over our own reservation refused: 0x401330000+0x8000 errno=12 (Cannot allocate memory) | OCCUPIED 0x401330000+0x8000 prot=0/0 shared=0 | the retry placed it (9 refused in all; small address map retry on) rev=ajan5-motor
+[reserved-area] #8 detail: 0x8000 bytes bottom-up; 9 candidate(s) refused [0x401330000 0x401340000 0x401350000 0x401360000 0x401370000 0x401380000 0x401390000 0x4013a0000 0x4013b0000]; kernel regions across the first refused range (p/m = protection/maximum): 0x401330000+0x8000 0/0; last candidate tried after a refusal, before it was mapped: 0x4015c0000: 0x4015c0000+0x6a40000 0/7 (it took the mapping)
+D 24 Load module uxtheme.dll (uxtheme.dll-4e148963446455ca): 47A970000
+[phase] spawn:L"C:\\users\\<user>\\AppData\\Local\\Temp\\3adf.tmp\\lf-Life 2 Episode One.bat" t+  1.609s rev=ml526
+[phase] spawn:L"C:\\windows\\system32\\cmd.exe" t+  1.611s rev=ml526
+[Wine child thread] calling wine_ios_child_main...
+[wow-window] B=0x500000000: window body after failed reservations (OCCUPIED 0x500000000+0x4000 prot=0/7 shared=0 (and the range continues past this region))
+[wow-window] B=0x500000000 REJECTED: 4GB+guard unavailable and the page at 0x600000000 is not an inaccessible neighbour (FREE: all 0x4000 bytes from 0x600000000 are free, next region 0xaf0000000 (+0x4efffc000 past the end) <-- iOS REFUSED A FREE RANGE)
+[wow-window] B=0x600000000: reserved 4GB + own guard page (+0x4000)
+[wow-window] reserved B=0x600000000..0x700000000 (slot 1) guard=owned
+[wow-window] slot 1 B=0x600000000 bound to peb=0x600310000
+[nls-getptr] type=11 id=1252 peb=0x600310000
+[nls-getptr] type=11 id=437 peb=0x600310000
+002c:err:module:load_dll [dll-missing] rev=ml336 #1 L"\\??\\C:\\windows\\system32\\wow64cpu.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+002c:err:wow:load_cpu_dll CPU backend wow64cpu.dll not available, falling back to the platform default xtajit.dll
+[phase] spawn:L"C:\\windows\\system32\\conhost.exe" t+  1.686s rev=ml526
+[Wine child thread] calling wine_ios_child_main...
+[nls-getptr] type=11 id=20127 peb=0x600310000
+[copy-verify] kernelbase.dll: OK, 30 .text pages executable (copy @0x1495bc000)
+[nls-getptr] type=11 id=1252 peb=0x108974000
+[nls-getptr] type=11 id=437 peb=0x108974000
+[copy-verify] user32.dll: OK, 35 .text pages executable (copy @0x14973c000)
+[copy-verify] gdi32.dll: OK, 19 .text pages executable (copy @0x149934000)
+[copy-verify] advapi32.dll: OK, 9 .text pages executable (copy @0x149a0c000)
+[copy-verify] sechost.dll: OK, 4 .text pages executable (copy @0x149aa0000)
+[copy-verify] ucrtbase.dll: OK, 39 .text pages executable (copy @0x149b04000)
+[nls-getptr] type=11 id=20127 peb=0x108974000
+[iosb-dead] ajan16 #1 async I/O completion in a 32-bit process (window 0x600000000): the status block pointer 0x10000 is not memory; the store of status=0 information=0x8d is skipped (a 64-bit caller's status block taken for a guest one; MADEIRA_IOSB_DEAD_TARGET=0 stores anyway)
+[nt-fail] #2 NtAllocateVirtualMemoryEx status=c000000d proc=cmd.exe tid=002c size=0x10000 type=0x2000 prot=0x1 hint=0x0 zb=0x0 ext={addr[low=0x7c00000000 high=0x7fffffffff align=0x10000]} hits=1 rev=ajan5-rockstar
+[store-noalias] #1 rev=ml348 addr=0x36 insn=0x00000036 pc=0x149131358 NO pool/anon alias | region 0x104e20000+0x8000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[fault_rip] cnt=1 rip=0x0 pc=0x149131358 addr=0x36 kr=1(INVALID_ADDRESS) entryprot=5 nowprot=5 region=0x104e20000+0x8000 rev=ml555
+[mach_exc] UNHANDLED #1 pc=0x149131358 addr=0x36 x18=0x600300000 type=2 lr=0x14913133c sp=0x12640e950 x16=0x148a29994 x17=0x12640e950
+[guest-code] rev=ml333 pool_rip=0xffffffffffffffff (PE 0xffffffffffffffff) -- NO pool copy for this address (identity translate)
+[fault-host] 149131258: 2a0203e4 910003e1 910023e3 92800000 aa1f03e2 d63f0100 2a0003f3 340000c0
+[fault-host] 149131278: f0000328 2a1303e0 f946a108 d63f0100 14048b96 f94003e8 7100027f 9a9f0100
+[fault-host] 149131298: f9400ffe f9400bf3 910083ff d65f03c0 d10083ff f9000bf3 f9000ffe a9000be1
+[fault-host] 1491312b8: f0000328 2a0403e5 f9425508 2a0303e4 910003e1 910023e3 aa1f03e2 d63f0100
+[fault-host] 1491312d8: 2a0003f3 340000c0 f0000328 2a1303e0 f946a108 d63f0100 14048b81 f94003e8
+[fault-host] 1491312f8: 7100027f 9a9f0100 f9400ffe f9400bf3 910083ff d65f03c0 d10083ff f9000bf3
+[mach_exc] insn_stream PC-12..PC+8: f946a108 d63f0100 00000000 [00000036] 7100027f 9a9f0100 f9400ffe
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0x0 TEB=0x600300000 TEB[0x58]=0x0 *(gs_cached+0x58)=0x0
+[store-noalias] #2 rev=ml348 addr=0x36 insn=0x00000036 pc=0x149131358 NO pool/anon alias | region 0x104e20000+0x8000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[fault_rip] cnt=2 rip=0x0 pc=0x149131358 addr=0x36 kr=1(INVALID_ADDRESS) entryprot=5 nowprot=5 region=0x104e20000+0x8000 rev=ml555
+[mach_exc] UNHANDLED #2 pc=0x149131358 addr=0x36 x18=0x600300000 type=2 lr=0x14913133c sp=0x12640e950 x16=0x148a29994 x17=0x12640e950
+[guest-code] rev=ml333 pool_rip=0xffffffffffffffff (PE 0xffffffffffffffff) -- NO pool copy for this address (identity translate)
+[fault-host] 1491312b8: f0000328 2a0403e5 f9425508 2a0303e4 910003e1 910023e3 aa1f03e2 d63f0100
+[fault-host] 1491312d8: 2a0003f3 340000c0 f0000328 2a1303e0 f946a108 d63f0100 14048b81 f94003e8
+[fault-host] 1491312f8: 7100027f 9a9f0100 f9400ffe f9400bf3 910083ff d65f03c0 d10083ff f9000bf3
+[fault-host] 149131318: f9000ffe a9000be1 f0000328 f100001f f9425908 da9f1000 910003e1 910023e2
+[fault-host] 149131338: d63f0100 2a0003f3 340000c0 f0000328 2a1303e0 f946a108 d63f0100 00000000
+[fault-host] 149131358: 00000036 7100027f 9a9f0100 f9400ffe 00000000 00000000 00000000 00000000
+[mach_exc] insn_stream PC-12..PC+8: f946a108 d63f0100 00000000 [00000036] 7100027f 9a9f0100 f9400ffe
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0x0 TEB=0x600300000 TEB[0x58]=0x0 *(gs_cached+0x58)=0x0
+002c:err:seh:NtRaiseException Unhandled exception code c000001d flags 0 addr 0x169e51358
+002c:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0xc000001d) syscalls=0 unix_calls=366
+[Wine ntdll/server] process_exit_wrapper(-1073741795): closing child fd_socket=116
+[wow-window] slot 1 B=0x600000000 released (owner peb=0x600310000 exited); torn down when the next 32-bit process starts
+[Wine ntdll/server] process_exit_wrapper(-1073741795)
+[Wine child thread] child exited with code -1073741795
+0034:err:process:NtTerminateProcess NtTerminateProcess(handle=0x0, exit_code=0x0) syscalls=0 unix_calls=367
+0034:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0x0) syscalls=0 unix_calls=370
+[Wine ntdll/server] process_exit_wrapper(0): closing child fd_socket=129
+[Wine ntdll/server] process_exit_wrapper(0)
+[Wine ntdll/server] process_exit_wrapper(0)
+[WineProc] Wine exited with code 0 (caught by longjmp)
+[WineProc] stopping wineserver...
+[frontend] returned to library
+[footprint] rev=ml358 phys=426 MB (peak 426) internal=427 MB compressed=0 MB external=125 MB reusable=17 MB (cycle=2)
+[swap] ml1077 stats: 0 MB file-backed now (peak 0), 0 extents, file used 0 of 4096 MB, backs 0 releases 0 unbacks 0 refused 0 | coverage classic: disk 0 MB of 4096 cap, reservations 0, holes 0, disk-full refusals 0 | ml1258 churn: 0 sizes, 0 blocks left anonymous
+[14:13:59.182] [INFO] Detaching debugger...
+[footprint] rev=ml358 phys=409 MB (peak 426) internal=410 MB compressed=0 MB external=126 MB reusable=17 MB (cycle=3)
+[footprint] rev=ml358 phys=409 MB (peak 426) internal=410 MB compressed=0 MB external=126 MB reusable=17 MB (cycle=4)
+[footprint] rev=ml358 phys=409 MB (peak 426) internal=409 MB compressed=0 MB external=126 MB reusable=17 MB (cycle=5)
+[footprint] rev=ml358 phys=409 MB (peak 426) internal=409 MB compressed=0 MB external=126 MB reusable=17 MB (cycle=6)
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16ba3d050 NATIVE (no FEX state) sp-cand=[ ]
+[freeze] alive t+30s beats=1 gaps=0 iter=119 gen=1 threads=16 resident=554MB dbg=DEBUGGED rev=ml525
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16ba3d050 NATIVE (no FEX state) sp-cand=[ ]
+[freeze] alive t+60s beats=2 gaps=0 iter=238 gen=1 threads=16 resident=556MB dbg=DEBUGGED rev=ml525
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16ba3d050 NATIVE (no FEX state) sp-cand=[ ]
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16ba3d050 NATIVE (no FEX state) sp-cand=[ ]
+[freeze] alive t+91s beats=3 gaps=0 iter=357 gen=1 threads=17 resident=558MB dbg=DEBUGGED rev=ml525
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16ba3d050 NATIVE (no FEX state) sp-cand=[ ]
+[freeze] alive t+121s beats=4 gaps=0 iter=476 gen=1 threads=18 resident=561MB dbg=DEBUGGED rev=ml525
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16ba3d050 NATIVE (no FEX state) sp-cand=[ ]
+[footprint] rev=ml358 phys=414 MB (peak 426) internal=414 MB compressed=0 MB external=127 MB reusable=21 MB (cycle=73)
+[footprint] rev=ml358 phys=414 MB (peak 426) internal=414 MB compressed=0 MB external=127 MB reusable=21 MB (cycle=74)
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16ba3d050 NATIVE (no FEX state) sp-cand=[ ]
+[thread-sample] ml876 b2 "" teb=0x0 cpu=15% RUN pc=libsystem_platform.dylib`_platform_memmove+0x1a4 lr=SwiftUICore`$s7SwiftUI23AccessibilityPropertiesVyACxm_13PropertyValueQztcAA0cD3KeyRzlufC+0xf8 sp=0x16afdb4c0 NATIVE (no FEX state) sp-cand=[ ]
+[footprint] rev=ml358 phys=414 MB (peak 426) internal=414 MB compressed=0 MB external=127 MB reusable=21 MB (cycle=75)
+[freeze] alive t+151s beats=5 gaps=0 iter=595 gen=1 threads=18 resident=562MB dbg=DEBUGGED rev=ml525
+[footprint] rev=ml358 phys=414 MB (peak 426) internal=414 MB compressed=0 MB external=127 MB reusable=21 MB (cycle=76)
+[footprint] rev=ml358 phys=414 MB (peak 426) internal=414 MB compressed=0 MB external=127 MB reusable=21 MB (cycle=77)
+[footprint] rev=ml358 phys=414 MB (peak 426) internal=414 MB compressed=0 MB external=127 MB reusable=21 MB (cycle=78)

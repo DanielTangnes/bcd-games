@@ -405,16 +405,33 @@ struct BCDStatusChip: View {
 /// field, over whatever is on screen (a sheet, a page, nothing), so it works from every place the same way. Send sends with the
 /// text (empty is fine); Cancel sends nothing. The text goes first in the sent log as "[user-comment]" lines (LogUploadCore).
 enum BCDLogComment {
-    static func ask(_ send: @escaping (String) -> Void, cancelled: (() -> Void)? = nil) {
+    /// The newest screenshot that belongs to a log (BCDScreenshotLive.install sets it; the preview app has none): offered with the comment.
+    static var screenshotFor: ((URL) -> URL?)?
+    /// The player chose to send `shot` along with `log`.
+    static var screenshotChosen: ((URL, URL) -> Void)?
+    /// What the box says about the session's performance trace, when there is one for that log (BCDPerfTraceSend.install sets it; the preview has none).
+    static var traceNote: ((URL) -> String?)?
+
+    /// `log`: the log about to be sent; when a screenshot was taken during its session the dialog offers to send that too (2026-10-25).
+    /// Words the next box starts with (a guided debug run's notes, BCDHelpLive.swift); the person can change them. Taken by the next `ask`.
+    static var prefill = ""
+
+    static func ask(for log: URL? = nil, _ send: @escaping (String) -> Void, cancelled: (() -> Void)? = nil) {
+        let starting = prefill
+        prefill = ""
+
         // A moment later: the button that asked may be closing its own alert or menu.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             guard let top = topController() else { return send("") }
-            let alert = UIAlertController(title: "Add a comment",
-                                          message: "Add a comment if you like: what happened, what the log can't show (low FPS and "
-                                                   + "where, a stutter, what was on screen). Please don't write personal details.",
-                                          preferredStyle: .alert)
+            let shot = log.flatMap { screenshotFor?($0) }
+            var message = "Add a comment if you like: what happened, what the log can't show (low FPS and "
+                + "where, a stutter, what was on screen). Please don't write personal details."
+            if shot != nil { message += "\n\nYou took a screenshot during this session. " + BCDScreenshotRules.sentAsItIs }
+            if let log, let note = traceNote?(log) { message += "\n\n" + note }
+            let alert = UIAlertController(title: "Add a comment", message: message, preferredStyle: .alert)
             alert.addTextField { field in
                 field.placeholder = "Comment (optional)"
+                field.text = starting.isEmpty ? nil : starting
                 field.autocapitalizationType = .sentences
                 field.returnKeyType = .send
                 field.accessibilityIdentifier = "log.comment"
@@ -424,6 +441,12 @@ enum BCDLogComment {
                 send(alert?.textFields?.first?.text ?? "")
             }
             alert.addAction(sendAction)
+            if let shot, let log {
+                alert.addAction(UIAlertAction(title: "Send with the screenshot", style: .default) { [weak alert] _ in
+                    screenshotChosen?(log, shot)
+                    send(alert?.textFields?.first?.text ?? "")
+                })
+            }
             alert.preferredAction = sendAction
             top.present(alert, animated: true)
         }

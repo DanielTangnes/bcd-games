@@ -109,8 +109,10 @@ final class MetalHostView: UIView {
     /// Set by TouchControlsOverlay.configureGamepad: the landscape overlay is
     /// visible, not editing, and has at least one controller mapping.
     static var padOverlay = false
+    /// madeira-bcd (round 604): the in-game menu's "Touches that miss the controls" for this session; nil leaves the rule above as it is.
+    static var override: Mode?
     static func suppressing(touchpad: Bool, desktop: Bool) -> Bool {
-        switch mode {
+        switch override ?? mode {
         case .on: return false
         case .off: return true
         case .auto: return padOverlay && !touchpad && !desktop
@@ -135,6 +137,22 @@ final class MetalBackedView: UIView {
         keyboardTarget?.layoutIfNeeded()
     }
     override var canBecomeFirstResponder: Bool { true }
+    /// Command-V is this view's paste command only with env.MADEIRA_PASTE_SHORTCUT = 1 (HardwareInput.pasteShortcut). Off, the view has
+    /// no key command of its own, as before; the key bar's Paste button needs none.
+    override var keyCommands: [UIKeyCommand]? {
+        guard HardwareInput.pasteShortcut else { return super.keyCommands }
+        let command = UIKeyCommand(input: "v", modifierFlags: .command, action: #selector(paste(_:)))
+        command.wantsPriorityOverSystemBehavior = true
+        return [command]
+    }
+    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+        if action == #selector(paste(_:)) { return HardwareInput.pasteShortcut && HardwareInput.shared.canPaste && UIPasteboard.general.hasStrings }
+        return super.canPerformAction(action, withSender: sender)
+    }
+    override func paste(_ sender: Any?) {
+        HardwareInput.shared.pasteClipboard()
+    }
+
     static func toggleKeyboard() {
         guard let v = keyboardTarget else { return }
         if v.isFirstResponder { v.resignFirstResponder() }
@@ -213,7 +231,8 @@ final class MetalBackedView: UIView {
     private func gameRect() -> CGRect {
         let r = GameSurfaceLayout.rect(guest: guestSize(), aspect: drawableAspect(),
                                        bounds: bounds, mode: effectiveDisplayMode())
-        return CGRect(x: r.minX, y: r.minY, width: max(r.width, 1), height: max(r.height, 1))
+        let base = CGRect(x: r.minX, y: r.minY, width: max(r.width, 1), height: max(r.height, 1))
+        return BCDMagnifierCurrent.state.rect(base: base)   // madeira-bcd (round 604): the magnifier; at 1x (the default) this is `base` itself
     }
 
     private static var drawableObservation: NSKeyValueObservation?
@@ -322,13 +341,18 @@ final class MetalBackedView: UIView {
     /// Same mapping for any point (a multi-finger midpoint, a touch's down
     /// point). In a desktop session the compositor letterboxes the desktop in
     /// its own frame, so it does the mapping.
-    private func mapPoint(_ p: CGPoint) -> (Int32, Int32) {
+    func mapPoint(_ p: CGPoint) -> (Int32, Int32) {   // madeira-bcd (round 604): not private, the Apple Pencil maps its points the same way (BCDTouchExtrasLive.swift)
         if desktopMode {
             let w = convert(p, to: nil)
             var px: Int32 = 0, py: Int32 = 0
             _ = winios_desktop_point_from_window(Double(w.x), Double(w.y), &px, &py)
             Self.cursor = CGPoint(x: CGFloat(px), y: CGFloat(py))   // keep the trackpad cursor in step
             return (px, py)
+        }
+        var p = p
+        if BCDMagnifierCurrent.state.isOn {   // madeira-bcd (round 604): the finger is over the enlarged picture; map it as the picture at 1x would be
+            p = BCDMagnifierCurrent.state.unzoom(point: p, base: GameSurfaceLayout.rect(guest: guestSize(), aspect: drawableAspect(),
+                                                                                       bounds: bounds, mode: effectiveDisplayMode()))
         }
         let g = GameSurfaceLayout.map(point: p, guest: guestSize(), aspect: drawableAspect(),
                                       bounds: bounds, mode: effectiveDisplayMode())
@@ -474,8 +498,8 @@ final class MetalBackedView: UIView {
             let (x, y) = mapPoint(mid)
             winios_post_touch_down(x, y)
             winios_post_touch_up(x, y)
-        case 2: tmAbsoluteClick(down: F_RDOWN, up: F_RUP, at: mid)
-        case 3: tmAbsoluteClick(down: F_MDOWN, up: F_MUP, at: mid)
+        case 2: if !BCDTouchExtras.replaces(.tap2) { tmAbsoluteClick(down: F_RDOWN, up: F_RUP, at: mid) }   // madeira-bcd (round 604): a bound gesture replaces the click
+        case 3: if !BCDTouchExtras.replaces(.tap3) { tmAbsoluteClick(down: F_MDOWN, up: F_MUP, at: mid) }
         default: break
         }
     }
@@ -589,6 +613,8 @@ final class MetalBackedView: UIView {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        BCDTouchFeelModel.shared.gameTouched()   // madeira-bcd (round 604): a touch brings back touch controls that auto-hid (before the pad overlay's filter below drops it); nothing with auto-hide off
+        guard let touches = BCDTouchExtras.filter(self, touches, .began) else { return }   // madeira-bcd (round 604): aim mode, touch gestures, the Pencil; one static flag when off
         if HardwareInput.shared.interceptTouches(touches, event, .began) { return }
         guard let touches = tmgFilter(touches, .began) else { return }
         if touchPointerMode { touchModeBegan(touches); return }
@@ -636,6 +662,7 @@ final class MetalBackedView: UIView {
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touches = BCDTouchExtras.filter(self, touches, .moved) else { return }   // madeira-bcd (round 604)
         if HardwareInput.shared.interceptTouches(touches, event, .moved) { return }
         guard let touches = tmgFilter(touches, .moved) else { return }
         if touchPointerMode { touchModeMoved(touches, event); return }
@@ -714,6 +741,7 @@ final class MetalBackedView: UIView {
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touches = BCDTouchExtras.filter(self, touches, .ended) else { return }   // madeira-bcd (round 604)
         if HardwareInput.shared.interceptTouches(touches, event, .ended) { return }
         guard let touches = tmgFilter(touches, .ended) else { return }
         if touchPointerMode { touchModeEnded(touches, event); return }
@@ -727,6 +755,7 @@ final class MetalBackedView: UIView {
         if twoFingerActive {
             if activeTouches(event).isEmpty {
                 if !twoFingerMoved && now - twoFingerStartTime < 0.40
+                    && !BCDTouchExtras.replaces(.tap2)   // madeira-bcd (round 604): a bound gesture replaces the click
                     && !InputSettings.shared.relative {   // ml643: see touchesBegan
                     postPointer(F_RDOWN)
                     postPointer(F_RUP)
@@ -758,6 +787,7 @@ final class MetalBackedView: UIView {
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touches = BCDTouchExtras.filter(self, touches, .cancelled) else { return }   // madeira-bcd (round 604)
         if HardwareInput.shared.interceptTouches(touches, event, .cancelled) { return }
         guard let touches = tmgFilter(touches, .cancelled) else { return }
         if touchPointerMode { touchModeCancelled(touches); return }
@@ -817,6 +847,7 @@ extension MetalBackedView: UIKeyInput {
         // A hardware keyboard's presses reach Wine raw (HardwareInput); UIKit
         // also delivers them here as text, which would type every key twice.
         if HardwareInput.shared.handlesTyping { return }
+        HardwareInput.shared.cancelPaste()
         for ch in text {
             guard let (vk, shift) = MetalBackedView.vkForChar(ch) else { continue }
             if shift { winios_post_key(0x10, 1) }   // VK_SHIFT down
@@ -828,6 +859,7 @@ extension MetalBackedView: UIKeyInput {
 
     func deleteBackward() {
         if HardwareInput.shared.handlesTyping { return }
+        HardwareInput.shared.cancelPaste()
         winios_post_key(0x08, 1)   // VK_BACK down
         winios_post_key(0x08, 0)
     }
@@ -1008,6 +1040,7 @@ struct ContentView: View {
                                                                set: { if !$0 { library.restartNotice = nil } })) {
                 Button("Close BCD") {
                     LogStore.shared.log("[session-once] closed by the user for a restart")
+                    BCDSessionRecorder.closingOnPurpose()   // madeira-bcd: a session still open when the player closes BCD for a restart is no crash to ask about
                     exit(0)
                 }
                 Button("Later", role: .cancel) { library.restartNotice = nil }
@@ -1639,11 +1672,17 @@ struct ContentView: View {
             // madeira-bcd ios18-jit: env.MADEIRA_POOL_FROM_LIMIT (off: 896, no change) sizes it from the memory limit, never larger.
             poolSizeMB = min(poolSizeMB, StikJITHelper.launchPoolMB(standard: 896))
             // bcd.cfg pool: the JIT pool size in MB (256 to 1152) for every launch; wins over the size above.
-            if let txt = MadeiraConfig.get("pool"),
+            // madeira-bcd pool-above-window = 1 (the game's file or bcd.cfg; off unless set): a pool line in the game's own file counts too and
+            // wins, so a game can size its pool to fit a free run above its widened executable window (The Adventures of Elliot).
+            // Off, the game's file has no say, as before.
+            let poolAbove = ["1", "on", "true", "yes"].contains((MadeiraConfig.gameValue("pool-above-window") ?? MadeiraConfig.get("pool-above-window") ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
+            let gamePool = poolAbove ? MadeiraConfig.gameValue("pool") : nil
+            if let txt = gamePool ?? MadeiraConfig.get("pool"),
                let mb = Int(txt.trimmingCharacters(in: .whitespacesAndNewlines)),
                mb >= 256, mb <= 1152 {
                 poolSizeMB = mb
-                logStore.log("JIT pool overridden to \(mb)MB via bcd.cfg pool")
+                logStore.log("JIT pool overridden to \(mb)MB via \(gamePool != nil ? "the game's settings" : "bcd.cfg") pool")
             }
             // ml694: W^X A/B switch. bcd.cfg wx = 0
             // disables page demotion for the SAME binary, so the on/off
@@ -1728,6 +1767,13 @@ struct ContentView: View {
                 dxmtOptions.append("dxgi.customDeviceId=2544")
                 logStore.log("DXMT config: dxgi.customDeviceId=2544 via Report an NVIDIA GPU")
             }
+            // DXMT's memory census reports from the encode thread several times a second in a
+            // 64-bit game (a third of a log, and its scans on the frame path). DXMT throttles
+            // it to one report every 10 s by default only in its 32-bit build; turn that on for
+            // every session unless madeira.cfg sets env.DXMT_CENSUS_THROTTLE itself.
+            if MadeiraConfig.get("env.DXMT_CENSUS_THROTTLE") == nil && getenv("DXMT_CENSUS_THROTTLE") == nil {
+                setenv("DXMT_CENSUS_THROTTLE", "1", 0)
+            }
             // madeira-bcd: the game's options from BCDLaunch.applyExtras (LibraryPrefs'
             // NVIDIA device id, MetalFX's D3D11 factor up to 3x from the game's own file),
             // last, as before the merge. An option whose key is already set above is
@@ -1742,6 +1788,7 @@ struct ContentView: View {
                 }
                 if !extra.isEmpty { logStore.log("DXMT config: \(extra.joined(separator: ";")) via the game's settings") }
             }
+            BCDGPUCardsLive.apply(to: &dxmtOptions)   // madeira-bcd (2026-10-25, round 603): the game's "Look like this GPU" choice (gpu-card); nothing without one
             // Unset otherwise, so a previous session's options in this app process do not apply.
             if !dxmtOptions.isEmpty { setenv("DXMT_CONFIG", dxmtOptions.joined(separator: ";"), 1) } else { unsetenv("DXMT_CONFIG") }
             // ml1255: DXMT reads the variable into a MAX_PATH buffer (util_env.cpp
@@ -2263,6 +2310,17 @@ struct ContentView: View {
             let installFolder = MadeiraDock.drive.appendingPathComponent(game.library + "/common/" + game.installDir)
             // madeira-bcd (2026-10-24): a game whose page chose a Steam launch option (profile.steamLaunchOption) asks for that
             // entry; a game that never did gets exactly the key and the line it got before (SteamDirectStart.dockLaunch).
+            // madeira-bcd exe-window-auto = 1 (the game's file or bcd.cfg; off unless set): measure the game's own fixed-base exe now, so
+            // the JIT pool is placed above it (StikJITHelper.allocatePool reads this once). Off, nothing is measured and the window is
+            // what exe-window-mb says, or 128MB.
+            StikJITHelper.exeWindowAutoMB = 0
+            let autoWindow = ((profile.map { GameProfile(windowsPath: $0.windowsPath).get("exe-window-auto") } ?? nil)
+                              ?? MadeiraConfig.get("exe-window-auto") ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if ["1", "on", "true", "yes"].contains(autoWindow), let need = StikJITHelper.fixedBaseWindowMB(in: installFolder) {
+                StikJITHelper.exeWindowAutoMB = need.mb
+                LogStore.shared.log("[exe-window] \(need.exe) is a fixed-base image ending \(need.mb)MB above 0x140000000: "
+                    + "the executable window is widened to \(need.mb)MB for this session (exe-window-auto; exe-window-mb in the game's file overrides)")
+            }
             let dockLaunch = SteamDirectStart.dockLaunch(chosen: profile?.steamLaunchOption, options: options, installFolder: installFolder)
             let launchOption = dockLaunch.index
             for line in dockLaunch.lines { LogStore.shared.log(line) }
@@ -2547,6 +2605,10 @@ struct TouchControl: Codable, Identifiable, Equatable {
     /// (PadKeyboardMouse): "A", "RT", "D↑", ...; "LS"/"RS" for a key stick.
     /// Optional, so layouts saved before it existed still decode.
     var padBinding: String?
+    /// madeira-bcd (upstream port 2026-10-25): a locked control cannot be moved, resized or removed in the
+    /// editor. Optional and written only when set, so a layout saved before it existed, and any layout
+    /// with nothing locked, is the same file as always.
+    var locked: Bool?
 }
 
 final class TouchControlsModel: ObservableObject {
@@ -2650,7 +2712,7 @@ final class TouchControlsModel: ObservableObject {
         let barW: CGFloat = buttons * 44 + (buttons - 1) * 10
         if topBar, CGRect(x: bounds.midX - barW / 2 - 10, y: 0,
                           width: barW + 20, height: 68).contains(p) { return true }
-        guard visible else { return false }
+        guard visible, !BCDTouchFeel.controlsHidden else { return false }   // madeira-bcd (round 604): hidden for want of a touch, every touch is the game's
         for c in controls {
             let r = Self.diameter(c) / 2
             let cx = CGFloat(c.nx) * bounds.width
@@ -2668,6 +2730,14 @@ final class TouchControlsModel: ObservableObject {
 /// lands on the hosting root view means empty space, and empty space belongs to
 /// the game underneath — mouse-look must keep working between the buttons.
 final class ControlsWindow: UIWindow {
+    /// madeira-bcd (round 604): the touches that reach a control keep the auto-hide timer from running while a finger is down (BCDTouchFeelModel).
+    override func sendEvent(_ event: UIEvent) {
+        super.sendEvent(event)
+        if event.type == .touches, BCDTouchFeelModel.shared.seconds > 0 {
+            BCDTouchFeelModel.shared.controlsTouched(fingers: BCDTouchFeelModel.fingersDown(in: event))
+        }
+    }
+
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         let m = TouchControlsModel.shared
         // Edit mode owns the whole screen: drags and the scale pinch must not
@@ -2693,7 +2763,7 @@ final class ControlsWindow: UIWindow {
         // button, its performance overlay and the touch controls do.
         if library.current != nil {
             if library.menu || library.launching || library.menuButtonRect.contains(point) ||
-                (library.performance && library.performanceRect.contains(point)) {
+                library.performanceRect.contains(point) {   // the HUD's frame is zero except while the player moves it (BCDHUDHost)
                 return super.hitTest(point, with: event)
             }
             guard m.hitsInteractive(point, in: bounds, topBar: false) else { return nil }
@@ -2738,6 +2808,7 @@ enum TouchControlsHost {
 struct TouchControlsOverlay: View {
     @ObservedObject private var m = TouchControlsModel.shared
     @ObservedObject private var library = LibraryModel.shared
+    @ObservedObject private var feel = BCDTouchFeelModel.shared   // madeira-bcd (round 604): the controls hide when no finger has been on them for the time the player chose
     @State private var pinchBase: Double?
 
     var body: some View {
@@ -2751,8 +2822,10 @@ struct TouchControlsOverlay: View {
             ZStack(alignment: .top) {
                 if landscape {
                     if (m.visible || m.editing) && !library.blocksGameplayTouch {
-                        controls(geo.size, session: session)
-                            .opacity(m.editing ? 1.0 : m.opacity)
+                        if !feel.hidden {   // madeira-bcd (round 604): hidden for want of a touch, the controls have no view at all
+                            controls(geo.size, session: session)
+                                .opacity(m.editing ? 1.0 : m.opacity)
+                        }
                     }
                     if session && !m.editing { BCDSessionLiveLayer() } else { topBar }   // BCD's in-game layer (BCDSessionLive.swift)
                     // BCD (2026-10-18): the selected control's panel is part of BCD's editor, in `topBar`.
@@ -2817,7 +2890,7 @@ struct TouchControlsOverlay: View {
     private var scalePinch: some Gesture {
         MagnificationGesture()
             .onChanged { v in
-                guard m.editing, let i = m.index(of: m.selected) else { return }
+                guard m.editing, let i = m.index(of: m.selected), m.controls[i].locked != true else { return }
                 if pinchBase == nil { pinchBase = m.controls[i].scale }
                 m.controls[i].scale = min(max((pinchBase ?? 1) * Double(v), 0.5), 3.0)
             }

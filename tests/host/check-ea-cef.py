@@ -74,6 +74,11 @@ end = native.index('static int ios_ea_slot_busy(')
 end = native.index('\n}\n', end) + 3
 ea_block = native[begin:end]
 rest = native[:begin] + native[end:]
+# BCD modified 2026-10-26: thread retirement has its own isolated EA block;
+# check-ea-thread-reap.py runs it against stale/unmapped/reused TEBs and joins.
+reap_begin = rest.index('/* BCD modified 2026-10-26: EA 608,')
+reap_end = rest.index('/* ios-ea-thread-reap end */', reap_begin) + len('/* ios-ea-thread-reap end */')
+rest = rest[:reap_begin] + rest[reap_end:]
 
 hook_lines = []
 for line in rest.split('\n'):
