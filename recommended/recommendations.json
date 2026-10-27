@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "version": 12,
+  "version": 13,
   "generated": "2026-10-27",
   "rules": [
     {
@@ -2108,7 +2108,7 @@
     {
       "id": "marvels-spider-man-2",
       "title": "Marvel's Spider-Man 2",
-      "version": 3,
+      "version": 4,
       "match": {
         "steamAppIDs": [2651280],
         "steamFolders": ["marvel's spider-man 2"],
@@ -2119,11 +2119,14 @@
         "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
         "env.MADEIRA_EC_HOOK_TRACE = 0",
         "env.MADEIRA_X64_IMAGE_NOCOPY = 1",
+        "env.MADEIRA_JUMBO_HALF = 1",
         "env.MADEIRA_CAGE_RELEASE = 1",
         "env.MADEIRA_ALIAS_RELEASE = 1",
+        "env.LC_ALL = en_US.UTF-8",
+        "env.MADEIRA_VA_PRESSURE_GAP_OK = 1",
         "mip0-full = 1",
         "quiet-log = 1",
-        "swap-mb = 6144",
+        "swap-mb = 8192",
         "swap-mode = 2",
         "swap-min-mb = 1"
       ],
@@ -2147,7 +2150,15 @@
         "    then Coherent's V8 cage at 0x7700000000 decommits 128 MB starting at anon-JIT alias #6 (0x7700000000+0x4000, L22999/L23478:",
         "    [alias-tomb] refused, [commit-zero] STALE ON COMMIT at L23481 -> V8_Fatal int3 at v8_libbase.dll+0x22d35, L23483): the same",
         "    Insomniac/Nixxes V8 cage pattern as Ratchet & Clank: Rift Apart, needing env.MADEIRA_ALIAS_RELEASE = 1 (and build 616's",
-        "    mprotect_range / ml640 alias ownership fix)."
+        "    mprotect_range / ml640 alias ownership fix).",
+        "  - Version 4 (owner's iPhone18,2, build 616, logs 2026-10-27 19:53:40 and 19:55:21): the intro videos play through (2221 frames,",
+        "    47.2 FPS avg), then at 56 s thread 0024 requests the Turkish OEM code page (\"[nls-getptr] type=11 id=857\", L27107 / L26872),",
+        "    immediately throws an uncaught C++ exception (\"[exc] ml811 code=e06d7363 ... tid=0024 hit=4\", L27108 / L26873; id=1254 at",
+        "    L27110 / L26880, \"ACCEPTING terminal root frame\" at L27112 / L26882) and crs-client.dll terminates the process with",
+        "    0xffff7001 (L27114 / L26884) — the exact Turkish-locale throw of Ratchet & Clank: Rift Apart (fixed by env.LC_ALL = en_US.UTF-8).",
+        "    Also adds Rift Apart's env.MADEIRA_JUMBO_HALF = 1 (8 GB -> 4 GB arena probes at L16247-L16270 of 19:55:21),",
+        "    env.MADEIRA_VA_PRESSURE_GAP_OK = 1 (19:53:40 had 17 [steer] and 7076 MB peak vs 0 [steer] and 6066 MB in 19:55:21), and",
+        "    swap-mb = 8192."
       ]
     },
     {
