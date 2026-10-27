@@ -35,6 +35,7 @@
 /* The window census struct is shared with Swift through this header;
  * including it here keeps both sides' definitions the same. */
 #include "Winios.h"
+#include "WiniosCursor.h"
 
 /* csops syscall — CS_DEBUGGED is the flag StikDebug JIT rides on. Declared by
  * hand for the same reason JITAllocator.c does: <sys/codesign.h> is not in the
@@ -2734,6 +2735,7 @@ void winios_cursor_set(unsigned int cur_id, int w, int h, int hot_x, int hot_y, 
 }
 
 void winios_cursor_show(int show) {
+    if (winios_direct_cursor_wanted()) winios_direct_cursor_show(show);
     dispatch_async(dispatch_get_main_queue(), ^{
         if (g_comp_game) {   /* the dialog cursor shows only over a dialog */
             g_game_cursor_prog_hidden = !show;

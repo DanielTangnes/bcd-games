@@ -197,7 +197,7 @@ extension BCDGamePageLive {
         case BCDGameStartPage.second:
             let text = value.trimmingCharacters(in: .whitespaces)
             guard text.isEmpty || BCDStartPlan.isProgram(text) else {
-                setupSay(game, setting, "Not saved: a program on drive C: that ends in .exe, like C:\\Tools\\mapper.exe. A program that protects a game is not accepted.")
+                setupSay(game, setting, "Not saved: a program on drive C: that ends in .exe, .bat or .cmd, like C:\\Tools\\mapper.exe. A program that protects a game is not accepted.")
                 return true
             }
             setupLine(entry, BCDStartPlan.secondKey, text)

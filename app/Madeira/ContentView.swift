@@ -430,6 +430,7 @@ final class MetalBackedView: UIView {
             tmGestureDownPoint = t.location(in: self)
             let (x, y) = mapPoint(tmGestureDownPoint)
             winios_cursor_move(x, y)
+            if !desktopMode { HardwareInput.shared.noteTouchCursor(x: x, y: y) }
             tmGeneration += 1
             let gen = tmGeneration
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.tmHoldDelay) { [weak self, weak t] in
@@ -466,6 +467,7 @@ final class MetalBackedView: UIView {
                 guard t === tmDragTouch else { continue }
                 let (x, y) = mapPoint(p)
                 winios_post_touch_move(x, y)
+                if !desktopMode { HardwareInput.shared.noteTouchCursor(x: x, y: y) }
                 continue
             }
             guard tmDownPoints.count == 1 else {
@@ -477,6 +479,7 @@ final class MetalBackedView: UIView {
                 tmCommitDrag(t)                  // button down at the ORIGINAL point
                 let (x, y) = mapPoint(p)
                 winios_post_touch_move(x, y)
+                if !desktopMode { HardwareInput.shared.noteTouchCursor(x: x, y: y) }
             }
         }
     }
@@ -576,7 +579,11 @@ final class MetalBackedView: UIView {
         return i
     }
     private func postPointer(_ flags: UInt32, data: Int32 = 0) {
-        winios_pointer(Int32(Self.cursor.x), Int32(Self.cursor.y), flags, UInt32(bitPattern: data))
+        let x = Int32(Self.cursor.x), y = Int32(Self.cursor.y)
+        winios_pointer(x, y, flags, UInt32(bitPattern: data))
+        if !desktopMode && !InputSettings.shared.relative {
+            HardwareInput.shared.noteTouchCursor(x: x, y: y)
+        }
     }
     private func avgPoint(_ touches: [UITouch]) -> CGPoint {
         var x: CGFloat = 0, y: CGFloat = 0
@@ -618,7 +625,7 @@ final class MetalBackedView: UIView {
         if HardwareInput.shared.interceptTouches(touches, event, .began) { return }
         guard let touches = tmgFilter(touches, .began) else { return }
         if touchPointerMode { touchModeBegan(touches); return }
-        guard desktopMode else {
+        guard desktopMode || !InputSettings.shared.directTouch else {
             guard let t = touches.first else { return }
             let (x, y) = mapTouch(t)
             winios_post_touch_down(x, y)
@@ -666,7 +673,7 @@ final class MetalBackedView: UIView {
         if HardwareInput.shared.interceptTouches(touches, event, .moved) { return }
         guard let touches = tmgFilter(touches, .moved) else { return }
         if touchPointerMode { touchModeMoved(touches, event); return }
-        guard desktopMode else {
+        guard desktopMode || !InputSettings.shared.directTouch else {
             guard let t = touches.first else { return }
             let (x, y) = mapTouch(t)
             winios_post_touch_move(x, y)
@@ -745,7 +752,7 @@ final class MetalBackedView: UIView {
         if HardwareInput.shared.interceptTouches(touches, event, .ended) { return }
         guard let touches = tmgFilter(touches, .ended) else { return }
         if touchPointerMode { touchModeEnded(touches, event); return }
-        guard desktopMode else {
+        guard desktopMode || !InputSettings.shared.directTouch else {
             guard let t = touches.first else { return }
             let (x, y) = mapTouch(t)
             winios_post_touch_up(x, y)
@@ -791,7 +798,7 @@ final class MetalBackedView: UIView {
         if HardwareInput.shared.interceptTouches(touches, event, .cancelled) { return }
         guard let touches = tmgFilter(touches, .cancelled) else { return }
         if touchPointerMode { touchModeCancelled(touches); return }
-        guard desktopMode else {
+        guard desktopMode || !InputSettings.shared.directTouch else {
             guard let t = touches.first else { return }
             let (x, y) = mapTouch(t)
             winios_post_touch_up(x, y)
@@ -1118,6 +1125,7 @@ struct ContentView: View {
         .ignoresSafeArea()
         .background(Color.black)
         .statusBarHidden(true)
+        .persistentSystemOverlays(.hidden)
         .modifier(DeferSystemEdges(active: true))   // madeira-bcd: env.MADEIRA_DEFER_EDGES (opt-in); without it the view is unchanged
     }
 
@@ -2846,6 +2854,8 @@ struct TouchControlsOverlay: View {
             .onDisappear { GamepadInput.shared.configureTouch(controls: []); TouchMouseGate.padOverlay = false }
         }
         .ignoresSafeArea()
+        .statusBarHidden(library.current != nil)
+        .persistentSystemOverlays(library.current != nil ? .hidden : .automatic)
     }
 
     /// BCD's controls (BCDTouchLive.swift).

@@ -28,7 +28,7 @@ import SwiftUI
         if name == "setup.exe" { throw BCDGameError("BCD runs x86 and x64 programs only.") }
         let title = (name as NSString).deletingPathExtension.replacingOccurrences(of: "_", with: " ")
         let windows = "C:\\" + path.replacingOccurrences(of: "/", with: "\\")
-        if name.hasSuffix(".bat") { return BCDProgramInfo(title: title, windowsPath: windows, bits: 0) }
+        if name.hasSuffix(".bat") || name.hasSuffix(".cmd") { return BCDProgramInfo(title: title, windowsPath: windows, bits: 0) }
         return BCDProgramInfo(title: title, windowsPath: windows, bits: name.contains("hollow") ? 64 : 32,
                               api: name.contains("hollow") ? "D3D11" : "D3D8")
     }

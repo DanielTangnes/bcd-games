@@ -1532,6 +1532,42 @@ static int console_headless_cmdline( const char *env, const WCHAR *image, int im
     return cl_len + n;
 }
 
+/* madeira-bcd: an interactive cmd.exe (Start Menu > Command Prompt, or cmd /k)
+ * has no window of its own -- its conhost.exe window IS the command prompt.
+ * Non-interactive cmd.exe (/c ...) runs a batch or command and exits, so its
+ * console stays headless unless env.MADEIRA_CONSOLE_WINDOW=1. */
+static int cmd_interactive_console( const WCHAR *own_image, int own_image_len,
+                                    const WCHAR *own_cl, int own_cl_len )
+{
+    int i = 0;
+
+    if (!ios_image_name_is( own_image, own_image_len, "cmd.exe" )) return 0;
+    if (!own_cl || own_cl_len <= 0) return 1;
+    while (i < own_cl_len && (own_cl[i] == ' ' || own_cl[i] == '\t')) i++;
+    if (i < own_cl_len && own_cl[i] == '"')
+    {
+        i++;
+        while (i < own_cl_len && own_cl[i] != '"') i++;
+        if (i < own_cl_len) i++;
+    }
+    else
+    {
+        while (i < own_cl_len && own_cl[i] != ' ' && own_cl[i] != '\t' && own_cl[i] != '/') i++;
+    }
+    for (; i + 1 < own_cl_len; i++)
+    {
+        WCHAR c, next;
+        if (own_cl[i] != '/') continue;
+        c = own_cl[i + 1];
+        if (c >= 'A' && c <= 'Z') c += 'a' - 'A';
+        next = (i + 2 < own_cl_len) ? own_cl[i + 2] : 0;
+        if (next && next != ' ' && next != '\t' && next != '"' && next != '/') continue;
+        if (c == 'c') return 0;
+        if (c == 'k') return 1;
+    }
+    return 1;
+}
+
 /* madeira-bcd: the JIT pool's variables in every child's environment. The app
  * exports WINE_IOS_JIT_RX/SIZE/RW (ContentView.swift) before Wine starts; the
  * first process imports the Unix environment and children inherit it. The
@@ -2321,19 +2357,24 @@ NTSTATUS WINAPI NtCreateUserProcess( HANDLE *process_handle_ptr, HANDLE *thread_
     }
 
     /* madeira-bcd: a console's conhost.exe starts without a window (see
-     * console_headless_cmdline); env.MADEIRA_CONSOLE_WINDOW=1 keeps it. */
+     * console_headless_cmdline); env.MADEIRA_CONSOLE_WINDOW=1 keeps it, as
+     * does an interactive cmd.exe (Start Menu > Command Prompt, or cmd /k). */
     {
+        const RTL_USER_PROCESS_PARAMETERS *own = NtCurrentTeb()->Peb->ProcessParameters;
         int cl_len = params->CommandLine.Length / sizeof(WCHAR), o = -1;
         WCHAR *nbuf = malloc( (cl_len + 16) * sizeof(WCHAR) );   /* kept when used: leaks once per console, as above */
         const char *window = getenv( "MADEIRA_CONSOLE_WINDOW" );   /* 1: consoles keep their conhost window (default: none, as with CREATE_NO_WINDOW) */
 
+        if ((!window || !window[0]) && own &&
+            cmd_interactive_console( own->ImagePathName.Buffer, own->ImagePathName.Length / sizeof(WCHAR),
+                                     own->CommandLine.Buffer, own->CommandLine.Length / sizeof(WCHAR) ))
+            window = "1";
         if (nbuf)
             o = console_headless_cmdline( window, params->ImagePathName.Buffer, params->ImagePathName.Length / sizeof(WCHAR),
                                           params->CommandLine.Buffer, cl_len, nbuf, cl_len + 16 );
         if (o < 0) free( nbuf );
         else
         {
-            const RTL_USER_PROCESS_PARAMETERS *own = NtCurrentTeb()->Peb->ProcessParameters;
             static int console_n;
 
             params->CommandLine.Buffer = nbuf;

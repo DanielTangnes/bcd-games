@@ -261,13 +261,16 @@ enum SteamDirectStart {
         return spelled.joined(separator: "/")
     }
 
+    /// The extensions of a Windows program or startup script ("exe", "bat", "cmd").
+    static let programExtensions: Set<String> = ["exe", "bat", "cmd"]
+
     /// The launch entry "The game" starts. Candidates are the Windows entries (no
     /// platform list, or one naming Windows) outside beta branches and of a kind that is
     /// the game itself; Steam's default comes first ("default", then no type or "none",
     /// then the other options), each in Steam's order with a 64-bit entry before one
     /// for any architecture before a 32-bit one. The first candidate whose program is a
-    /// Windows program (.exe) inside the install folder, and whose working folder (when
-    /// it names one) exists there, is taken.
+    /// Windows program (.exe, .bat or .cmd) inside the install folder, and whose working
+    /// folder (when it names one) exists there, is taken.
     static func choose(_ options: [SteamLaunchOption], installFolder root: URL) -> Choice? {
         func rank(_ option: SteamLaunchOption) -> Int? {
             let type = option.type.lowercased()
@@ -289,7 +292,7 @@ enum SteamDirectStart {
         for entry in ranked {
             let option = entry.option
             guard let path = relativePath(option.executable), !path.isEmpty,
-                  URL(fileURLWithPath: path).pathExtension.lowercased() == "exe",
+                  programExtensions.contains(URL(fileURLWithPath: path).pathExtension.lowercased()),
                   let program = onDisk(path, in: root, directory: false) else { continue }
             var folder: String? = nil
             if !option.workingDir.trimmingCharacters(in: spaces).isEmpty {
@@ -340,7 +343,7 @@ enum SteamDirectStart {
                   option.requiredDLC == nil || option.requiredDLC == "" || option.requiredDLC == "0",
                   option.oslist.isEmpty || option.oslist.lowercased().contains("windows"),
                   let path = relativePath(option.executable), !path.isEmpty,
-                  URL(fileURLWithPath: path).pathExtension.lowercased() == "exe",
+                  programExtensions.contains(URL(fileURLWithPath: path).pathExtension.lowercased()),
                   let program = onDisk(path, in: root, directory: false) else { continue }
             if !option.workingDir.trimmingCharacters(in: spaces).isEmpty {
                 guard let relative = relativePath(option.workingDir) else { continue }
@@ -378,8 +381,8 @@ enum SteamDirectStart {
             standard])
     }
 
-    /// The install folder's Windows programs for the Program picker: every .exe up to
-    /// six folders deep (linked folders are not followed), at most 400, sorted.
+    /// The install folder's Windows programs for the Program picker: every .exe, .bat
+    /// or .cmd up to six folders deep (linked folders are not followed), at most 400, sorted.
     static func programs(in root: URL) -> [String] {
         let fm = FileManager.default
         var found: [String] = []
@@ -393,7 +396,7 @@ enum SteamDirectStart {
                 if isDirectory.boolValue {
                     if ["_commonredist", "commonredist", "redist"].contains(name.lowercased()) { continue }
                     if (try? fm.destinationOfSymbolicLink(atPath: child.path)) == nil { walk(child, relative, depth + 1) }
-                } else if child.pathExtension.lowercased() == "exe" {
+                } else if programExtensions.contains(child.pathExtension.lowercased()) {
                     found.append(relative)
                 }
             }

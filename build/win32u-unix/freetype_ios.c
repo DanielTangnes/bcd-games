@@ -19,6 +19,26 @@
 #define dlsym   ios_ft_dlsym
 #define dlclose ios_ft_dlclose
 
+#include "ntstatus.h"
+#include "windef.h"
+#include "winbase.h"
+#include "winternl.h"
+#include "winerror.h"
+#include "winreg.h"
+#include "wingdi.h"
+#include "ntgdi_private.h"
+
+/* Fallback to CP1252 when a font's SFNT name table uses a Mac codepage
+ * (e.g. 10000 Mac Roman) whose NLS table is not loaded, so decode_opentype_name
+ * never returns NULL and crashes add_unix_face. */
+static CPTABLEINFO *ios_ft_get_cptable( WORD cp )
+{
+    CPTABLEINFO *ret = get_cptable( cp );
+    if (!ret && cp != 1252) ret = get_cptable( 1252 );
+    return ret;
+}
+#define get_cptable(cp) ios_ft_get_cptable(cp)
+
 /* Kill the __APPLE__ system-font sweep (load_mac_fonts): enumerating iOS
  * system fonts via CoreText crashed AddFontToList on a font wine can't
  * parse (2026-07-06 log: NULL-name deref → unhandled-fault cascade that
@@ -30,6 +50,8 @@
 #define CTFontCollectionCreateFromAvailableFonts ios_ft_null_collection
 
 #include "freetype.c"
+
+#undef get_cptable
 
 CTFontCollectionRef ios_ft_null_collection( CFDictionaryRef options )
 {

@@ -72,6 +72,7 @@ struct BCDLiveFrontEnd: View {
                 guard phase == .active else { return }
                 library.refreshFlag()
                 live.becameActive()
+                update.recheckIfDue()
             }
             .onReceive(LibraryController.shared.commands) { command($0) }
             // An open page closes when the session starts or a message needs the screen.
@@ -93,32 +94,43 @@ struct BCDLiveFrontEnd: View {
     }
 
     private func presenting<Content: View>(_ content: Content) -> some View {
+        presentingSheets(
+            content
+                .alert(jitProblem == nil ? "Library" : "Enabling JIT Failed",
+                       isPresented: Binding<Bool>(get: { library.error != nil }, set: { if !$0 { library.error = nil } })) {
+                    if let jitProblem { jitConnectionActions(jitProblem, retry: enableJIT) { library.error = nil } }
+                    Button("OK", role: .cancel) { library.error = nil }
+                } message: { Text(library.error ?? "") }
+                .alert("Steam", isPresented: Binding<Bool>(get: { steam.error != nil }, set: { if !$0 { steam.error = nil } })) {
+                    Button("OK", role: .cancel) { steam.error = nil }
+                } message: { Text(steam.error ?? "") }
+                .modifier(BCDEpicPromptAlert())   // Epic's sign-in question when a start can't be signed in (BCDEpicStart.swift); nothing until one asks
+                // An install without the increased memory limit (MemoryRights.swift): told, never blocked;
+                // only over the library, OK is the only button.
+                .alert("Memory limit", isPresented: Binding<Bool>(
+                    get: {
+                        guard memory.message != nil, library.current == nil, !onboarding.presented else { return false }
+                        return library.error == nil && steam.error == nil
+                    },
+                    set: { if !$0 { memory.message = nil } })) {
+                    Button("OK", role: .cancel) { memory.message = nil }
+                } message: { Text(memory.message ?? "") }
+                // A newer BCD (BCDUpdateCheck.swift): only over the library, never during a game, first-run
+                // setup or another alert; OK is the only button.
+                .alert("Update available", isPresented: Binding<Bool>(
+                    get: {
+                        guard update.message != nil, library.current == nil, !onboarding.presented else { return false }
+                        guard library.error == nil, steam.error == nil, memory.message == nil else { return false }
+                        return live.sheet == nil
+                    },
+                    set: { if !$0 { update.message = nil } })) {
+                    Button("OK", role: .cancel) { update.message = nil }
+                } message: { Text(update.message ?? "") }
+        )
+    }
+
+    private func presentingSheets<Content: View>(_ content: Content) -> some View {
         content
-            .alert(jitProblem == nil ? "Library" : "Enabling JIT Failed",
-                   isPresented: Binding(get: { library.error != nil }, set: { if !$0 { library.error = nil } })) {
-                if let jitProblem { jitConnectionActions(jitProblem, retry: enableJIT) { library.error = nil } }
-                Button("OK", role: .cancel) { library.error = nil }
-            } message: { Text(library.error ?? "") }
-            .alert("Steam", isPresented: Binding(get: { steam.error != nil }, set: { if !$0 { steam.error = nil } })) {
-                Button("OK", role: .cancel) { steam.error = nil }
-            } message: { Text(steam.error ?? "") }
-            .modifier(BCDEpicPromptAlert())   // Epic's sign-in question when a start can't be signed in (BCDEpicStart.swift); nothing until one asks
-            // An install without the increased memory limit (MemoryRights.swift): told, never blocked;
-            // only over the library, OK is the only button.
-            .alert("Memory limit", isPresented: Binding(
-                get: { memory.message != nil && library.current == nil && !onboarding.presented
-                    && library.error == nil && steam.error == nil },
-                set: { if !$0 { memory.message = nil } })) {
-                Button("OK", role: .cancel) { memory.message = nil }
-            } message: { Text(memory.message ?? "") }
-            // A newer BCD (BCDUpdateCheck.swift): only over the library, never during a game, first-run
-            // setup or another alert; OK is the only button.
-            .alert("Update available", isPresented: Binding(
-                get: { update.message != nil && library.current == nil && !onboarding.presented
-                    && library.error == nil && steam.error == nil && memory.message == nil },
-                set: { if !$0 { update.message = nil } })) {
-                Button("OK", role: .cancel) { update.message = nil }
-            } message: { Text(update.message ?? "") }
             // First-run setup (Onboarding.swift).
             .fullScreenCover(isPresented: $onboarding.presented, onDismiss: BCDPresentation.didClose) { OnboardingView() }
             .sheet(item: sheetShown, onDismiss: BCDPresentation.didClose) { sheet in screen(sheet) }

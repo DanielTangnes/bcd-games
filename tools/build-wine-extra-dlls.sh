@@ -228,16 +228,17 @@ fi
 # when every delayed DLL ships or is built here; otherwise the module is left
 # as it is.
 undelayed=""
-for d in $todo; do
+for d in $todo $OPT; do
     mk="$R/wine/dlls/$d/Makefile.in"
     delayed="$(sed -n 's/^DELAYIMPORTS[[:space:]]*=[[:space:]]*//p' "$mk")"
     [ -n "$delayed" ] && grep -q "^IMPORTS" "$mk" || continue
     ok=1
     for i in $delayed; do
-        shipped "$i" || case " $todo " in *" $i "*) ;; *) ok=0 ;; esac
+        shipped "$i" || case " $todo $OPT " in *" $i "*) ;; *) ok=0 ;; esac
     done
     [ "$ok" = 1 ] || continue
     sed -i.bak -e '/^DELAYIMPORTS[[:space:]]*=/d' -e "s/^\(IMPORTS[[:space:]]*=.*\)\$/\1 $delayed/" "$mk" && rm -f "$mk.bak"
+    rm -f "$B/dlls/$d/arm64ec-windows/$d.dll"
     undelayed="$undelayed $d"
 done
 # mfasfsrcsnk-optin.dll: Wine's ASF byte stream handler, patched to use winedmo (see the script). A patch that does not

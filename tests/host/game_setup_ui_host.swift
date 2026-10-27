@@ -215,7 +215,7 @@ do {
     for bad in ["C:\\Tools\\readme.txt", "..\\x.exe", "C:\\a\\..\\b.exe", "tools\\x.exe", "D:\\x.exe", "C:\\EasyAntiCheat\\EasyAntiCheat_Setup.exe", "BEService.exe", "C:\\x\"y.exe", ""] {
         check(!BCDStartPlan.isProgram(bad), "not a second program: \(bad)")
     }
-    for good in ["C:\\Tools\\mapper.exe", "notepad.exe", "c:\\Program Files\\JoyToKey\\JoyToKey.exe"] { check(BCDStartPlan.isProgram(good), "a second program: \(good)") }
+    for good in ["C:\\Tools\\mapper.exe", "notepad.exe", "c:\\Program Files\\JoyToKey\\JoyToKey.exe", "C:\\Tools\\startup.cmd", "C:\\Tools\\helper.bat"] { check(BCDStartPlan.isProgram(good), "a second program: \(good)") }
     check(BCDStartPlan.read(["start.second": "C:\\x\\EasyAntiCheat.exe"]).second == "" && BCDStartPlan.read(["start.second": "C:\\x\\EasyAntiCheat.exe"]).problems.count == 1, "a protection program is no second program")
 
     // rules

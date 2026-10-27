@@ -1731,7 +1731,7 @@ final class HardwareInput: ObservableObject {
         if desktop, !desktopCursorSynced { desktopCursorSynced = true; syncCursor = true }
         motionLock.unlock()
         winios_pointer(dx, dy, Self.moveFlag, 0)
-        if desktop { followDesktopCursor(dx, dy, sync: syncCursor) }
+        if desktop && cursorShownForRoute { followDesktopCursor(dx, dy, sync: syncCursor) }
         bumpTicker()
     }
 
@@ -1906,7 +1906,8 @@ final class HardwareInput: ObservableObject {
     // MARK: - route, drawn cursor and automatic lock
 
     private var cursorShownForRoute: Bool {
-        if Self.desktopMode { return true }
+        if InputSettings.shared.relative { return false }
+        if Self.desktopMode { return cursorState.reports == 0 || cursorState.shown != 0 }
         return directCursorLive && cursorState.shown != 0
     }
 
@@ -1940,10 +1941,25 @@ final class HardwareInput: ObservableObject {
     }
 
     private func setMouseInUse(_ on: Bool) {
-        guard on != mouseInUse else { return }
+        if !on { touchCursorActive = false }
+        guard on != mouseInUse else {
+            if !on { renderCursor() }
+            return
+        }
         mouseInUse = on
         motionLock.lock(); mouseInUseMirror = on; motionLock.unlock()
         updateTracking()
+        renderCursor()
+    }
+
+    private var touchCursorActive = false
+
+    /// Trackpad or tap-to-click touch moved the pointer in a direct game session:
+    /// draw the program's cursor at that guest position.
+    func noteTouchCursor(x: Int32, y: Int32) {
+        guard directCursorLive, !InputSettings.shared.relative else { return }
+        touchCursorActive = true
+        lastAbsolute = (x, y)
         renderCursor()
     }
 
@@ -2010,7 +2026,8 @@ final class HardwareInput: ObservableObject {
     /// rectangle (madeira-bcd), or where the driver reported it.
     private func renderCursor() {
         guard directCursorLive else { return }
-        let visible = mouseInUse && mouseFocused && cursorState.shown != 0
+        let shown = cursorState.shown != 0 || (touchCursorActive && cursorState.reports == 0)
+        let visible = (mouseInUse || touchCursorActive) && mouseFocused && shown && !InputSettings.shared.relative
         var pos = (x: cursorState.x, y: cursorState.y)
         if let last = lastAbsolute {
             pos = ScreenMap.clamp(x: last.x, y: last.y, clipLeft: cursorState.clip_left, top: cursorState.clip_top,
@@ -2021,7 +2038,7 @@ final class HardwareInput: ObservableObject {
     }
 
     private func updateAutoLock() {
-        guard Self.autoLockEnabled, directCursorLive, Self.pointerLockAvailable, mousePath == .gcmouse else {
+        guard Self.autoLockEnabled, Self.directCursorEnabled, Self.pointerLockAvailable, mousePath == .gcmouse else {
             if pointerLocked && lockedByUs { setPointerLocked(false, byUs: true, why: "automatic lock unavailable") }
             return
         }
@@ -2030,18 +2047,22 @@ final class HardwareInput: ObservableObject {
         // madeira-bcd: env.MADEIRA_POINTER_FOLLOW = 1 gives the game's hidden
         // cursor the pointer's position instead of a lock.
         let wantsLock = followMode != .always
+        let relOptIn = InputSettings.shared.relative
+        let shown = !relOptIn && cursorState.shown != 0
+        let hiddenFor = relOptIn ? AutoLock.hiddenDelay : (cursorState.reports == 0 || cursorHiddenSince == 0 ? 0 : now - cursorHiddenSince)
+        let sinceReport = (Self.desktopMode || relOptIn) ? 0 : (lastReportAt == 0 ? .infinity : now - lastReportAt)
         let action = AutoLock.decide(
-            locked: pointerLocked, lockedByUs: lockedByUs, cursorShown: cursorState.shown != 0,
-            hiddenFor: cursorState.reports == 0 || cursorHiddenSince == 0 ? 0 : now - cursorHiddenSince,
+            locked: pointerLocked, lockedByUs: lockedByUs, cursorShown: shown,
+            hiddenFor: hiddenFor,
             pointerOver: pointerOver, focused: baseFocused,
-            sinceReport: lastReportAt == 0 ? .infinity : now - lastReportAt,
+            sinceReport: sinceReport,
             sinceMotion: lastDelta == 0 ? .infinity : now - lastDelta,
             wantsLock: wantsLock)
         switch action {
         case .lock where !autoLockSuppressed:
             setPointerLocked(true, byUs: true, why: "the program hides its cursor")
         case .unlock:
-            setPointerLocked(false, byUs: true, why: cursorState.shown != 0 ? "the program shows its cursor"
+            setPointerLocked(false, byUs: true, why: shown ? "the program shows its cursor"
                              : !wantsLock ? "the program draws its own cursor (env.MADEIRA_POINTER_FOLLOW=1)"
                              : baseFocused ? "the program stopped reporting" : "focus lost")
         default:
@@ -2363,32 +2384,30 @@ extension UIResponder {
 // ============================================================================
 
 enum PointerLock {
-    private static var installed = false
+    private static var installedClasses = Set<ObjectIdentifier>()
 
-    /// Re-ask UIKit for the preference. The root controller is re-resolved
-    /// every time: a cached reference that went stale after a scene rebuild
-    /// would silently stop updating it.
+    /// Re-ask UIKit for the preference on every window's root view controller.
     static func refresh() {
         DispatchQueue.main.async {
-            install()
-            keyWindow()?.rootViewController?.setNeedsUpdateOfPrefersPointerLocked()
+            for w in allWindows() {
+                if let root = w.rootViewController {
+                    install(on: root)
+                    root.setNeedsUpdateOfPrefersPointerLocked()
+                }
+            }
         }
     }
 
-    private static func keyWindow() -> UIWindow? {
+    private static func allWindows() -> [UIWindow] {
         UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
-            .first { $0.isKeyWindow }
     }
 
-    private static func install() {
-        guard !installed else { return }
-        guard let root = keyWindow()?.rootViewController else {
-            fputs("[hwinput] pointer lock: no key window yet (will retry)\n", stderr)
-            return
-        }
+    private static func install(on root: UIViewController) {
         guard let cls: AnyClass = object_getClass(root) else { return }
+        let id = ObjectIdentifier(cls)
+        guard !installedClasses.contains(id) else { return }
         let sel = NSSelectorFromString("prefersPointerLocked")
         let body: @convention(block) (AnyObject) -> Bool = { _ in
             HardwareInput.shared.pointerLocked
@@ -2399,7 +2418,7 @@ enum PointerLock {
         if !class_addMethod(cls, sel, imp, "B@:") {
             _ = class_replaceMethod(cls, sel, imp, "B@:")
         }
-        installed = true
+        installedClasses.insert(id)
         fputs("[hwinput] pointer lock installed on \(NSStringFromClass(cls))\n", stderr)
     }
 }
@@ -2623,26 +2642,31 @@ final class DirectCursorOverlay {
         l.isHidden = !visible
         if visible {
             let host = MetalHostView.shared.bounds
+            let origin = MetalHostView.shared.superview != nil ? MetalHostView.shared.frame.origin : .zero
             let kx = host.width / CGFloat(max(guestW, 1)), ky = host.height / CGFloat(max(guestH, 1))
             let w = serial != 0 ? Int(image.w) : Self.arrowSize.w
             let h = serial != 0 ? Int(image.h) : Self.arrowSize.h
             let hx = serial != 0 ? Int(image.hot_x) : 0
             let hy = serial != 0 ? Int(image.hot_y) : 0
             l.bounds = CGRect(x: 0, y: 0, width: CGFloat(w) * kx, height: CGFloat(h) * ky)
-            l.position = CGPoint(x: CGFloat(Int(x) - hx) * kx, y: CGFloat(Int(y) - hy) * ky)
+            l.position = CGPoint(x: origin.x + CGFloat(Int(x) - hx) * kx, y: origin.y + CGFloat(Int(y) - hy) * ky)
         }
         CATransaction.commit()
     }
 
     private func ensureLayer() -> CALayer {
-        if let l = layer { return l }
+        let hostLayer = (MetalHostView.shared.superview ?? MetalHostView.shared).layer
+        if let l = layer {
+            if l.superlayer !== hostLayer { hostLayer.addSublayer(l) }
+            return l
+        }
         let l = CALayer()
         l.anchorPoint = .zero
         l.zPosition = 10000
         l.magnificationFilter = .nearest
         l.isHidden = true
         l.contents = Self.arrow()
-        MetalHostView.shared.layer.addSublayer(l)
+        hostLayer.addSublayer(l)
         layer = l
         return l
     }

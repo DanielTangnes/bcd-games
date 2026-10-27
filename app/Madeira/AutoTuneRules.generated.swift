@@ -1508,6 +1508,7 @@ enum AutoTuneBuiltInRules {
   "lines": [
    "env.MADEIRA_WER = 1"
   ],
+  "noRetry": true,
   "none": [
    {
     "has": [
@@ -1807,7 +1808,22 @@ enum AutoTuneBuiltInRules {
    {
     "has": [
      "err:module:load_dll [dll-missing]",
+     "status=c0000135"
+    ]
+   }
+  ],
+  "any": [
+   {
+    "has": [
+     "err:module:load_dll [dll-missing]",
      "mfasfsrcsnk.dll",
+     "status=c0000135"
+    ]
+   },
+   {
+    "has": [
+     "err:module:load_dll [dll-missing]",
+     "wmadmod.dll",
      "status=c0000135"
     ]
    }
@@ -4144,7 +4160,9 @@ enum AutoTuneBuiltInRules {
    }
   ],
   "outcomes": [
-   "crashed"
+   "crashed",
+   "hung",
+   "exited-early"
   ],
   "priority": 6,
   "reason": "RDR2 asked for 28 GB of address space, sized from the 16 GB of memory this iPad reports, and BCD has no such room. The line reports 8191 MB, as the iPhones RDR2 runs on do; the game then asks for the 9 GB the list keeps free."
@@ -5483,6 +5501,24 @@ enum AutoTuneBuiltInRules {
    },
    {
     "has": [
+     "[win-name] #",
+     "WGL: The driver does not appear to support OpenGL"
+    ]
+   },
+   {
+    "has": [
+     "[win-name] #",
+     "Failed to create OpenGL window"
+    ]
+   },
+   {
+    "has": [
+     "[win-name] #",
+     "Failed to create OpenGL context"
+    ]
+   },
+   {
+    "has": [
      "Session log: logs/GeometryDash.exe-"
     ]
    },
@@ -5687,9 +5723,9 @@ enum AutoTuneBuiltInRules {
    "one-piece-bounty-rush-vm-fault-self-deadlock-2026-10-23 (Send Log WCSJBK, build 592, iPhone16,2)",
    "~/madeira-local/intake/analysis/tur600/ajan37.md"
   ],
+  "fixedIn": 613,
   "id": "virtual-mutex-fault-self-deadlock",
   "lines": [],
-  "noFix": true,
   "outcomes": [
    "hung",
    "exited-early"

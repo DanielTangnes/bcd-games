@@ -48,6 +48,7 @@ typedef unsigned short WCHAR;
 code += function(source, 'static int ios_image_name_is(')
 code += function(source, 'static int sc_switch_end(')
 code += function(source, 'static int console_headless_cmdline(')
+code += function(source, 'static int cmd_interactive_console(')
 code += r'''
 static WCHAR in[2][160], out[200];
 static int w( int slot, const char *s )
@@ -70,11 +71,17 @@ static int is( int len, const char *want )
     for (i = 0; i < len; i++) if (out[i] != (unsigned char)want[i]) return 0;
     return 1;
 }
+static int run_cmd( const char *image, const char *cl )
+{
+    int il = w( 0, image ), cll = w( 1, cl );
+    return cmd_interactive_console( in[0], il, in[1], cll );
+}
 #define FAIL(m) do { fprintf( stderr, "%s\n", m ); return 1; } while (0)
 int main( void )
 {
     static const char ch[] = "C:\\windows\\system32\\conhost.exe";
     static const char alloc[] = "\"C:\\windows\\system32\\conhost.exe\" --server 0x34";
+    static const char cmd[] = "C:\\windows\\system32\\cmd.exe";
     int n;
 
     n = run( NULL, ch, alloc, 200 );
@@ -94,6 +101,14 @@ int main( void )
     if (run( NULL, ch, alloc, (int)strlen( alloc ) + 11 ) != -1) FAIL( "no room for the NUL, changed anyway" );
     if (!is( run( NULL, ch, alloc, (int)strlen( alloc ) + 12 ), "\"C:\\windows\\system32\\conhost.exe\" --server 0x34 --headless" ))
         FAIL( "exact-size buffer refused" );
+    if (!run_cmd( cmd, "\"C:\\windows\\system32\\cmd.exe\"" ) || !run_cmd( cmd, "cmd.exe" ) ||
+        !run_cmd( cmd, "cmd.exe /k echo hi" ) || !run_cmd( cmd, "cmd.exe /k dir /c" ))
+        FAIL( "interactive cmd.exe (Start Menu / /k) did not keep its console window" );
+    if (run_cmd( cmd, "cmd.exe /c \"C:\\Games\\start.cmd\"" ) ||
+        run_cmd( cmd, "\"C:\\windows\\system32\\cmd.exe\" /C \"C:\\bcd-games\\x.bat\"" ) ||
+        run_cmd( cmd, "cmd.exe /q /d /c echo hi" ) ||
+        run_cmd( "C:\\windows\\system32\\dockhost.exe", "dockhost.exe" ))
+        FAIL( "non-interactive cmd.exe (/c) or non-cmd process kept its console window" );
     return 0;
 }
 '''

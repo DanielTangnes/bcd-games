@@ -1883,10 +1883,12 @@ static void ios_bigres_note( void *base, size_t size );   /* defined below */
 static int ios_safe_read64( uint64_t addr, uint64_t *out );
 static void ios_jumbo_census( void *hint, size_t size, void *result, unsigned st )
 {
+    unsigned seq = ++ios_jumbo_seq;
+    int log_this = !st || (size & (size - 1)) == 0 || seq <= 64 || (seq <= 4096 && !(seq & 63)) || !(seq & (seq - 1));
     /* ml131: report the 512MB-reservation census alongside every jumbo call —
      * the warmer-tick schedule fired only at cycle 1, before Steam had made any
      * of them, so the one number that matters never appeared. */
-    ios_bigres_report( st ? "jumbo fail" : "jumbo ok" );
+    if (log_this) ios_bigres_report( st ? "jumbo fail" : "jumbo ok" );
     unsigned long long now = ios_now_ms();
     unsigned long long gap = ios_jumbo_last_ms ? now - ios_jumbo_last_ms : 0;
 
@@ -1933,14 +1935,15 @@ static void ios_jumbo_census( void *hint, size_t size, void *result, unsigned st
      * single-process); if they share a PEB it is four distinct pool TYPES and
      * the size is a Chromium compile-time constant we cannot change. Those two
      * answers have completely different fixes, so print the discriminator. */
-    dprintf(2, "[jumbo#%u] +%llums tid=%lx wtid=%04x peb=%p nrip=0x%llx grip=0x%llx size=0x%lx (%lu MB) hint=%p -> %p st=0x%x | granted=%lu MB ok=%u fail=%u\n",
-            ++ios_jumbo_seq, gap, (unsigned long)(uintptr_t)pthread_self(),
-            NtCurrentTeb() ? (unsigned)(ULONG_PTR)NtCurrentTeb()->ClientId.UniqueThread : 0,
-            NtCurrentTeb() ? NtCurrentTeb()->Peb : NULL,
-            (unsigned long long)ios_guest_rip_now(),
-            (unsigned long long)ios_guest_ctx_rip(),
-            (unsigned long)size, (unsigned long)(size >> 20), hint, result, st,
-            (unsigned long)(ios_jumbo_granted >> 20), ios_jumbo_ok, ios_jumbo_fail);
+    if (log_this)
+        dprintf(2, "[jumbo#%u] +%llums tid=%lx wtid=%04x peb=%p nrip=0x%llx grip=0x%llx size=0x%lx (%lu MB) hint=%p -> %p st=0x%x | granted=%lu MB ok=%u fail=%u\n",
+                seq, gap, (unsigned long)(uintptr_t)pthread_self(),
+                NtCurrentTeb() ? (unsigned)(ULONG_PTR)NtCurrentTeb()->ClientId.UniqueThread : 0,
+                NtCurrentTeb() ? NtCurrentTeb()->Peb : NULL,
+                (unsigned long long)ios_guest_rip_now(),
+                (unsigned long long)ios_guest_ctx_rip(),
+                (unsigned long)size, (unsigned long)(size >> 20), hint, result, st,
+                (unsigned long)(ios_jumbo_granted >> 20), ios_jumbo_ok, ios_jumbo_fail);
     /* madeira-bcd [jumbo-tls]: the main image's allocator stack at this point
      * (God of War keeps it in its TLS[0] block: index at +0xc, table at +0xf0).
      * GoW pushes its first heap before it reserves the arena this call makes;
@@ -18494,8 +18497,16 @@ static inline int mprotect_exec( void *base, size_t size, int unix_prot )
              * on failure fall through to the anonymous-RWX path, which carves a
              * pool slot AND registers the alias the store emulator needs. */
             if (image_base &&
+                (uintptr_t)base >= (uintptr_t)image_base &&
+                (uintptr_t)base < (uintptr_t)image_base + image_size)
+            {
+                uintptr_t img_end_aligned = ((uintptr_t)image_base + image_size + 0x3fffULL) & ~0x3fffULL;
+                if ((uintptr_t)base + size > img_end_aligned)
+                    size = img_end_aligned - (uintptr_t)base;
+            }
+            if (image_base &&
                 ((uintptr_t)base < (uintptr_t)image_base ||
-                 (uintptr_t)base + size > (uintptr_t)image_base + image_size))
+                 (uintptr_t)base + size > (((uintptr_t)image_base + image_size + 0x3fffULL) & ~0x3fffULL)))
             {
                 dprintf(2, "[jit-pool] exec page %p+0x%lx is OUTSIDE nearest image %p+0x%lx "
                         "(%s) — treating as anonymous RWX rev=ml348\n",
@@ -23175,6 +23186,23 @@ static const char *ios_decommit_alias_split( char *base, size_t size,
     return n_kept ? "alias-split(PART KEPT, not zeroed)" : "alias-split";
 }
 
+static void zero_partial_decommit_range( void *addr, SIZE_T len )
+{
+    char *hp = ROUND_ADDR( addr, host_page_mask );
+    BYTE vp = get_host_page_vprot( hp );
+    int unix_prot;
+    if (!(vp & VPROT_COMMITTED)) return;
+    unix_prot = get_unix_prot( vp );
+    if (!(unix_prot & PROT_WRITE))
+    {
+        if (mprotect_exec( hp, host_page_size, unix_prot | PROT_READ | PROT_WRITE ))
+            return;
+        memset( addr, 0, len );
+        return;
+    }
+    memset( addr, 0, len );
+}
+
 static NTSTATUS decommit_pages( struct file_view *view, char *base, size_t size )
 {
     char *host_end, *host_start = (char *)ROUND_SIZE( 0, base, host_page_mask );
@@ -23284,16 +23312,16 @@ static NTSTATUS decommit_pages( struct file_view *view, char *base, size_t size 
              * couldn't cover — FEX relies on decommit-as-bzero, and stale
              * LookupCache entries surviving at the edges would run wrong
              * blocks. Edge pages belong to the same committed RW guest heap. */
-            if ((char *)base < host_start) memset( base, 0, host_start - (char *)base );
-            if (host_end < (char *)base + size) memset( host_end, 0, (char *)base + size - host_end );
+            if ((char *)base < host_start) zero_partial_decommit_range( base, host_start - (char *)base );
+            if (host_end < (char *)base + size) zero_partial_decommit_range( host_end, (char *)base + size - host_end );
         }
         else
         {
             /* Range lies within a single host page — no full page to remap;
              * zero it in place to honour the decommit-as-bzero contract. */
-            memset( base, 0, size );
+            zero_partial_decommit_range( base, size );
             dc_branch = "subpage-memset";
-            dc_verify = base;
+            dc_verify = (get_unix_prot( get_host_page_vprot( ROUND_ADDR( base, host_page_mask ) ) ) & PROT_READ) ? base : NULL;
             dc_vsize  = size;
         }
 
@@ -26793,6 +26821,7 @@ void virtual_free_teb( TEB *teb )
     sigset_t sigset;
     WOW_TEB *wow_teb = get_wow_teb( teb );
 
+    if (teb == NtCurrentTeb()) return;
     ios_vh_why = "TEB free (thread stacks)";   /* madeira-bcd: view history */
     if (teb->DeallocationStack) ios_stack_release( teb->DeallocationStack );   /* madeira-bcd: quarantined */
 #ifdef __aarch64__
@@ -31303,9 +31332,11 @@ static inline __attribute__((always_inline)) NTSTATUS ios_nt_impl_NtAllocateVirt
             st = allocate_virtual_memory( ret, size_ptr, type, protect, 0, limit, 0, 0 );
             if (st)
             {
-                static int probed;
-                dprintf(2, "[jumbo] kernel-pick reserve failed (0x%x) for size=0x%lx — top window is full\n",
-                        (unsigned)st, (unsigned long)*size_ptr);
+                static unsigned probed;
+                unsigned pseq = ++probed;
+                if (pseq <= 64 || !(*size_ptr & (*size_ptr - 1)) || !(pseq & (pseq - 1)))
+                    dprintf(2, "[jumbo] kernel-pick reserve failed (0x%x) for size=0x%lx — top window is full\n",
+                            (unsigned)st, (unsigned long)*size_ptr);
                 /* ml997: serve it from the boot holdback HERE. rdr65 proved this
                  * is the branch that runs -- it printed the line above and then
                  * gave up, while ml996's take() sat in the hinted-retry branch
@@ -31480,6 +31511,7 @@ static inline __attribute__((always_inline)) NTSTATUS ios_nt_impl_NtAllocateVirt
             if (!ios_steered
                 && !*ret && !limit && (type & MEM_RESERVE) && !(type & MEM_COMMIT)
                 && *size_ptr >= 0x2000000 && *size_ptr < 0x40000000
+                && !(*size_ptr >= 0x10000000 && protect == PAGE_NOACCESS && ios_bigres_reserved_total >= (24ull << 30))
                 && (ios_bigres_reserved_total > (8ull << 30) || ios_va_pressure))
             {
                 SIZE_T want = *size_ptr;
@@ -31633,7 +31665,8 @@ static inline __attribute__((always_inline)) NTSTATUS ios_nt_impl_NtAllocateVirt
                  * back three times, freed each time, then the fatal 32GB
                  * fallback). Walk the aligned slots in the usable top arena
                  * and try hint_offset-preserving fixed placements first. */
-                ULONG_PTR align_unit = 0x400000000ULL;              /* 16GB */
+                ULONG_PTR align_unit = (*size_ptr >= 0x800000000ULL && !((ULONG_PTR)hint & 0x7ffffffffULL))
+                                       ? 0x800000000ULL : 0x400000000ULL;
                 ULONG_PTR off = (ULONG_PTR)hint & (align_unit - 1);
                 ULONG_PTR slot;
                 /* ml106 packing rule: a guard-style reservation (off != 0,
@@ -33852,6 +33885,23 @@ NTSTATUS WINAPI NtFreeVirtualMemory( HANDLE process, PVOID *addr_ptr, SIZE_T *si
 #endif
 
     /* ml433 (#72): keep the jumbo ledger honest — see ios_bigres_release. */
+    if ((type & MEM_RELEASE) && !size && ios_soft_n)
+    {
+        unsigned si;
+        uint64_t b64 = (uint64_t)(uintptr_t)base;
+        for (si = 0; si < ios_soft_n; si++)
+        {
+            if (ios_soft[si].base == b64 && !ios_soft[si].committed && !ios_soft[si].cage)
+            {
+                SIZE_T ssz = (SIZE_T)ios_soft[si].size;
+                for (; si + 1 < ios_soft_n; si++) ios_soft[si] = ios_soft[si + 1];
+                ios_soft_n--;
+                *addr_ptr = base;
+                *size_ptr = ssz;
+                return STATUS_SUCCESS;
+            }
+        }
+    }
     if (type & MEM_RELEASE) ios_bigres_release( base );
     /* ml435 (#73): band span lifecycle census — resolve MEM_RELEASE size=0 from the view. */
     if ((type & MEM_RELEASE) && (uintptr_t)base >= 0x7c00000000ULL)

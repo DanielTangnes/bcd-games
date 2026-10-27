@@ -119,6 +119,10 @@ for src in $WINE_SRC/dlls/win32u/*.c $WINE_SRC/dlls/win32u/dibdrv/*.c; do
             compile_one "$BUILD_DIR/syscall_ios.c" "syscall"
             continue
             ;;
+        font)
+            compile_one "$BUILD_DIR/font_ios.c" "font"
+            continue
+            ;;
         freetype)
             # Statically-linked freetype (build/freetype-ios). The wrapper
             # re-defines HAVE_FT2BUILD_H itself; config_ios.h's #undefs win

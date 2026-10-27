@@ -30,11 +30,12 @@ enum SystemGestures {
             ?? ProcessInfo.processInfo.environment["MADEIRA_PAD_SYSTEM_GESTURES"]) == "1"
     }
 
-    /// env.MADEIRA_DEFER_EDGES, read the same way, once per app run (the game views read it).
-    static let deferEdgesOptIn: Bool =
+    /// env.MADEIRA_DEFER_EDGES: the game's own file, else madeira.cfg, else the environment.
+    static var deferEdgesOptIn: Bool {
         (MadeiraConfig.gameValue("env.MADEIRA_DEFER_EDGES")
             ?? MadeiraConfig.get("env.MADEIRA_DEFER_EDGES")   // 1: with the on-screen controls shown, an edge swipe goes to the game first and a second one to iOS; unset/0: as before
             ?? ProcessInfo.processInfo.environment["MADEIRA_DEFER_EDGES"]) == "1"
+    }
 
     /// The buttons iOS binds to system gestures that the game reads (XInput Guide and Back).
     static func gestureButtons(_ pad: GCExtendedGamepad) -> [GCControllerButtonInput] {

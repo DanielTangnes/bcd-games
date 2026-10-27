@@ -123,6 +123,10 @@ LONG CALLBACK faultDumpVeh(EXCEPTION_POINTERS *ep) {
   const DWORD code = ep->ExceptionRecord->ExceptionCode;
   if (code != EXCEPTION_ACCESS_VIOLATION && code != EXCEPTION_IN_PAGE_ERROR && code != EXCEPTION_ILLEGAL_INSTRUCTION)
     return EXCEPTION_CONTINUE_SEARCH;
+  uint64_t access = ep->ExceptionRecord->NumberParameters > 0 ? ep->ExceptionRecord->ExceptionInformation[0] : 0xff;
+  uint64_t addr = ep->ExceptionRecord->NumberParameters > 1 ? ep->ExceptionRecord->ExceptionInformation[1] : 0;
+  if (code == EXCEPTION_ACCESS_VIOLATION && access == 1 && addr >= 0x7000000000ULL && addr < 0x8000000000ULL)
+    return EXCEPTION_CONTINUE_SEARCH;
   const CONTEXT *c = ep->ContextRecord;
   const uint64_t rip = c->Rip;
   for (auto &s : g_seen)
@@ -139,8 +143,6 @@ LONG CALLBACK faultDumpVeh(EXCEPTION_POINTERS *ep) {
     uint64_t hi = (uint64_t)tib->StackBase, lo = (uint64_t)tib->StackLimit;
     if (hi <= g.rsp || lo > g.rsp)
       lo = g.rsp, hi = g.rsp + 0x10000; // the TEB's bounds do not hold RSP: a window above RSP is all that is known
-    uint64_t access = ep->ExceptionRecord->NumberParameters > 0 ? ep->ExceptionRecord->ExceptionInformation[0] : 0xff;
-    uint64_t addr = ep->ExceptionRecord->NumberParameters > 1 ? ep->ExceptionRecord->ExceptionInformation[1] : 0;
     auto emit = [](const char *line) { dxmt::Logger::info(std::string("[fault-dump] ") + line); };
     char head[160];
     snprintf(head, sizeof(head), "context flags=0x%08x exception address=%p (a CONTEXT whose Rip is the exception address is the x64 one)",

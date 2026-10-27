@@ -1190,18 +1190,25 @@ struct BCDGamePending: Equatable {
         case .signIn(let front): actions?.signIn(front)
         // A game added from Files leaves the library through the same action (its files stay).
         case .uninstall, .removeFromLibrary: actions?.uninstall(game)
-        case .set(let id, let value): backend?.set(id, to: value, for: game)
+        case .set(let id, let value):
+            configDraft = nil
+            backend?.set(id, to: value, for: game)
         case .resetToRecommended:
+            configDraft = nil
             backend?.resetToRecommended(game)
             messages["recommended"] = "The recommended settings are back."
         case .applyRecommended(let changes):
+            configDraft = nil
             backend?.applyRecommendedSettings(game)
             messages["recommended"] = "Updated: \(changes) change\(changes == 1 ? "" : "s")"
         case .syncCloud: backend?.syncCloud(game)
         case .keepCloud(let fromCloud): backend?.keepCloudSaves(game, fromCloud: fromCloud)
         case .setTuning(let on): backend?.setTuning(on, for: game)
-        case .undoTuning: backend?.undoTuning(game)
+        case .undoTuning:
+            configDraft = nil
+            backend?.undoTuning(game)
         case .writeTuningLines:
+            configDraft = nil
             backend?.writeTuningLines(game)
             messages["tuning"] = "Written into this game's config."
         case .restoreSaves(let file):
@@ -1562,12 +1569,14 @@ struct BCDGamePage: View {
     }
 
     private func showOptions(_ page: BCDGameOptionsPage, focusing id: String? = nil) {
+        if options == .config && page != .config { model.configDraft = nil }
         withAnimation(.easeOut(duration: 0.18)) { options = page }
         focus.focused = id ?? BCDGameOptionsList.firstRow(page, model.details, game: model.game)
     }
 
     private func closeOptions() {
         guard options != nil else { return }
+        model.configDraft = nil
         withAnimation(.easeOut(duration: 0.2)) { options = nil }
         focus.closeLayer(Self.panelLayer)
         model.showSettings(false)
@@ -2825,7 +2834,9 @@ private struct BCDGameConfigPage: View {
                 .background(BCDStyle.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(BCDStyle.stroke, lineWidth: 1))
                 .accessibilityLabel("Game config")
-                .onChange(of: draft) { _, text in if loaded { model.configDraft = text } }
+                .onChange(of: draft) { _, text in
+                    if loaded, text != (model.backend?.configText(for: game) ?? "") { model.configDraft = text }
+                }
             if vertical != .compact { buttons }
             Text("One setting a line; a line that starts with # is a note. For example: fence-chain = 6, dxmt = d3d11.mipClampBC=1, env.FEX_MULTIBLOCK = 1. An env.NAME = value line sets an environment variable for the game.")
                 .font(BCDStyle.body(12)).foregroundStyle(BCDStyle.textSoft)

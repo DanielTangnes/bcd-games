@@ -98,10 +98,12 @@ struct BCDStartPlan: Equatable {
 
     static let delayChoices = [0, 3, 5, 10, 15, 30, 60, 120]
 
-    /// A second program: a path on drive C: ending in .exe, or the name of a program of Windows' own folder.
+    /// A second program: a path on drive C: ending in .exe, .bat or .cmd, or the name of a program of Windows' own folder.
     static func isProgram(_ text: String) -> Bool {
         let t = text.trimmingCharacters(in: .whitespaces)
-        guard t.lowercased().hasSuffix(".exe"), t.utf8.count < 260, !t.contains(where: { "\"\n\r\0<>|*?".contains($0) }), !BCDProtection.names(t) else { return false }
+        let lower = t.lowercased()
+        guard lower.hasSuffix(".exe") || lower.hasSuffix(".bat") || lower.hasSuffix(".cmd"),
+              t.utf8.count < 260, !t.contains(where: { "\"\n\r\0<>|*?".contains($0) }), !BCDProtection.names(t) else { return false }
         if t.count >= 3, t.prefix(3).uppercased() == "C:\\" { return !t.contains("..") }
         return !t.contains("\\") && !t.contains("/") && !t.contains(":")
     }
@@ -112,7 +114,7 @@ struct BCDStartPlan: Equatable {
             if let n = Int(text), (0...300).contains(n) { plan.delay = n } else { plan.problems.append("\(delayKey): a whole number of seconds from 0 to 300") }
         }
         if let text = values[secondKey], !text.isEmpty {
-            if isProgram(text) { plan.second = text.trimmingCharacters(in: .whitespaces) } else { plan.problems.append("\(secondKey): a program on drive C: ending in .exe (not a protection program)") }
+            if isProgram(text) { plan.second = text.trimmingCharacters(in: .whitespaces) } else { plan.problems.append("\(secondKey): a program on drive C: ending in .exe, .bat or .cmd (not a protection program)") }
         }
         plan.secondArguments = (values[secondArgsKey] ?? "").trimmingCharacters(in: .whitespaces)
         if plan.secondArguments.contains(where: { "\n\r\0".contains($0) }) || plan.secondArguments.utf8.count > 500 { plan.secondArguments = ""; plan.problems.append("\(secondArgsKey): not valid") }

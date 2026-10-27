@@ -70,10 +70,10 @@ import Foundation
     /// A lookup of the game's DLC runs now (the page's question waits for it).
     func isLooking(_ appID: Int) -> Bool { looking.contains(appID) }
 
-    /// The last lookup failed less than a minute ago (or could not start): the page then asks no DLC question.
+    /// The last lookup failed recently (or could not start): the page then asks no DLC question.
     func lookupFailed(_ appID: Int) -> Bool {
         guard reports[appID] == nil else { return false }
-        if let failed = failedAt[appID] { return Date().timeIntervalSince(failed) < 60 }
+        if let failed = failedAt[appID] { return Date().timeIntervalSince(failed) < 5 }
         return !looking.contains(appID)
     }
 
@@ -89,7 +89,7 @@ import Foundation
             return
         }
         if !force, reports[appID] != nil, let at = loadedAt[appID], Date().timeIntervalSince(at) < 120 { return }
-        if let failed = failedAt[appID], Date().timeIntervalSince(failed) < 60 { return }
+        if !force, let failed = failedAt[appID], Date().timeIntervalSince(failed) < 5 { return }
         looking.insert(appID)
         let began = Date()
         SteamLog.event("[steam-dlc] lookup app=\(appID) start")

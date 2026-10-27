@@ -223,6 +223,7 @@ import Foundation
               && BCDDrivePath.parent("setup.exe") == "")
         check("a path as it reads", BCDDrivePath.trail("") == "drive_c" && BCDDrivePath.trail("Games/Warcraft III") == "drive_c › Games › Warcraft III")
         check("a batch file", BCDDriveItem(name: "start.BAT", path: "x/start.BAT", folder: false).batch
+              && BCDDriveItem(name: "start.cmd", path: "x/start.cmd", folder: false).batch
               && !BCDDriveItem(name: "war3.exe", path: "war3.exe", folder: false).batch
               && !BCDDriveItem(name: "a.bat", path: "a.bat", folder: true).batch)
         check("a program's line", BCDProgramInfo(title: "x", windowsPath: "C:\\x.exe", bits: 32, api: "D3D9").summary == "32-bit · Direct3D 9"

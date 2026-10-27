@@ -1021,6 +1021,7 @@ RULES = [
         "id": "wer-dll-optin",
         "lines": ["env.MADEIRA_WER = 1"],
         "priority": 10,
+        "noRetry": True,
         "all": [s("err:module:import_dll Library wer.dll", "not found")],
         "none": [s("MADEIRA_WER=1: wer.dll -> wer-optin.dll")],
         "reason": "The game's program imports wer.dll, which BCD does not ship for every game (Wine's has "
@@ -1208,7 +1209,9 @@ RULES = [
         # FFmpeg demuxer by tools/patch-wine-mfasfsrcsnk-winedmo.py), and gives a 64-bit game BCD's winegstreamer unix side with
         # MADEIRA_WG_64BIT = 1 (it decodes WMV: build/ntdll-unix/winegstreamer_wmv_ios.c). Both lines come together: the DLLs do
         # nothing without the table, and the table has nothing to decode without the DLLs.
-        "all": [s("err:module:load_dll [dll-missing]", "mfasfsrcsnk.dll", "status=c0000135")],
+        "all": [s("err:module:load_dll [dll-missing]", "status=c0000135")],
+        "any": [s("err:module:load_dll [dll-missing]", "mfasfsrcsnk.dll", "status=c0000135"),
+                s("err:module:load_dll [dll-missing]", "wmadmod.dll", "status=c0000135")],
         "none": [s("MADEIRA_OPTIN_DLLS: mfasfsrcsnk.dll -> mfasfsrcsnk-optin.dll")],
         "reason": "The game plays a Windows Media Video cutscene through Media Foundation and BCD ships no ASF source; the "
                   "lines give this game Wine's ASF source and WMV and WMA decoders, and BCD's media decoders for a 64-bit game.",
@@ -2409,7 +2412,7 @@ RULES = [
         # code, so the exit is not a signal.
         "all": [s("[nt-fail]", "NtAllocateVirtualMemory status=c0000017", "proc=rdr2.exe", "size=0x700000000")],
         "none": [s("ml993: totalphys ->")],
-        "outcomes": ["crashed"],
+        "outcomes": ["crashed", "hung", "exited-early"],
         "reason": "RDR2 asked for 28 GB of address space, sized from the 16 GB of memory this iPad reports, and BCD has no such room. The line "
                   "reports 8191 MB, as the iPhones RDR2 runs on do; the game then asks for the 9 GB the list keeps free.",
         "evidence": ["rdr2-reserve-28gb-2026-10-23 (P8H75J and 91C75Y, build 592, iPad17,4; 1Z27N7 build 579 iPad17,3)",
@@ -2988,6 +2991,9 @@ RULES = [
         "all": [s("[unixlib] opengl32 (GL-absent stub table)")],
         "any": [s("[win-name] #", "ChoosePixelFormat failed"), s("[win-name] #", "Unable to create OpenGL window"),
                 s("[win-name] #", "Could not create window: No matching GL pixel format available"),
+                s("[win-name] #", "WGL: The driver does not appear to support OpenGL"),
+                s("[win-name] #", "Failed to create OpenGL window"),
+                s("[win-name] #", "Failed to create OpenGL context"),
                 s("Session log: logs/GeometryDash.exe-"), s("[session-log] Steam game GeometryDash.exe:")],
         "reason": "This game draws with OpenGL, and BCD has no OpenGL yet: the game cannot make its window and stops. This is not a setting; "
                   "Direct3D games are not affected.",
@@ -3082,7 +3088,7 @@ RULES = [
     {
         "id": "virtual-mutex-fault-self-deadlock",
         "lines": [],
-        "noFix": True,
+        "fixedIn": 613,
         "priority": 4,
         "outcomes": ["hung", "exited-early"],
         # A thread of the game faults inside one of Wine's memory calls and stops for good. The page-fault server of the app is one Mach thread

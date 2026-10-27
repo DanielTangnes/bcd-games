@@ -413,6 +413,10 @@ func record(_ appID: Int, _ name: String, _ folder: String, flags: Int) -> Strin
         require(D.program(picked: nil, options: nil, installFolder: single) == "bin/only.exe", "pills: else the install folder's only program")
         require(D.program(picked: "../Direct/tools/launcher.exe", options: nil, installFolder: single) == "bin/only.exe",
                 "pills: a picked program never leaves the install folder")
+        let cmdGame = drive.appendingPathComponent("Program Files (x86)/Steam/steamapps/common/CmdGame")
+        try write(cmdGame.appendingPathComponent("start.cmd"), "x")
+        require(D.programs(in: cmdGame) == ["start.cmd"] && D.program(picked: nil, options: nil, installFolder: cmdGame) == "start.cmd",
+                "a .cmd startup file in a Steam game's folder is listed and chosen by SteamDirectStart")
         let redistOnly = drive.appendingPathComponent("Program Files (x86)/Steam/steamapps/common/RedistOnly")
         try write(redistOnly.appendingPathComponent("_CommonRedist/DirectX/Jun2010/DXSETUP.exe"), "x")
         require(D.programs(in: redistOnly).isEmpty,

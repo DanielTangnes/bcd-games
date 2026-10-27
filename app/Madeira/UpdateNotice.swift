@@ -30,10 +30,20 @@ import Foundation
             }
             let text = BCDUpdateCheck.notice(latest: latest, current: current)
             await MainActor.run {
-                UserDefaults.standard.set(today, forKey: BCDUpdateCheck.lastDayKey)
                 LogStore.shared.log("[update-check] latest=\(latest.build) (\(latest.version)) this=\(current.build) told=\(text == nil ? 0 : 1)")
-                if let text { BCDUpdateNotice.shared.message = text }
+                if let text {
+                    UserDefaults.standard.set(today, forKey: BCDUpdateCheck.lastDayKey)
+                    BCDUpdateNotice.shared.message = text
+                }
             }
+        }
+    }
+
+    /// Re-run the once-a-day check when the app returns to the foreground and no notice has been shown today.
+    func recheckIfDue() {
+        if message == nil {
+            started = false
+            start()
         }
     }
 }

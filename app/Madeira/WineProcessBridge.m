@@ -590,6 +590,78 @@ static void madeira_ensure_locallow(NSString *prefix)
     ws_log( "[profile] users/%s/AppData/LocalLow %s", name, made ? "created" : "could NOT be created" );
 }
 
+static void madeira_seed_fonts_and_vc80_amd64(NSFileManager *fm, NSString *prefix)
+{
+    NSString *fontsDir = [prefix stringByAppendingPathComponent:@"drive_c/windows/Fonts"];
+    [fm createDirectoryAtPath:fontsDir withIntermediateDirectories:YES attributes:nil error:nil];
+    struct { const char *dst; const char *srcs[4]; } const fontMap[] = {
+        { "msgothic.ttc", { "/System/Library/Fonts/Core/HiraginoKakuGothic.ttc",
+                            "/System/Library/Fonts/Core/Hiragino Sans.ttc",
+                            "/System/Library/Fonts/Hiragino Sans GB.ttc",
+                            "/System/Library/Fonts/Core/PingFang.ttc" } },
+        { "msmincho.ttc", { "/System/Library/Fonts/AppFonts/HiraginoMincho.ttc",
+                            "/System/Library/Fonts/Core/HiraginoKakuGothic.ttc",
+                            "/System/Library/Fonts/Core/Hiragino Sans.ttc", NULL } },
+        { "arial.ttf",    { "/System/Library/Fonts/CoreAddition/Arial.ttf",
+                            "/System/Library/Fonts/Supplemental/Arial.ttf", NULL, NULL } },
+        { "arialbd.ttf",  { "/System/Library/Fonts/CoreAddition/ArialBold.ttf",
+                            "/System/Library/Fonts/Supplemental/Arial Bold.ttf", NULL, NULL } },
+        { "verdana.ttf",  { "/System/Library/Fonts/CoreAddition/Verdana.ttf",
+                            "/System/Library/Fonts/Supplemental/Verdana.ttf", NULL, NULL } },
+        { "georgia.ttf",  { "/System/Library/Fonts/CoreAddition/Georgia.ttf",
+                            "/System/Library/Fonts/Supplemental/Georgia.ttf", NULL, NULL } },
+        { "cour.ttf",     { "/System/Library/Fonts/Core/CourierNew.ttf",
+                            "/System/Library/Fonts/Supplemental/Courier New.ttf", NULL, NULL } },
+        { "times.ttf",    { "/System/Library/Fonts/Core/TimesNewRoman.ttf",
+                            "/System/Library/Fonts/Supplemental/Times New Roman.ttf", NULL, NULL } },
+        { "trebuc.ttf",   { "/System/Library/Fonts/CoreUI/TrebuchetMS.ttf",
+                            "/System/Library/Fonts/Supplemental/Trebuchet MS.ttf", NULL, NULL } },
+    };
+    for (size_t i = 0; i < sizeof(fontMap) / sizeof(fontMap[0]); i++) {
+        NSString *dst = [fontsDir stringByAppendingPathComponent:[NSString stringWithUTF8String:fontMap[i].dst]];
+        if ([fm fileExistsAtPath:dst]) continue;
+        for (size_t j = 0; j < 4 && fontMap[i].srcs[j]; j++) {
+            NSString *src = [NSString stringWithUTF8String:fontMap[i].srcs[j]];
+            if ([fm fileExistsAtPath:src]) {
+                [fm removeItemAtPath:dst error:nil];
+                [fm createSymbolicLinkAtPath:dst withDestinationPath:src error:nil];
+                break;
+            }
+        }
+    }
+
+    /* Seed 64-bit Microsoft.VC80.CRT side-by-side assembly from arm64ec-windows if present. */
+    NSString *bundle = [NSBundle mainBundle].bundlePath;
+    NSString *ecDir = [bundle stringByAppendingPathComponent:@"arm64ec-windows"];
+    NSString *firstVc80 = [ecDir stringByAppendingPathComponent:@"msvcr80.dll"];
+    if ([fm fileExistsAtPath:firstVc80]) {
+        NSString *winsxs = [prefix stringByAppendingPathComponent:@"drive_c/windows/winsxs"];
+        NSString *manifests = [winsxs stringByAppendingPathComponent:@"manifests"];
+        NSString *dirName = @"amd64_microsoft.vc80.crt_1fc8b3b9a1e18e3b_8.0.50727.9672_none_deadbeef";
+        NSString *asmDir = [winsxs stringByAppendingPathComponent:dirName];
+        NSString *manifest = [manifests stringByAppendingPathComponent:[dirName stringByAppendingString:@".manifest"]];
+        [fm createDirectoryAtPath:manifests withIntermediateDirectories:YES attributes:nil error:nil];
+        [fm createDirectoryAtPath:asmDir withIntermediateDirectories:YES attributes:nil error:nil];
+        NSMutableString *text = [NSMutableString stringWithString:
+            @"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+            @"<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">\n"
+            @"  <assemblyIdentity type=\"win32\" name=\"Microsoft.VC80.CRT\" version=\"8.0.50727.9672\" "
+            @"processorArchitecture=\"amd64\" publicKeyToken=\"1fc8b3b9a1e18e3b\"/>\n"];
+        const char *const files[] = { "msvcr80.dll", "msvcp80.dll", "msvcm80.dll" };
+        for (size_t f = 0; f < 3; f++) {
+            NSString *fn = [NSString stringWithUTF8String:files[f]];
+            NSString *src = [ecDir stringByAppendingPathComponent:fn];
+            NSString *link = [asmDir stringByAppendingPathComponent:fn];
+            [fm removeItemAtPath:link error:nil];
+            if (![fm fileExistsAtPath:src]) continue;
+            if ([fm createSymbolicLinkAtPath:link withDestinationPath:src error:nil])
+                [text appendFormat:@"  <file name=\"%s\"/>\n", files[f]];
+        }
+        [text appendString:@"</assembly>\n"];
+        [[text dataUsingEncoding:NSUTF8StringEncoding] writeToFile:manifest atomically:YES];
+    }
+}
+
 /***********************************************************************
  *           madeira_seed_prefix_if_needed
  *
@@ -645,6 +717,7 @@ void madeira_seed_prefix_if_needed(const char *prefix_path) {
         /* ml581: see madeira_undo_appdata_skeleton() above. */
         madeira_undo_appdata_skeleton( prefix );
         madeira_ensure_locallow( prefix );
+        madeira_seed_fonts_and_vc80_amd64( fm, prefix );
     }
 }
 
@@ -2511,6 +2584,9 @@ static void *wine_process_thread(void *arg) {
                         if (n.length) [wanted addObject:n];
                     }
                 }
+                if ([wanted containsObject:@"evr"]) [wanted addObject:@"dxva2"];
+                if ([wanted containsObject:@"sfc"]) [wanted addObject:@"sfc_os"];
+                if (([wanted containsObject:@"wmadmod"] || [wanted containsObject:@"wmvdecod"] || [wanted containsObject:@"mfasfsrcsnk"]) && !getenv("MADEIRA_WG_64BIT")) setenv("MADEIRA_WG_64BIT", "1", 0);
                 NSString *ecDir = [bundlePath stringByAppendingPathComponent:@"arm64ec-windows"];
                 NSArray *optDirs = use_arm64ec
                     ? @[ [prefix stringByAppendingPathComponent:@"drive_c/windows/sysx64"], sys32Dir ]

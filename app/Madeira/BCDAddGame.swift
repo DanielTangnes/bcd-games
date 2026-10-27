@@ -196,7 +196,7 @@ struct BCDAddGame: View {
 
     @ViewBuilder private var listing: some View {
         if folder.isEmpty {
-            Text("Copy a game's folder into BCD › wine › drive_c with the Files app, then choose its program here: the .exe that starts the game.")
+            Text("Copy a game's folder into BCD › wine › drive_c with the Files app, then choose its program here: the .exe, .bat or .cmd that starts the game.")
                 .font(BCDStyle.body(14)).foregroundStyle(BCDStyle.textSoft)
                 .fixedSize(horizontal: false, vertical: true).padding(.horizontal, 4).padding(.bottom, 4)
             row(id: "add.every", symbol: "square.stack.3d.down.right", title: busy ? "Adding…" : "Add every game in drive_c",

@@ -209,6 +209,7 @@ echo "=== Renaming colliding symbols in every .o (objcopy sweep) ==="
 # references uniformly, so cross-file calls inside wineserver still
 # resolve. Externals (win32u, etc.) only see the ws_-prefixed names.
 OBJCOPY=$(command -v llvm-objcopy || echo /opt/homebrew/opt/llvm/bin/llvm-objcopy)
+[ -x "$OBJCOPY" ] || OBJCOPY=/usr/local/opt/llvm/bin/llvm-objcopy
 [ -x "$OBJCOPY" ] || OBJCOPY=/opt/homebrew/Cellar/llvm/22.1.0/bin/llvm-objcopy
 COLLISIONS=(
     alloc_user_handle free_user_handle get_virtual_screen_rect
