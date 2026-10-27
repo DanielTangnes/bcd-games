@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "version": 13,
+  "version": 14,
   "generated": "2026-10-27",
   "rules": [
     {
@@ -2108,7 +2108,7 @@
     {
       "id": "marvels-spider-man-2",
       "title": "Marvel's Spider-Man 2",
-      "version": 4,
+      "version": 5,
       "match": {
         "steamAppIDs": [2651280],
         "steamFolders": ["marvel's spider-man 2"],
@@ -2124,13 +2124,20 @@
         "env.MADEIRA_ALIAS_RELEASE = 1",
         "env.LC_ALL = en_US.UTF-8",
         "env.MADEIRA_VA_PRESSURE_GAP_OK = 1",
+        "env.MADEIRA_SRV_FGETPATH = 1",
+        "env.MADEIRA_LEAN_DIAG = 1",
+        "env.MADEIRA_FREE_DELAY_MS = 0",
+        "env.WINEDEBUG = err+all,err-virtual,fixme-all",
         "mip0-full = 1",
         "quiet-log = 1",
+        "pso-lazy-libs = 1",
+        "fence-early = 2",
+        "fence-poll-backoff = 64",
         "swap-mb = 8192",
         "swap-mode = 2",
         "swap-min-mb = 1"
       ],
-      "switches": {"avx": true, "nvidia": true, "wineVCRT": false, "display": "fit"},
+      "switches": {"avx": true, "nvidia": true, "wineVCRT": false, "fastSync": true, "fpsMode": 3, "display": "fit"},
       "notes": [
         "Marvel's Spider-Man 2 (spider-man2.exe, matched by name whatever the install source), the owner's iPhone18,2, build 592, eight",
         "logs of 2026-10-23 11:59-12:46. Not running yet: these are the owner's latest settings (owner, same day: the list carries them).",
@@ -2158,7 +2165,18 @@
         "    0xffff7001 (L27114 / L26884) — the exact Turkish-locale throw of Ratchet & Clank: Rift Apart (fixed by env.LC_ALL = en_US.UTF-8).",
         "    Also adds Rift Apart's env.MADEIRA_JUMBO_HALF = 1 (8 GB -> 4 GB arena probes at L16247-L16270 of 19:55:21),",
         "    env.MADEIRA_VA_PRESSURE_GAP_OK = 1 (19:53:40 had 17 [steer] and 7076 MB peak vs 0 [steer] and 6066 MB in 19:55:21), and",
-        "    swap-mb = 8192."
+        "    swap-mb = 8192.",
+        "  - Version 5 (owner's iPhone18,2, build 617, log 2026-10-27 21:41:37): the game opens and is playable in-game (4338 frames,",
+        "    8.5-13.6 FPS in gameplay). Build 618 (branch sm2-d3d12) fixes character mesh corruption caused by 536,346,624-element",
+        "    (> 2^28) R32_UINT typed buffer views on the 2046 MB mesh pool buffer (rewriting CS_ModelSkinning 0x3d50acdb571dce22, vertex",
+        "    morph 0x14902794dd7134e4, and symbiote spline 0x9538ca33c087a84c / 0x125a4957ab64d24d from TypedBuffer<U32> to RawBuffer and",
+        "    clamping mad_typed_buffer_view's texture-buffer width to 2^28 while keeping full GPU VA + metadata size). For the 8.5-13.6 FPS",
+        "    stutter: [perf] at L31807-L32258 shows cpu_blocked_in_retire = 71.4-88.2 ms/frame (76% of the frame!) with GPU-done -> fence",
+        "    advanced = 3.74-4.34 ms across 20 Signals/frame while actual GPU busy is only 17.6 ms/frame, plus 10,034,628 GetCompletedValue",
+        "    polls/s (890,992/frame) spinning a core under iOS's 1.48 GHz clamp. Adds fence-early = 2 (build 618: publishes occlusion",
+        "    queries at the shared event and defers CB retire), fence-poll-backoff = 64, pso-lazy-libs = 1, env.MADEIRA_SRV_FGETPATH = 1,",
+        "    env.MADEIRA_LEAN_DIAG = 1, env.MADEIRA_FREE_DELAY_MS = 0, env.WINEDEBUG = err+all,err-virtual,fixme-all, and Rift Apart's",
+        "    fastSync / fpsMode switches."
       ]
     },
     {
