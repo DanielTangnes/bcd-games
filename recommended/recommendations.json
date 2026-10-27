@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "version": 11,
+  "version": 12,
   "generated": "2026-10-27",
   "rules": [
     {
@@ -2108,7 +2108,7 @@
     {
       "id": "marvels-spider-man-2",
       "title": "Marvel's Spider-Man 2",
-      "version": 2,
+      "version": 3,
       "match": {
         "steamAppIDs": [2651280],
         "steamFolders": ["marvel's spider-man 2"],
@@ -2120,6 +2120,7 @@
         "env.MADEIRA_EC_HOOK_TRACE = 0",
         "env.MADEIRA_X64_IMAGE_NOCOPY = 1",
         "env.MADEIRA_CAGE_RELEASE = 1",
+        "env.MADEIRA_ALIAS_RELEASE = 1",
         "mip0-full = 1",
         "quiet-log = 1",
         "swap-mb = 6144",
@@ -2141,7 +2142,12 @@
         "    Spider-Man2.exe's launcher check also requires (\"Launcher_CPUFeatureAVXNotPresent\" at L2832 of 15:52:48 and L2663 of",
         "    16:04:15). Removing env.MADEIRA_FEX_AVX = 2 and turning the AVX switch on (MADEIRA_FEX_AVX=1) passes the check and reaches",
         "    the Sony intro video at 36.7 FPS (logs 16:14:04 and 16:15:03; the partial alias mprotect / decommit deadlock at L23861 of",
-        "    16:14:04 and the detached desktop window handle owner bug in the Setup dialog at 16:13:18 are fixed in build 615)."
+        "    16:14:04 and the detached desktop window handle owner bug in the Setup dialog at 16:13:18 are fixed in build 615).",
+        "  - Version 3 (owner's iPhone18,2, build 615, log 2026-10-27 18:38:56): the build 614 deadlock is gone (140 frames at 31.4 FPS),",
+        "    then Coherent's V8 cage at 0x7700000000 decommits 128 MB starting at anon-JIT alias #6 (0x7700000000+0x4000, L22999/L23478:",
+        "    [alias-tomb] refused, [commit-zero] STALE ON COMMIT at L23481 -> V8_Fatal int3 at v8_libbase.dll+0x22d35, L23483): the same",
+        "    Insomniac/Nixxes V8 cage pattern as Ratchet & Clank: Rift Apart, needing env.MADEIRA_ALIAS_RELEASE = 1 (and build 616's",
+        "    mprotect_range / ml640 alias ownership fix)."
       ]
     },
     {
