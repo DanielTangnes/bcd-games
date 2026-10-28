@@ -1,0 +1,14 @@
+{
+ "dialogs": [
+  "Could not create SDL Window"
+ ],
+ "end": {},
+ "matched": [
+  "opengl-only-no-context"
+ ],
+ "next": [],
+ "note": "Friday Night Funkin' (Lime/SDL2), build 611, Send Log 9PV6NT (round 620): window text 'Could not create SDL Window' with the GL-absent stub, then a call to NULL. OpenGL is absent; no setting helps.",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "known"
+}

@@ -5,7 +5,7 @@
 """Make the public alpha IPA from an unsigned one (madeira-bcd FORK-ONLY: never upstream).
 
 Owner, 2026-10-17: the Discord alpha link serves an unsigned IPA that carries nothing about
-the owner ("benimle ilgili hiçbir bilgi içermeyecek"); a signed one showed the owner's name
+the owner (nothing about the owner in it); a signed one showed the owner's name
 in its certificate. Testers re-sign it anyway.
 
     tools/make-alpha-ipa.py IN.ipa OUT.ipa [--needles FILE]

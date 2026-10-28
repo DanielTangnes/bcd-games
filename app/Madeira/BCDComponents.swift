@@ -501,7 +501,7 @@ struct BCDKeyboardDone: ViewModifier {
     }
 }
 
-/// madeira-bcd (2026-10-24, the owner: "klavyeye Bitti butonu da eklememişsin hala"): SwiftUI's keyboard bar above does not show in a
+/// madeira-bcd (2026-10-24, the owner: the keyboard still had no Done button): SwiftUI's keyboard bar above does not show in a
 /// screen that is not inside a navigation stack, and BCD's game page (a full-screen cover) and its Game config (a sheet) are not: on
 /// iOS 27 the config editor's keyboard had no Done. So a multi-line editor (a UITextView: TextEditor, TextField with axis .vertical)
 /// that starts editing without a bar of its own gets one here, with the same Done: the editor lets go of the keyboard, the text stays,

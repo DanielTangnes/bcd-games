@@ -372,6 +372,240 @@ static int rewrite_module(Module &m, note_t &note, unsigned *n_rewritten, unsign
     return 1;
 }
 
+/* Spider-Man 2 character mesh pool (2,046 MB = 536,346,624 uint elements):
+ * Metal's MTLTextureTypeTextureBuffer width limit on Apple7-Apple9 is 2^28
+ * (268,435,456 elements = 1 GB), so typed buffer reads/writes past 1 GB return
+ * 0 or are dropped. Rewriting TypedBuffer<U32> (dx.op.bufferLoad.i32 /
+ * dx.op.bufferStore.i32) on the pool register into RawBuffer
+ * (dx.op.rawBufferLoad.i32 / dx.op.rawBufferStore.i32 at index << 2) lets the
+ * converted Metal shader address the full 2 GB buffer via its GPU VA. */
+constexpr unsigned kOpBufferLoad = 68, kOpBufferStore = 69, kOpRawBufferLoad = 139, kOpRawBufferStore = 140;
+constexpr unsigned kOpAnnotateHandle = 216, kOpCreateHandleFromBinding = 217;
+constexpr uint64_t kFlagRawBuffers = 1ull << 4;
+constexpr uint64_t kSfi0RawBuffers = 0x10ull;
+
+struct t2r_target { uint64_t hash; uint32_t space, reg; bool uav; };
+static constexpr t2r_target kT2RTargets[] = {
+    { 0x3d50acdb571dce22ull, 0, 1, false },   /* CS_ModelSkinning: Buffer<uint> at t1 */
+    { 0x14902794dd7134e4ull, 0, 0, false },   /* vertex morph: Buffer<uint> at t0 */
+    { 0x9538ca33c087a84cull, 0, 1, true  },   /* CS_AnimSplineMeshGenIndices (symbiote): RWBuffer<uint> at u1 */
+    { 0x125a4957ab64d24dull, 0, 1, true  },   /* CS_AnimSplineMeshGenIndicesFinalize (symbiote): RWBuffer<uint> at u1 */
+};
+
+static uint64_t fnv1_shader_hash(const uint8_t *p, size_t size)
+{
+    uint64_t h = 0xcbf29ce484222325ull;
+    for (size_t i = 0; i < size; i++)
+        h = (h * 0x100000001b3ull) ^ p[i];
+    return h;
+}
+
+static bool match_t2r_target(const uint8_t *d, size_t len, t2r_target *out)
+{
+    if (const char *env = getenv("MADEIRA_T2R_TARGET")) {
+        unsigned sp = 0, rg = 0, u = 0;
+        if (sscanf(env, "%u:%u:%u", &sp, &rg, &u) == 3) {
+            *out = { 0, sp, rg, u != 0 };
+            return true;
+        }
+    }
+    uint64_t h = fnv1_shader_hash(d, len);
+    for (const auto &t : kT2RTargets) {
+        if (t.hash == h) { *out = t; return true; }
+    }
+    return false;
+}
+
+static int rewrite_t2r_module(Module &m, const t2r_target &tgt, note_t &note,
+                              unsigned *n_handles, unsigned *n_loads, unsigned *n_stores)
+{
+    LLVMContext &ctx = m.getContext();
+    Type *i32 = Type::getInt32Ty(ctx), *i64 = Type::getInt64Ty(ctx), *i8 = Type::getInt8Ty(ctx);
+    NamedMDNode *res = m.getNamedMetadata("dx.resources");
+    if (!res || res->getNumOperands() != 1) { say(note, "t2r: missing dx.resources%s", ""); return -1; }
+    auto *top = dyn_cast<MDTuple>(res->getOperand(0));
+    if (!top || top->getNumOperands() < 2) { say(note, "t2r: malformed dx.resources%s", ""); return -1; }
+    unsigned list_idx = tgt.uav ? 1u : 0u;
+    auto *rlist = dyn_cast_or_null<MDTuple>(top->getOperand(list_idx).get());
+    if (!rlist) { say(note, "t2r: no %s list in dx.resources", tgt.uav ? "UAV" : "SRV"); return -1; }
+
+    /* 1. Resource metadata entry: TypedBuffer (10) -> RawBuffer (11), element-type tag -> null. */
+    int64_t target_range_id = -1;
+    std::vector<Metadata *> new_rlist;
+    for (const MDOperand &op : rlist->operands()) {
+        auto *e = dyn_cast_or_null<MDTuple>(op.get());
+        if (!e || e->getNumOperands() < (tgt.uav ? 11u : 9u)) {
+            new_rlist.push_back(op.get());
+            continue;
+        }
+        bool ok = true;
+        uint64_t id = md_int(e->getOperand(0), &ok);
+        uint64_t space = md_int(e->getOperand(3), &ok);
+        uint64_t reg = md_int(e->getOperand(4), &ok);
+        uint64_t cnt = md_int(e->getOperand(5), &ok);
+        uint64_t shape = md_int(e->getOperand(6), &ok);
+        if (ok && space == tgt.space && reg == tgt.reg && cnt == 1 && shape == 10) {
+            target_range_id = (int64_t)id;
+            std::vector<Metadata *> f(e->op_begin(), e->op_end());
+            f[6] = ConstantAsMetadata::get(ConstantInt::get(i32, 11));
+            f[tgt.uav ? 10 : 8] = nullptr;
+            new_rlist.push_back(MDTuple::get(ctx, f));
+        } else {
+            new_rlist.push_back(op.get());
+        }
+    }
+    if (target_range_id < 0) {
+        if (note.buf && note.cap)
+            snprintf(note.buf, note.cap, "typed %s space %u register %u not found in the resource metadata",
+                     tgt.uav ? "UAV" : "SRV", tgt.space, tgt.reg);
+        return -1;
+    }
+
+    /* 2. Handles created for that binding (SM 6.6 createHandleFromBinding or SM 6.0 createHandle). */
+    std::vector<Value *> created;
+    auto in_vec = [](const std::vector<Value *> &v, const Value *x) {
+        for (const Value *e : v) if (e == x) return true;
+        return false;
+    };
+    for (Function &f : m) for (BasicBlock &bb : f) for (Instruction &in : bb) {
+        auto *ci = dyn_cast<CallInst>(&in);
+        if (!ci) continue;
+        if (is_dx_op(ci, kOpCreateHandleFromBinding) && ci->arg_size() >= 2) {
+            Value *b = ci->getArgOperand(1);
+            if (isa<ConstantAggregateZero>(b)) {
+                if (tgt.reg == 0 && tgt.space == 0 && !tgt.uav) created.push_back(ci);
+            } else if (auto *cs = dyn_cast<ConstantStruct>(b)) {
+                if (cs->getNumOperands() == 4) {
+                    bool ok = true;
+                    uint64_t lo = cint(cs->getOperand(0), &ok), hi = cint(cs->getOperand(1), &ok);
+                    uint64_t sp = cint(cs->getOperand(2), &ok), cl = cint(cs->getOperand(3), &ok);
+                    if (ok && lo == tgt.reg && hi == tgt.reg && sp == tgt.space && cl == (tgt.uav ? 1u : 0u))
+                        created.push_back(ci);
+                }
+            }
+        } else if (is_dx_op(ci, kOpCreateHandle) && ci->arg_size() >= 3) {
+            bool ok = true;
+            uint64_t cl = cint(ci->getArgOperand(1), &ok), rid = cint(ci->getArgOperand(2), &ok);
+            if (ok && cl == (tgt.uav ? 1u : 0u) && (int64_t)rid == target_range_id)
+                created.push_back(ci);
+        }
+    }
+    if (created.empty()) { say(note, "no handle created for the binding%s", ""); return -1; }
+
+    /* 3. Handle annotations: {10, 261} -> {11, 0} for SRV, {4106, 261} -> {4107, 0} for UAV. */
+    std::vector<Value *> handles;
+    for (Function &f : m) for (BasicBlock &bb : f) for (Instruction &in : bb) {
+        auto *ci = dyn_cast<CallInst>(&in);
+        if (!ci || !is_dx_op(ci, kOpAnnotateHandle) || ci->arg_size() < 3) continue;
+        if (!in_vec(created, ci->getArgOperand(1))) continue;
+        auto *cs = dyn_cast<ConstantStruct>(ci->getArgOperand(2));
+        if (!cs || cs->getNumOperands() != 2) continue;
+        bool ok = true;
+        uint64_t w0 = cint(cs->getOperand(0), &ok), w1 = cint(cs->getOperand(1), &ok);
+        if (!ok || w0 != (tgt.uav ? 4106u : 10u) || w1 != 261u) continue;
+        ci->setArgOperand(2, ConstantStruct::get(cs->getType(),
+            {ConstantInt::get(i32, tgt.uav ? 4107u : 11u), ConstantInt::get(i32, 0)}));
+        handles.push_back(ci);
+    }
+    if (handles.empty()) handles = created;   /* SM 6.0-6.5 createHandle has no annotateHandle */
+
+    /* 4. Collect bufferLoad / bufferStore calls on those handles. */
+    std::vector<CallInst *> loads, stores;
+    for (Function &f : m) for (BasicBlock &bb : f) for (Instruction &in : bb) {
+        auto *ci = dyn_cast<CallInst>(&in);
+        if (!ci || ci->arg_size() < 3 || !in_vec(handles, ci->getArgOperand(1))) continue;
+        if (is_dx_op(ci, kOpBufferLoad)) loads.push_back(ci);
+        else if (tgt.uav && is_dx_op(ci, kOpBufferStore) && ci->arg_size() >= 9) stores.push_back(ci);
+    }
+    if (loads.empty() && stores.empty()) { say(note, "no typed loads or stores found on the handle%s", ""); return -1; }
+
+    Type *handle_ty = handles[0]->getType();
+    Function *raw_load_fn = nullptr, *raw_store_fn = nullptr;
+    if (!loads.empty()) {
+        Type *ret_ty = loads[0]->getType();
+        FunctionCallee fc = m.getOrInsertFunction("dx.op.rawBufferLoad.i32",
+            FunctionType::get(ret_ty, {i32, handle_ty, i32, i32, i8, i32}, false));
+        raw_load_fn = cast<Function>(fc.getCallee());
+        if (Function *orig = loads[0]->getCalledFunction()) raw_load_fn->setAttributes(orig->getAttributes());
+        else { raw_load_fn->addFnAttr(Attribute::NoUnwind); raw_load_fn->addFnAttr(Attribute::ReadOnly); }
+    }
+    if (!stores.empty()) {
+        FunctionCallee fc = m.getOrInsertFunction("dx.op.rawBufferStore.i32",
+            FunctionType::get(Type::getVoidTy(ctx), {i32, handle_ty, i32, i32, i32, i32, i32, i32, i8, i32}, false));
+        raw_store_fn = cast<Function>(fc.getCallee());
+        if (Function *orig = stores[0]->getCalledFunction()) raw_store_fn->setAttributes(orig->getAttributes());
+        else raw_store_fn->addFnAttr(Attribute::NoUnwind);
+    }
+
+    Value *u32_undef = UndefValue::get(i32);
+    unsigned t2r_seq = 0;
+    for (CallInst *ci : loads) {
+        IRBuilder<> b(ci);
+        char nm[24]; snprintf(nm, sizeof nm, "t2r%u", ++t2r_seq);
+        Value *byte_off = b.CreateShl(ci->getArgOperand(2), ConstantInt::get(i32, 2), nm);
+        Value *r = b.CreateCall(raw_load_fn, {ConstantInt::get(i32, kOpRawBufferLoad), ci->getArgOperand(1),
+                                              byte_off, u32_undef, ConstantInt::get(i8, 1), ConstantInt::get(i32, 4)});
+        ci->replaceAllUsesWith(r);
+        ci->eraseFromParent();
+    }
+    for (CallInst *ci : stores) {
+        IRBuilder<> b(ci);
+        char nm[24]; snprintf(nm, sizeof nm, "t2r%u", ++t2r_seq);
+        Value *byte_off = b.CreateShl(ci->getArgOperand(2), ConstantInt::get(i32, 2), nm);
+        Value *val0 = ci->getArgOperand(4);
+        b.CreateCall(raw_store_fn, {ConstantInt::get(i32, kOpRawBufferStore), ci->getArgOperand(1),
+                                    byte_off, u32_undef, val0, u32_undef, u32_undef, u32_undef,
+                                    ConstantInt::get(i8, 1), ConstantInt::get(i32, 4)});
+        ci->eraseFromParent();
+    }
+
+    /* 5. Publish updated dx.resources and set UseRawAndStructuredBuffers (16) on dx.entryPoints. */
+    std::vector<Metadata *> t(top->op_begin(), top->op_end());
+    t[list_idx] = MDTuple::get(ctx, new_rlist);
+    MDTuple *ntop = MDTuple::get(ctx, t);
+    res->setOperand(0, ntop);
+    if (NamedMDNode *eps = m.getNamedMetadata("dx.entryPoints")) {
+        for (unsigned i = 0; i < eps->getNumOperands(); i++) {
+            auto *ep = cast<MDTuple>(eps->getOperand(i));
+            std::vector<Metadata *> e(ep->op_begin(), ep->op_end());
+            if (e.size() < 5) e.resize(5, nullptr);
+            if (e[3]) e[3] = ntop;
+            std::vector<Metadata *> props;
+            bool have_flags = false;
+            if (e[4]) {
+                auto *p = cast<MDTuple>(e[4]);
+                for (unsigned k = 0; k + 1 < p->getNumOperands(); k += 2) {
+                    bool ok = true;
+                    uint64_t tag = md_int(p->getOperand(k), &ok);
+                    Metadata *val = p->getOperand(k + 1);
+                    if (ok && tag == 0) {
+                        bool ok2 = true;
+                        uint64_t fl = md_int(p->getOperand(k + 1), &ok2);
+                        val = ConstantAsMetadata::get(ConstantInt::get(i64, fl | kFlagRawBuffers));
+                        have_flags = true;
+                    }
+                    props.push_back(p->getOperand(k)); props.push_back(val);
+                }
+            }
+            if (!have_flags) {
+                props.insert(props.begin(), ConstantAsMetadata::get(ConstantInt::get(i64, kFlagRawBuffers)));
+                props.insert(props.begin(), ConstantAsMetadata::get(ConstantInt::get(i32, 0)));
+            }
+            e[4] = MDTuple::get(ctx, props);
+            eps->setOperand(i, MDTuple::get(ctx, e));
+        }
+    }
+    {
+        std::vector<Function *> unused;
+        for (Function &f : m) if (f.isDeclaration() && f.use_empty() && f.getName().startswith("dx.op.")) unused.push_back(&f);
+        for (Function *f : unused) f->eraseFromParent();
+    }
+    *n_handles = (unsigned)handles.size();
+    *n_loads = (unsigned)loads.size();
+    *n_stores = (unsigned)stores.size();
+    return 1;
+}
+
 }  // namespace
 
 extern "C" int madeira_ags_rewrite(const void *bc, size_t len, void **out, size_t *out_len,
@@ -399,8 +633,10 @@ extern "C" int madeira_ags_rewrite(const void *bc, size_t len, void **out, size_
         if (!memcmp(d + off, "PSV0", 4))
             for (uint32_t k = 0; k + 4 <= sz; k += 4) magic |= rd32(d + off + 8 + k) == kAgsSpace;
     }
+    t2r_target t2r{};
+    bool want_t2r = !magic && match_t2r_target(d, len, &t2r);
     if (getenv("MADEIRA_AGS_ROUNDTRIP_ONLY")) magic = true;
-    if (!dxil || !magic || dxil_size < 24) return 0;
+    if (!dxil || (!magic && !want_t2r) || dxil_size < 24) return 0;
     uint32_t bc_off = rd32(dxil + 16), bc_size = rd32(dxil + 20);
     if (8ull + bc_off + bc_size > dxil_size) return 0;
 
@@ -413,8 +649,10 @@ extern "C" int madeira_ags_rewrite(const void *bc, size_t len, void **out, size_
         say(note, "bitcode reader: %s", err.c_str());
         return -1;
     }
-    unsigned n = 0, n_used = 0;
-    int rc = getenv("MADEIRA_AGS_ROUNDTRIP_ONLY") ? 1 : rewrite_module(**mod, note, &n, &n_used);   /* offline control */
+    unsigned n = 0, n_used = 0, t2r_h = 0, t2r_l = 0, t2r_s = 0;
+    int rc = getenv("MADEIRA_AGS_ROUNDTRIP_ONLY") ? 1
+           : want_t2r ? rewrite_t2r_module(**mod, t2r, note, &t2r_h, &t2r_l, &t2r_s)
+                      : rewrite_module(**mod, note, &n, &n_used);   /* offline control */
     if (rc <= 0) return rc;
 
     SmallVector<char, 0> nb;
@@ -440,7 +678,9 @@ extern "C" int madeira_ags_rewrite(const void *bc, size_t len, void **out, size_
             memcpy(q.data() + 24, nb.data(), nb.size());
             p.swap(q);
         } else if (!memcmp(&cc, "SFI0", 4) && p.size() >= 8) {
-            uint64_t fl; memcpy(&fl, p.data(), 8); fl |= kSfi0Int64Ops | kSfi0AtomicInt64Typed; memcpy(p.data(), &fl, 8);
+            uint64_t fl; memcpy(&fl, p.data(), 8);
+            fl |= want_t2r ? kSfi0RawBuffers : (kSfi0Int64Ops | kSfi0AtomicInt64Typed);
+            memcpy(p.data(), &fl, 8);
         } else if (!memcmp(&cc, "PSV0", 4) && p.size() >= 4) {
             /* PSV0: u32 runtime-info size, runtime info, u32 resource count,
              * [u32 bind-info size], bind infos {type, space, lower, upper[, kind, flags]}. */
@@ -454,7 +694,13 @@ extern "C" int madeira_ags_rewrite(const void *bc, size_t len, void **out, size_
                     if (bsz >= 16 && base + (size_t)cnt * bsz <= p.size()) {
                         for (uint32_t k = 0; k < cnt; k++) {
                             uint8_t *b = p.data() + base + (size_t)k * bsz;
-                            if (rd32(b + 4) == kAgsSpace) {
+                            if (want_t2r) {
+                                if (rd32(b + 4) == t2r.space && rd32(b + 8) == t2r.reg && rd32(b + 12) == t2r.reg &&
+                                    rd32(b + 0) == (t2r.uav ? 6u : 3u)) {
+                                    wr32(b + 0, t2r.uav ? 7u : 4u);   /* SRVTyped(3)->SRVRaw(4), UAVTyped(6)->UAVRaw(7) */
+                                    if (bsz >= 20 && rd32(b + 16) == 10u) wr32(b + 16, 11u);   /* TypedBuffer(10)->RawBuffer(11) */
+                                }
+                            } else if (rd32(b + 4) == kAgsSpace) {
                                 memmove(b, b + bsz, p.size() - (size_t)(b + bsz - p.data()));
                                 p.resize(p.size() - bsz);
                                 wr32(p.data() + at, cnt - 1);
@@ -484,7 +730,12 @@ extern "C" int madeira_ags_rewrite(const void *bc, size_t len, void **out, size_
         w += 8 + parts[i].second.size();
     }
     *out = o; *out_len = total;
-    if (n_used) snprintf(note_buf, note_cap, "rewrote %u AGS 64-bit atomic(s); %u read the old value (Metal cannot return it)", n, n_used);
-    else say(note, "rewrote %s%u AGS 64-bit atomic(s)", "", n);
+    if (want_t2r)
+        snprintf(note_buf, note_cap, "rewrote TypedBuffer<U32> %s space %u reg %u -> RawBuffer (%u handle(s), %u load(s), %u store(s))",
+                 t2r.uav ? "UAV" : "SRV", t2r.space, t2r.reg, t2r_h, t2r_l, t2r_s);
+    else if (n_used)
+        snprintf(note_buf, note_cap, "rewrote %u AGS 64-bit atomic(s); %u read the old value (Metal cannot return it)", n, n_used);
+    else
+        say(note, "rewrote %s%u AGS 64-bit atomic(s)", "", n);
     return 1;
 }

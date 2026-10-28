@@ -21,7 +21,7 @@ Checks (read from the sources):
     reported), so a game that asks first sees no change;
   - query-timestamps is read with default 0; off, timestamps resolve to zero and
     GetClockCalibration's GPU value is 0, as before;
-  - the recommended list: only Marvel's Spider-Man Remastered carries either key, from build 593,
+  - the recommended list: only Marvel's Spider-Man Remastered and Miles Morales (its lines since 2026-10-28) carry either key, from build 593,
     matched by its program name without "steam": true;
   - auto-tune: the rule that adds write-buffer-immediate = 1 needs Spider-Man.exe's own log lines;
   - with the mingw toolchain present, madeira_d3d12.c passes an arm64ec syntax check.
@@ -94,7 +94,7 @@ check("off: timestamps still resolve to zero",
 gcc = func("queue_GetClockCalibration")
 check("off: GetClockCalibration's GPU value is 0", "*gpu = mad_qts_on() ? mad_qts_now_ns() : 0;" in gcc)
 
-# The recommended list: Spider-Man Remastered only.
+# The recommended list: Spider-Man Remastered and, with its lines (owner, 2026-10-28), Miles Morales.
 recs = json.loads((R / "recommended/recommendations.json").read_text())
 holders = {}
 for rule in recs["rules"]:
@@ -103,7 +103,8 @@ for rule in recs["rules"]:
         key = text.split("=")[0].strip()
         if key in ("write-buffer-immediate", "query-timestamps"):
             holders.setdefault(rule["id"], []).append(line)
-check("list: only Marvel's Spider-Man Remastered carries the keys", set(holders) <= {"marvels-spider-man-remastered"}, str(holders))
+check("list: only Marvel's Spider-Man Remastered and Miles Morales carry the keys",
+      set(holders) <= {"marvels-spider-man-remastered", "marvels-spider-man-miles-morales"}, str(holders))
 smr = next((r for r in recs["rules"] if r["id"] == "marvels-spider-man-remastered"), None)
 check("list: Spider-Man Remastered has write-buffer-immediate = 1 from build 593, matched by name",
       smr is not None and {"line": "write-buffer-immediate = 1", "minBuild": 593} in smr["config"]

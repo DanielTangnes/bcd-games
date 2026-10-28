@@ -1,0 +1,17 @@
+{
+ "dialogs": [
+  "DirectX error"
+ ],
+ "end": {},
+ "matched": [
+  "d3d11-buffer-render-target-view"
+ ],
+ "next": [
+  "env.MADEIRA_BUFFER_RTV_EMPTY = 1",
+  "env.MADEIRA_D3D11_SRC = 1"
+ ],
+ "note": "Need for Speed: The Run (Frostbite 2, 32-bit, non-Steam), build 614, iPhone18,2, Discord game-reports 2026-10-28 (same player as FRGCNV): the game's box 'DirectX function ...CreateRenderTargetView(...) failed with E_INVALIDARG' right after DXMT's 'D3D11Resource(buffer): Unknown interface query' (ID3D11Texture2D): a render target view on a buffer. env.MADEIRA_BUFFER_RTV_EMPTY = 1 (build 620) answers it with no view.",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "trying"
+}

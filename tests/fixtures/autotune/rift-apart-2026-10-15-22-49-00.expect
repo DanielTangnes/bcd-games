@@ -12,7 +12,7 @@
  "next": [
   "env.MADEIRA_CAGE_RELEASE = 1"
  ],
- "note": "Ratchet & Clank: Rift Apart, build 550, iPhone18,2 (11695 MB): crashed; two causes: the VA band (cage) and the Turkish locale (857 before the throw)",
+ "note": "Ratchet & Clank: Rift Apart, build 550, iPhone18,2 (11695 MB): crashed; two causes: the VA band (cage) and the non-English locale (857 before the throw)",
  "outcome": "crashed",
  "stage": 4,
  "status": "trying"

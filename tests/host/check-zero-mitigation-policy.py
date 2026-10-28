@@ -206,9 +206,16 @@ check('its other lines are the standard comments and the standard EC-hook line',
                                                   'env.MADEIRA_EC_HOOK_TRACE = 0'] and len(rule['config']) == 4)
 standard = next(r for r in recs['rules'] if r['id'] == 'standard')
 check('the standard list does not have it', NAME not in json.dumps(standard))
+# Round 620: thirteen lists of that round's logs follow Elliot.
 # Round 602 (ajan41): seven lists (Direct3D 8 and 64-bit Direct3D 9 games) were added between this rule and "standard".
 # The Adventures of Elliot (upstream port, build 602) stands last before "standard".
-check('the rule stands before "standard" (the last rule), after it only the round-602 lists and The Adventures of Elliot', [r['id'] for r in recs['rules']][-10:] == ['glyphica-typing-survival', 'grand-theft-auto-iii', 'postal-2', 'hotline-miami', 'max-payne-2', 'pico-park', 'dont-starve-together', 'a-hat-in-time', 'the-adventures-of-elliot', 'standard'])
+_r620 = ['forza-horizon-4', 'tiny-tinas-wonderlands', 'far-cry-3', 'barotrauma', 'slay-the-spire-2', 'resident-evil-3', 'marvel-cosmic-invasion',
+         'haste', 'big-walk', 'ball-x-pit', 'just-volleyball-demo', 'farming-simulator-22-epic', 'max-payne-3',
+         'f1-2020', 'need-for-speed-the-run']   # round 620's new lists (the last two after the Discord reports)
+_ids = [r['id'] for r in recs['rules']]
+check('the rule stands before "standard" (the last rule), after it only the round-602 lists, The Adventures of Elliot and round 620\'s lists',
+      _ids[_ids.index('glyphica-typing-survival'):] == ['glyphica-typing-survival', 'grand-theft-auto-iii', 'postal-2', 'hotline-miami', 'max-payne-2',
+                                                      'pico-park', 'dont-starve-together', 'a-hat-in-time', 'the-adventures-of-elliot'] + _r620 + ['standard'])
 pol = (root / 'app/Madeira/GameRecommendationsList.swift').read_text()
 check('the list policy knows the name', pol.count('"%s"' % NAME) == 2)
 case = re.search(r'case "MADEIRA_WINTYPES"[^\n]*"%s":(.*?)guard value == "0" \|\| value == "1"' % NAME, pol, re.S)

@@ -10369,6 +10369,7 @@ static void mad_cb_log_error(struct mad_device *d, obj_handle_t cb) {
 static volatile int g_fence_early = -1;   /* madeira-bcd fence-early (see mad_fence_early_on): -1 = not read yet */
 static volatile LONG g_fe_early, g_fe_inline;   /* fence-early: jobs that advanced early, or the old way */
 static void mad_vis_retire(struct mad_device *d, obj_handle_t cb);
+static void mad_vis_retire_ex(struct mad_device *d, obj_handle_t cb, int wait_cb);
 /* ml1108: where does the frame go? GPU busy (union of command-buffer GPU
  * intervals), CPU time blocked in retire, presents -- logged every 5 s from
  * Present. Off with bcd.cfg perf-log = 0. */
@@ -10641,10 +10642,11 @@ static void mad_list_rings_rewind(struct mad_list *l) {
  * be created takes the old order. 0 (the default): the old order always. */
 static int mad_fence_early_on(void) {
     if (g_fence_early < 0) {
-        long long v = mad_cfg_int_pe("fence-early", 0);   /* madeira-bcd: 1 = a fence advances as soon as the GPU reached its batch; the batch's command buffers are retired on a second thread. Batches with query results, and upload-guard, keep the old order. 0 (the default): retire, then advance, as before */
-        g_fence_early = v > 0 ? 1 : 0;
+        long long v = mad_cfg_int_pe("fence-early", 0);   /* madeira-bcd: 1 = a fence advances as soon as the GPU reached its batch; the batch's command buffers are retired on a second thread. 2 = also publish occlusion query results at the shared event without waiting for Metal's CB completion handler. 0 (the default): retire, then advance, as before */
+        g_fence_early = v >= 2 ? 2 : (v > 0 ? 1 : 0);
         if (g_fence_early)
-            d3d12_log("[madeira-d3d12] fence-early = 1 (opt-in): a fence advances when the GPU reached its batch; its command buffers retire on a second thread\n");
+            d3d12_log("[madeira-d3d12] fence-early = %d (opt-in): a fence advances when the GPU reached its batch; its command buffers retire on a second thread%s\n",
+                      g_fence_early, g_fence_early >= 2 ? " (queries published at shared event)" : "");
     }
     return g_fence_early;
 }
@@ -10760,8 +10762,12 @@ static DWORD WINAPI mad_fence_worker(void *arg) {
             }
         }
         {   /* ml1109: from "GPU reached the serial" to "fence advanced" = our retire overhead */
-            LARGE_INTEGER t0, t1; QueryPerformanceCounter(&t0);
-            if (mad_fence_early_on() && !g_upload_guard && !mad_vis_job_pending(d, job.cbs, job.ncbs) &&
+            LARGE_INTEGER t0, t1;
+            int fe = mad_fence_early_on();
+            QueryPerformanceCounter(&t0);
+            if (fe >= 2 && !g_upload_guard && (LONG64)job.serial > d->gpu_serial_failed)
+                for (k = 0; k < job.ncbs; k++) mad_vis_retire_ex(d, job.cbs[k], 0);
+            if (fe && !g_upload_guard && !mad_vis_job_pending(d, job.cbs, job.ncbs) &&
                 mad_retire_defer(d, job.cbs, job.ncbs)) {   /* madeira-bcd fence-early */
                 ID3D12Fence_Signal(job.fence, job.value);
                 InterlockedIncrement(&g_fe_early);
@@ -12881,7 +12887,8 @@ static int mad_typed_buffer_view(struct mad_device *d, struct mad_resource *r, D
         width = num + elem_off;
         if (aligned >= r->size) { LeaveCriticalSection(&d->view_lock); if (why) *why = 5; return 0; }   /* as before: no width */
         if (aligned + width * bytes > r->size) { width = (r->size - aligned) / bytes; cut = 1; }
-        if (!width || width > (1u << 28)) { LeaveCriticalSection(&d->view_lock); if (why) *why = width ? 6 : 5; return 0; }
+        if (!width) { LeaveCriticalSection(&d->view_lock); if (why) *why = 5; return 0; }
+        if (width > (1u << 28)) { width = (1u << 28); cut = 1; }   /* sm2-d3d12: clamp texture-buffer width to Metal's 2^28-texel limit while preserving full gpu_va + metadata size for RawBuffer shaders */
         bpr = width * bytes;
         memset(&ti, 0, sizeof ti);
         ti.pixel_format = pf; ti.width = (uint32_t)width; ti.height = 1; ti.depth = 1; ti.array_length = 1;
@@ -13959,10 +13966,10 @@ static void mad_vis_flush(struct mad_queue *q, obj_handle_t cb) {
     LeaveCriticalSection(&d->vis_lock);
     (void)v;
 }
-static void mad_vis_complete(struct mad_device *d, struct mad_vis_batch *v) {
+static void mad_vis_complete(struct mad_device *d, struct mad_vis_batch *v, int wait_cb) {
     unsigned k, j;
     static unsigned said_nocpu;
-    MTLCommandBuffer_waitUntilCompleted(v->cb);
+    if (wait_cb) MTLCommandBuffer_waitUntilCompleted(v->cb);
     /* ml1092: a query's value is PUBLISHED at its End, in program order with
      * the resolves, so "End Q7 (37) / Resolve / reuse Q7, End (0) / Resolve"
      * delivers 37 then 0 -- the old two-pass form delivered 0 twice (Astra's
@@ -14011,7 +14018,7 @@ static void mad_vis_complete(struct mad_device *d, struct mad_vis_batch *v) {
 }
 /* At retire: every batch committed up to and including this one has completed
  * (one Metal queue, in order), so deliver all of them, in order. */
-static void mad_vis_retire(struct mad_device *d, obj_handle_t cb) {
+static void mad_vis_retire_ex(struct mad_device *d, obj_handle_t cb, int wait_cb) {
     struct mad_vis_batch *todo[64]; unsigned n = 0, k, upto = ~0u;
     EnterCriticalSection(&d->vis_pub_lock);   /* ml1092: one retirer at a time, so batches publish in commit order */
     EnterCriticalSection(&d->vis_lock);
@@ -14023,9 +14030,10 @@ static void mad_vis_retire(struct mad_device *d, obj_handle_t cb) {
         d->nvis_pending -= n;
     }
     LeaveCriticalSection(&d->vis_lock);
-    for (k = 0; k < n; k++) mad_vis_complete(d, todo[k]);
+    for (k = 0; k < n; k++) mad_vis_complete(d, todo[k], wait_cb);
     LeaveCriticalSection(&d->vis_pub_lock);
 }
+static void mad_vis_retire(struct mad_device *d, obj_handle_t cb) { mad_vis_retire_ex(d, cb, 1); }
 
 /* ---- queue queries --------------------------------------------------------- */
 static HRESULT STDMETHODCALLTYPE queue_GetTimestampFrequency(ID3D12CommandQueue *This, UINT64 *freq) {
@@ -18858,7 +18866,7 @@ static HRESULT device_CreateGraphicsPipelineState_impl(ID3D12Device *This,
             pso_Release((ID3D12PipelineState *)p); return E_NOTIMPL;
         }
         rp.colors[i].pixel_format = pf;
-        rp.colors[i].blending_enabled = b->BlendEnable != 0;
+        rp.colors[i].blending_enabled = (b->BlendEnable != 0) && !mad_format_is_int(desc->RTVFormats[i]);
         rp.colors[i].rgb_blend_operation = mad_blend_op(b->BlendOp);
         rp.colors[i].alpha_blend_operation = mad_blend_op(b->BlendOpAlpha);
         rp.colors[i].src_rgb_blend_factor = mad_blend_factor(b->SrcBlend);

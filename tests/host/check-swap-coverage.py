@@ -527,9 +527,9 @@ tick = body_of(virt, 'static void ios_swap_tick( int force )\n{')
 for bad in ('printf', 'malloc', 'calloc', 'strdup', 'asprintf', 'ERR(', 'TRACE('):
     check(bad not in tick, 'census: no ' + bad)
 check('write( 2, line, p - line )' in tick, 'census written with one write(2)')
-check('return ios_swap_map( base, size, get_unix_prot( vprot | VPROT_COMMITTED ) );' in virt or
-      'ios_swap_map( base, size, get_unix_prot( vprot | VPROT_COMMITTED ) );' in virt, 'ml1082: commit-time extents mapped committed')
-check('ios_swap_map( base, size, get_unix_prot( vprot ) )' in body_of(virt, 'static void ios_swap_reserve( void *base, size_t size, unsigned int vprot, struct file_view *view )\n{'),
+# 2026-10-28: ios_swap_map takes whether the range is committed (counted against swap-mb in broad, check-swap-cap.py)
+check('ios_swap_map( base, size, get_unix_prot( vprot | VPROT_COMMITTED ), 1 );' in virt, 'ml1082: commit-time extents mapped committed')
+check('ios_swap_map( base, size, get_unix_prot( vprot ), 0 )' in body_of(virt, 'static void ios_swap_reserve( void *base, size_t size, unsigned int vprot, struct file_view *view )\n{'),
       'reserve-time extents keep the reservation protection (PROT_NONE)')
 setprot = body_of(virt, 'static NTSTATUS set_protection( struct file_view *view, void *base, SIZE_T size, ULONG protect )')
 check('ios_swap_release_range( base, size, 1 )' in setprot, 'set_protection still leaves the tier for EXEC/WRITECOPY/GUARD')

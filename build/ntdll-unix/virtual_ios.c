@@ -5260,21 +5260,32 @@ int ios_jit_anon_alias_overlaps(void *user_va, size_t size, uintptr_t *base_out,
 
 int ios_jit_anon_alias_find_cover(void *user_va, size_t size, void **rw_out, void **rx_out)
 {
-    uintptr_t lo = (uintptr_t)user_va, hi = lo + size;
+    uintptr_t lo = (uintptr_t)user_va, hi = lo + size, cur = lo;
     int n = ios_jit_anon_alias_count;
     int i;
 
-    for (i = 0; i < n; i++)
+    if (hi <= lo) return 0;
+    while (cur < hi)
     {
-        uintptr_t base = ios_jit_anon_aliases[i].user_va;
-        if (!base) continue;
-        if (lo < base || hi > ios_jit_anon_aliases[i].user_va_end) continue;
-        if (!ios_jit_anon_aliases[i].jit_rx_alias) continue; /* incomplete registration */
-        if (rw_out) *rw_out = (void *)(ios_jit_anon_aliases[i].jit_rw_alias + (lo - base));
-        if (rx_out) *rx_out = (void *)(ios_jit_anon_aliases[i].jit_rx_alias + (lo - base));
-        return 1;
+        int found = 0;
+        for (i = 0; i < n; i++)
+        {
+            uintptr_t base = ios_jit_anon_aliases[i].user_va;
+            uintptr_t end  = ios_jit_anon_aliases[i].user_va_end;
+            if (!base || cur < base || cur >= end) continue;
+            if (!ios_jit_anon_aliases[i].jit_rx_alias) continue; /* incomplete registration */
+            if (cur == lo)
+            {
+                if (rw_out) *rw_out = (void *)(ios_jit_anon_aliases[i].jit_rw_alias + (lo - base));
+                if (rx_out) *rx_out = (void *)(ios_jit_anon_aliases[i].jit_rx_alias + (lo - base));
+            }
+            cur = end;
+            found = 1;
+            break;
+        }
+        if (!found) return 0;
     }
-    return 0;
+    return 1;
 }
 
 void ios_jit_anon_alias_set_rx(void *user_va, void *jit_rx_alias)
@@ -18177,15 +18188,17 @@ static inline int mprotect_exec( void *base, size_t size, int unix_prot )
             void *cov_rw = NULL, *cov_rx = NULL;
             if (ios_jit_anon_alias_find_cover( base, size, &cov_rw, &cov_rx ))
             {
+                kern_return_t pkr = vm_protect( mach_task_self(), (vm_address_t)base, size,
+                                                FALSE, VM_PROT_READ | VM_PROT_EXECUTE );
                 static int own_n;
                 if (own_n < 32)
                     dprintf(2, "[alias-own] ml640 #%d %p+0x%lx prot=%c%c%c OWNED by live anon JIT alias "
-                               "(rx=%p rw=%p) — keeping the pool dual-map, no mprotect, no image lookup\n",
+                               "(rx=%p rw=%p vm_protect kr=%d) — keeping the pool dual-map, no mprotect, no image lookup\n",
                             ++own_n, base, (unsigned long)size,
                             (unix_prot & PROT_READ)  ? 'r' : '-',
                             (unix_prot & PROT_WRITE) ? 'w' : '-',
                             (unix_prot & PROT_EXEC)  ? 'x' : '-',
-                            cov_rx, cov_rw);
+                            cov_rx, cov_rw, (int)pkr);
                 return 0;
             }
         }
@@ -19970,19 +19983,36 @@ static int mprotect_range( void *base, size_t size, BYTE set, BYTE clear )
     char *addr = ROUND_ADDR( base, host_page_mask );
     int prot, next;
     BYTE vprot;
+#ifdef WINE_IOS
+    extern uintptr_t ios_jit_anon_alias_lookup(uintptr_t fault_addr);
+    int aliased, next_aliased;
+#endif
 
     size = ROUND_SIZE( base, size, host_page_mask );
 
     vprot = get_host_page_vprot( addr );
     prot = get_unix_prot( (vprot & ~clear) | set );
+#ifdef WINE_IOS
+    aliased = (ios_jit_anon_alias_lookup( (uintptr_t)addr ) != 0);
+    if (aliased && prot != PROT_NONE) prot = PROT_READ | PROT_EXEC;
+#endif
     for (count = i = 1; i < size / host_page_size; i++, count++)
     {
         vprot = get_host_page_vprot( addr + count * host_page_size );
         next = get_unix_prot( (vprot & ~clear) | set );
+#ifdef WINE_IOS
+        next_aliased = (ios_jit_anon_alias_lookup( (uintptr_t)(addr + count * host_page_size) ) != 0);
+        if (next_aliased && next != PROT_NONE) next = PROT_READ | PROT_EXEC;
+        if (next == prot && next_aliased == aliased) continue;
+#else
         if (next == prot) continue;
+#endif
         if (mprotect_exec( addr, count * host_page_size, prot )) return -1;
         addr += count * host_page_size;
         prot = next;
+#ifdef WINE_IOS
+        aliased = next_aliased;
+#endif
         count = 0;
     }
     return mprotect_exec( addr, count * host_page_size, prot );
@@ -20102,12 +20132,30 @@ static NTSTATUS set_protection( struct file_view *view, void *base, SIZE_T size,
         if (ios_jit_anon_alias_overlaps( base, size, &ov_b, &ov_e ))
         {
             int keep_exec = (vprot & VPROT_EXEC) || 1;   /* alias pages are executable by construction */
-            int pr = PROT_READ | (keep_exec ? PROT_EXEC : 0);
-            int rc = mprotect( base, size, pr );
+            vm_prot_t vpr = VM_PROT_READ | (keep_exec ? VM_PROT_EXECUTE : 0);
+            uintptr_t lo = (uintptr_t)base, hi = lo + size;
+            int n = ios_jit_anon_alias_count, i, rc = 0;
+            for (i = 0; i < n; i++)
+            {
+                uintptr_t b = ios_jit_anon_aliases[i].user_va, e;
+                if (!b) continue;
+                e = ios_jit_anon_aliases[i].user_va_end;
+                if (lo < e && b < hi)
+                {
+                    uintptr_t sub_lo = (uintptr_t)ROUND_ADDR( (void *)(lo > b ? lo : b), host_page_mask );
+                    uintptr_t sub_hi = (uintptr_t)ROUND_SIZE( 0, (void *)(hi < e ? hi : e), host_page_mask );
+                    if (sub_lo < sub_hi)
+                    {
+                        kern_return_t kr = vm_protect( mach_task_self(), (vm_address_t)sub_lo,
+                                                       sub_hi - sub_lo, FALSE, vpr );
+                        if (kr != KERN_SUCCESS) rc = (int)kr;
+                    }
+                }
+            }
             static int ab_n;
             if (ab_n < 24)
                 dprintf(2, "[alias-prot] ml638 #%d %p+0x%lx requested prot=0x%x (vprot=0x%x) — logical kept, "
-                           "PHYSICAL forced R%s (mprotect rc=%d) alias=[%p,%p)\n",
+                           "PHYSICAL forced R%s on alias sub-range(s) (mprotect rc=%d) alias=[%p,%p)\n",
                         ++ab_n, base, (unsigned long)size, (unsigned)protect, vprot,
                         keep_exec ? "X" : "", rc, (void *)ov_b, (void *)ov_e);
         }
@@ -21820,7 +21868,10 @@ static uint64_t ios_swap_cap, ios_swap_bump;
  * decommit inside it punches the file in place (ml1257). key: the size asked for
  * (reservation or commit), the churn filter's unit; born: ns when it was backed
  * (ml1258). img: an image section's (madeira-bcd swap-images, ios_swap_image_map). */
-static struct { char *va; size_t len; uint64_t off; int resv; size_t key; uint64_t born; int img; } ios_swap_ext[16384];
+static struct { char *va; size_t len; uint64_t off; int resv; size_t key; uint64_t born; int img; uint64_t live; } ios_swap_ext[16384];
+/* madeira-bcd (2026-10-28, Spider-Man 2): live is the committed guest data an extent holds in the file (host-page granular);
+ * ios_swap_live is their sum. In broad, swap-mb caps ios_swap_live (see ios_swap_live_add). */
+static unsigned long long ios_swap_live, ios_swap_live_peak, ios_swap_cap_anon, ios_swap_cap_anon_n;
 static unsigned ios_swap_n;
 static struct { uint64_t off, len; } ios_swap_free[8192];
 static unsigned ios_swap_nfree;
@@ -21982,7 +22033,7 @@ static void ios_swap_init( void )
         dprintf( 2, "[swap] coverage=%s min=%zuKB reserve-max=%zuMB (MADEIRA_SWAP_COVERAGE=classic|blocks|wide|broad, "
                     "MADEIRA_SWAP_MIN_KB, MADEIRA_SWAP_RESERVE_MAX_MB; bcd.cfg swap-mode, swap-min-mb)%s\n",
                  ios_swap_mode, ios_swap_min >> 10, ios_swap_resv_max >> 20,
-                 ios_swap_broad ? " -- ml1257 broad: whole reservations below FEX, holes on decommit, swap-mb caps the disk" : "" );
+                 ios_swap_broad ? " -- ml1257 broad: whole reservations below FEX, holes on decommit, swap-mb caps the disk the file occupies (past it, new commits stay in memory)" : "" );
     else
         dprintf( 2, "[swap] coverage=classic: %zu MB commits in the guest band, no census\n", ios_swap_min >> 20 );
 }
@@ -22272,10 +22323,33 @@ static int ios_swap_why( const void *base, size_t size, unsigned int vprot, stru
     if (ios_swap_churny( size )) { ios_swap_churn_skips++; return IOS_SW_CHURN; }   /* ml1258 */
     return IOS_SW_BACKED;
 }
+/* madeira-bcd (2026-10-28): swap-mb in broad. broad maps whole reservations from the sparse file when they are made, and the
+ * cap ("the disk the file occupies now", ml1257) was asked only then, when the file was still empty: every reservation was
+ * taken and later commits into them grew the file without a bound (Spider-Man 2 with swap-mb = 256: 2,445 MB on disk, 34
+ * reservations, 26 GB of address space). Build 622: the same cap (the disk, ios_swap_disk_full) is asked again for every fresh
+ * commit inside a reservation that is in the file; past it the commit stays in memory (ios_swap_present).
+ * Build 621 capped the committed data instead (this count): wrong, a game commits far more than it writes. Spider-Man 2
+ * committed ~9.3 GB into the file for 2.4 GB on the disk, so swap-mb 2048-4096 filled at load, the rest stayed in memory and iOS
+ * closed it at 8 GB (owner's logs 2026-10-28 16:00-16:02); RDR2 commits 10-13.5 GB for 4.2-4.5 GB on disk (logs DFRKWK,
+ * RS64VG) against its 8192. The count stays as a figure in the stats and census lines only. The RAM pool (ml1150) is not the
+ * file and is not counted. delta is clamped so an extent never holds less than 0 or more than its length. */
+static void ios_swap_live_add( unsigned i, long long delta )
+{
+    long long v = (long long)ios_swap_ext[i].live + delta;
+    if (ios_swap_ext[i].off & IOS_POOL_FLAG) return;
+    if (v < 0) v = 0;
+    if ((uint64_t)v > ios_swap_ext[i].len) v = (long long)ios_swap_ext[i].len;
+    ios_swap_live -= ios_swap_ext[i].live;
+    ios_swap_ext[i].live = (uint64_t)v;
+    ios_swap_live += ios_swap_ext[i].live;
+    if (ios_swap_live > ios_swap_live_peak) ios_swap_live_peak = ios_swap_live;
+}
 static const char *ios_swap_map_tag = "";   /* ml1257: the "backed" log line names whole reservations */
 /* Map the host-page interior of [base, base+size) from the file with
- * unix_prot. Returns IOS_SW_BACKED, IOS_SW_SMALL, IOS_SW_REFUSED or IOS_SW_MAPFAIL. */
-static int ios_swap_map( void *base, size_t size, int unix_prot )
+ * unix_prot. committed: the range holds committed pages (counted against
+ * swap-mb in broad); 0 for a reservation that is only address space.
+ * Returns IOS_SW_BACKED, IOS_SW_SMALL, IOS_SW_REFUSED or IOS_SW_MAPFAIL. */
+static int ios_swap_map( void *base, size_t size, int unix_prot, int committed )
 {
     char *hs = (char *)(((uintptr_t)base + host_page_mask) & ~(uintptr_t)host_page_mask);
     char *he = (char *)(((uintptr_t)base + size) & ~(uintptr_t)host_page_mask);
@@ -22312,7 +22386,8 @@ static int ios_swap_map( void *base, size_t size, int unix_prot )
 mapped:
     ios_swap_ext[ios_swap_n].va = hs; ios_swap_ext[ios_swap_n].len = len; ios_swap_ext[ios_swap_n].off = off;
     ios_swap_ext[ios_swap_n].resv = 0; ios_swap_ext[ios_swap_n].key = size; ios_swap_ext[ios_swap_n].img = 0;
-    ios_swap_ext[ios_swap_n].born = ios_swap_broad ? ios_swap_now_ns() : 0; ios_swap_n++;
+    ios_swap_ext[ios_swap_n].born = ios_swap_broad ? ios_swap_now_ns() : 0; ios_swap_ext[ios_swap_n].live = 0; ios_swap_n++;
+    if (committed) ios_swap_live_add( ios_swap_n - 1, (long long)len );
     ios_swap_churn_backed( size );   /* ml1226 */
     ios_swap_bytes += len; if (ios_swap_bytes > ios_swap_peak) ios_swap_peak = ios_swap_bytes;
     ios_swap_backs++;
@@ -22339,7 +22414,7 @@ static void ios_swap_back( void *base, size_t size, unsigned int vprot )
      * free, deadlocked when the faulting thread held virtual_mutex (rdr45/46),
      * and misdelivered to the guest as an AV when a JIT block took it (rdr49:
      * RIP 0x170, process terminated). The extent is committed by definition. */
-    ios_swap_map( base, size, get_unix_prot( vprot | VPROT_COMMITTED ) );
+    ios_swap_map( base, size, get_unix_prot( vprot | VPROT_COMMITTED ), 1 );
 }
 /* Drop file backing for whatever part of [base, base+size) has it. copy_back:
  * preserve contents in fresh anonymous memory (for an EXEC request); else the
@@ -22355,6 +22430,9 @@ static void ios_swap_back( void *base, size_t size, unsigned int vprot )
  * a source page that is not readable (uncommitted inside a reservation extent,
  * or a guard page) is made readable for the copy. Without a copy buffer or a
  * fresh anonymous mapping the range stays file-backed instead of losing its data. */
+/* madeira-bcd (2026-10-28): set while ios_swap_present gives a fresh commit memory of its own; the range it releases was never
+ * counted as committed file data, so the extent keeps what it holds. */
+static int ios_swap_release_keep_live;
 static void ios_swap_release_range( void *base, size_t size, int copy_back )
 {
     char *lo = (char *)base, *hi = (char *)base + size;
@@ -22407,6 +22485,16 @@ static void ios_swap_release_range( void *base, size_t size, int copy_back )
             ios_swap_bytes -= olen;
             if (ios_swap_ext[i].img) ios_swap_img_bytes -= olen;   /* madeira-bcd swap-images */
             ios_swap_releases++;
+            {
+                /* madeira-bcd (2026-10-28): the committed data leaving the file with the range (at most the range; none when
+                 * ios_swap_present releases a commit it never counted); what stays is clamped to the pieces below */
+                uint64_t keep = ios_swap_ext[i].live;
+                if (!ios_swap_release_keep_live) keep = keep > olen ? keep - olen : 0;
+                if (oa == a && ob == b) keep = 0;
+                else if (oa == a || ob == b) { if (keep > (uint64_t)(ios_swap_ext[i].len - olen)) keep = ios_swap_ext[i].len - olen; }
+                ios_swap_live -= ios_swap_ext[i].live - keep;
+                ios_swap_ext[i].live = keep;
+            }
             /* trim the extent: up to two remaining pieces */
             if (oa == a && ob == b)
             {
@@ -22423,9 +22511,19 @@ static void ios_swap_release_range( void *base, size_t size, int copy_back )
             if (ob == b) { ios_swap_ext[i].len = oa - a; i++; continue; }
             if (ios_swap_n < 16384)
             {
+                uint64_t live = ios_swap_ext[i].live, first = live < (uint64_t)(oa - a) ? live : (uint64_t)(oa - a);
+                uint64_t second = live - first < (uint64_t)(b - ob) ? live - first : (uint64_t)(b - ob);
                 ios_swap_ext[ios_swap_n] = ios_swap_ext[i];   /* resv, key, born carry over */
                 ios_swap_ext[ios_swap_n].va = ob; ios_swap_ext[ios_swap_n].off = ios_swap_ext[i].off + (ob - a);
-                ios_swap_ext[ios_swap_n].len = b - ob; ios_swap_n++;
+                ios_swap_ext[ios_swap_n].len = b - ob; ios_swap_ext[ios_swap_n].live = second; ios_swap_n++;
+                ios_swap_ext[i].live = first;
+                ios_swap_live -= live - first - second;   /* madeira-bcd: the committed data split between the pieces */
+            }
+            else
+            {
+                uint64_t live = ios_swap_ext[i].live, first = live < (uint64_t)(oa - a) ? live : (uint64_t)(oa - a);
+                ios_swap_live -= live - first;   /* the piece above is lost from the table (as before), and its count with it */
+                ios_swap_ext[i].live = first;
             }
             ios_swap_ext[i].len = oa - a; i++;
         }
@@ -22462,6 +22560,7 @@ static int ios_swap_punch_resv( char *lo, size_t len )
             return 0;
         }
         mprotect( lo, len, PROT_READ | PROT_WRITE );
+        ios_swap_live_add( i, -(long long)len );   /* madeira-bcd: the decommitted data leaves the file */
         if (++ios_swap_holes <= 8 || (ios_swap_holes % 1024) == 0)
             dprintf( 2, "[swap] ml1257 decommit %p+0x%zx punched in place (%llu holes)\n", lo, len, ios_swap_holes );
         return 1;
@@ -22489,7 +22588,10 @@ void madeira_hud_jit_pool( unsigned long long *used, unsigned long long *total )
 }
 unsigned long long madeira_hud_swap_bytes( void )
 {
-    return ios_swap_fd < 0 ? 0 : ios_swap_bytes;
+    /* madeira-bcd (2026-10-28): the disk the swap file occupies, the figure swap-mb caps (build 622). Not ios_swap_bytes, which
+     * in broad counts whole reservations (the Task Manager said "Swapped out: 17629 MB" for Spider-Man 2 with 2445 MB on the
+     * disk), nor the committed data (build 621), which is several times what a game writes. fstat only: no page is touched. */
+    return ios_swap_fd < 0 ? 0 : ios_swap_disk_used();
 }
 void ios_swap_stats_line( void )
 {
@@ -22498,11 +22600,13 @@ void ios_swap_stats_line( void )
     disk = ios_swap_disk_used();
     dprintf( 2, "[swap] ml1077 stats: %llu MB file-backed now (peak %llu), %u extents, file used %llu of %llu MB, backs %llu releases %llu unbacks %llu refused %llu"
              " | coverage %s: disk %llu MB of %llu cap, reservations %llu, holes %llu, disk-full refusals %llu"
-             " | ml1258 churn: %u sizes, %llu blocks left anonymous\n",
+             " | ml1258 churn: %u sizes, %llu blocks left anonymous"
+             " | committed data in the file %llu MB (peak %llu), %llu MB kept in memory by swap-mb\n",
              ios_swap_bytes >> 20, ios_swap_peak >> 20, ios_swap_n, (unsigned long long)(ios_swap_bump >> 20),
              (unsigned long long)(ios_swap_logical >> 20), ios_swap_backs, ios_swap_releases, ios_swap_unbacks, ios_swap_refused,
              ios_swap_mode, disk >> 20, (unsigned long long)(ios_swap_cap >> 20), ios_swap_resv_n, ios_swap_holes,
-             ios_swap_disk_refused, ios_swap_nchurny, ios_swap_churn_skips );
+             ios_swap_disk_refused, ios_swap_nchurny, ios_swap_churn_skips,
+             ios_swap_live >> 20, ios_swap_live_peak >> 20, ios_swap_cap_anon >> 20 );
     if (ios_pool_takes || ios_pool_guarded)
         dprintf( 2, "[swap] ml1150 pool: %llu MB in use (peak %llu), %llu takes, %llu guarded, %llu MB lost to a full free list\n",
                  ios_pool_bytes >> 20, ios_pool_peak >> 20, ios_pool_takes, ios_pool_guarded, ios_pool_lost >> 20 );
@@ -22564,6 +22668,8 @@ static void ios_swap_tick( int force )
     if (ios_swap_broad)
     {
         p = ios_swap_put( p, end, " disk=" );         p = ios_swap_put_u( p, end, ios_swap_disk_used() >> 20 );
+        p = ios_swap_put( p, end, "MB committed=" );  p = ios_swap_put_u( p, end, ios_swap_live >> 20 );   /* madeira-bcd */
+        p = ios_swap_put( p, end, "MB kept-in-memory=" ); p = ios_swap_put_u( p, end, ios_swap_cap_anon >> 20 );
         p = ios_swap_put( p, end, "MB churn-sizes=" ); p = ios_swap_put_u( p, end, ios_swap_nchurny );
         p = ios_swap_put( p, end, " | reservations not taken whole MB:" );   /* ml1221 */
         for (i = 0; i < IOS_SWK_REASONS; i++)
@@ -22592,6 +22698,69 @@ static void ios_swap_note( int why, size_t size )
     ios_swap_why_bytes[why] += size;
     ios_swap_tick( 0 );
 }
+/* madeira-bcd (2026-10-28, build 622): broad's cap, the disk the sparse file occupies (ios_swap_disk_used, the ml1257 figure),
+ * for the commits into reservations that are already in the file. The disk grows as iOS writes those pages out, so it is
+ * read again at most every 20 ms (one fstat; no page is touched). */
+static unsigned long long ios_swap_disk_seen, ios_swap_disk_seen_ns;
+static int ios_swap_disk_full( void )
+{
+    unsigned long long now = ios_swap_now_ns();
+    if (!ios_swap_disk_seen_ns || now - ios_swap_disk_seen_ns >= 20000000ULL)
+    {
+        ios_swap_disk_seen = ios_swap_disk_used();
+        ios_swap_disk_seen_ns = now ? now : 1;
+    }
+    return ios_swap_disk_seen >= ios_swap_cap;
+}
+/* madeira-bcd (2026-10-28): a fresh commit inside file-backed reservations (wide, broad). Its host-page interior becomes committed
+ * file data (ios_swap_live, a figure). In broad, once the file's disk has reached swap-mb (ios_swap_disk_full), it gets fresh
+ * anonymous memory instead: the pages were not committed, so there is nothing to copy, and their protection is applied again
+ * from Wine's table. Pages committed before the disk reached swap-mb stay in the file, and what the game writes into them later
+ * can still take the disk past it. Edges that share a host page with other pages stay as they are (a host page maps one
+ * object). Copy-on-write, guard, watch and executable commits are counted, never moved. virtual_mutex is held by the caller. */
+static void ios_swap_present( void *base, size_t size, unsigned int vprot )
+{
+    char *hs = (char *)(((uintptr_t)base + host_page_mask) & ~(uintptr_t)host_page_mask);
+    char *he = (char *)(((uintptr_t)base + size) & ~(uintptr_t)host_page_mask);
+    char *cut[16];
+    size_t cut_len[16];
+    unsigned i, k, ncut = 0;
+    int plain = (vprot & VPROT_WRITE) && !(vprot & (VPROT_EXEC | VPROT_WRITECOPY | VPROT_GUARD | VPROT_WRITEWATCH));
+    int full;
+    if (he <= hs) return;
+    full = ios_swap_broad && plain && ios_swap_disk_full();
+    for (i = 0; i < ios_swap_n; i++)
+    {
+        char *a = ios_swap_ext[i].va, *b = a + ios_swap_ext[i].len;
+        char *oa = a > hs ? a : hs, *ob = b < he ? b : he;
+        if (oa >= ob || (ios_swap_ext[i].off & IOS_POOL_FLAG)) continue;
+        if (full && !ios_swap_ext[i].img && ncut < 16)
+        {
+            cut[ncut] = oa; cut_len[ncut] = ob - oa; ncut++;
+            continue;
+        }
+        ios_swap_live_add( i, (long long)(ob - oa) );
+    }
+    for (k = 0; k < ncut; k++)
+    {
+        if (anon_mmap_fixed( cut[k], cut_len[k], PROT_READ | PROT_WRITE, 0 ) == MAP_FAILED)
+        {
+            /* the file pages are still mapped there: they hold the commit, so they count */
+            for (i = 0; i < ios_swap_n; i++)
+                if (ios_swap_ext[i].va <= cut[k] && cut[k] + cut_len[k] <= ios_swap_ext[i].va + ios_swap_ext[i].len)
+                { ios_swap_live_add( i, (long long)cut_len[k] ); break; }
+            continue;
+        }
+        mprotect_range( cut[k], cut_len[k], 0, 0 );
+        ios_swap_release_keep_live = 1;
+        ios_swap_release_range( cut[k], cut_len[k], 0 );   /* the extent's bookkeeping; the file range is punched and free again */
+        ios_swap_release_keep_live = 0;
+        ios_swap_cap_anon += cut_len[k];
+        if (++ios_swap_cap_anon_n == 1)
+            dprintf( 2, "[swap] swap-mb reached: the swap file holds %llu MB on the disk (cap %llu MB); later commits stay in memory\n",
+                     ios_swap_disk_seen >> 20, (unsigned long long)(ios_swap_cap >> 20) );
+    }
+}
 /* A fresh commit (MEM_COMMIT, with or without MEM_RESERVE) of [base, base+size).
  * classic runs the original rule unchanged. */
 static void ios_swap_commit( void *base, size_t size, unsigned int vprot, struct file_view *view )
@@ -22599,10 +22768,30 @@ static void ios_swap_commit( void *base, size_t size, unsigned int vprot, struct
     int why;
     if (ios_swap_fd < 0) return;
     if (!ios_swap_v2) { if (ios_swap_eligible( base, size, vprot, view )) ios_swap_back( base, size, vprot ); return; }
-    if ((ios_swap_wide || ios_swap_broad) && ios_swap_n && ios_swap_overlaps( base, size )) { ios_swap_note( IOS_SW_PRESENT, size ); return; }
+    if ((ios_swap_wide || ios_swap_broad) && ios_swap_n && ios_swap_overlaps( base, size ))
+    {
+        ios_swap_present( base, size, vprot );   /* madeira-bcd: counted against swap-mb, or kept in memory past it */
+        ios_swap_note( IOS_SW_PRESENT, size );
+        return;
+    }
     why = ios_swap_why( base, size, vprot, view );
-    if (why == IOS_SW_BACKED) why = ios_swap_map( base, size, get_unix_prot( vprot | VPROT_COMMITTED ) );   /* ml1082 */
+    if (why == IOS_SW_BACKED) why = ios_swap_map( base, size, get_unix_prot( vprot | VPROT_COMMITTED ), 1 );   /* ml1082 */
     ios_swap_note( why, size );
+}
+/* madeira-bcd (2026-10-28): a commit that also covered pages already committed (never moved to the file or out of it). Its
+ * fresh pages inside file-backed reservations are committed file data now; fresh_bytes of them, counted on the first extent
+ * the range touches (clamped there). */
+static void ios_swap_recommit( void *base, size_t size, size_t fresh_bytes )
+{
+    unsigned i;
+    const char *lo = base, *hi = (const char *)base + size;
+    if (ios_swap_fd < 0 || !ios_swap_n || !fresh_bytes) return;
+    for (i = 0; i < ios_swap_n; i++)
+        if (ios_swap_ext[i].va < hi && ios_swap_ext[i].va + ios_swap_ext[i].len > lo && !(ios_swap_ext[i].off & IOS_POOL_FLAG))
+        {
+            ios_swap_live_add( i, (long long)fresh_bytes );
+            return;
+        }
 }
 /* wide: a fresh WRITABLE reservation, mapped from the file PROT_NONE (what
  * map_view left there), so later commits are protection changes of file
@@ -22612,7 +22801,7 @@ static void ios_swap_reserve( void *base, size_t size, unsigned int vprot, struc
     if (ios_swap_fd < 0 || !ios_swap_wide) return;
     if ((vprot & VPROT_COMMITTED) || size > ios_swap_resv_max) return;
     if (ios_swap_why( base, size, vprot, view ) != IOS_SW_BACKED) return;
-    if (ios_swap_map( base, size, get_unix_prot( vprot ) ) != IOS_SW_BACKED) return;
+    if (ios_swap_map( base, size, get_unix_prot( vprot ), 0 ) != IOS_SW_BACKED) return;
     /* ml1257: decommit inside it punches in place, like broad's reservations, so a
      * small recommit stays file-backed instead of splitting the extent (wide has not
      * run on a device yet). */
@@ -22646,7 +22835,7 @@ static int ios_swap_whole_resv( struct file_view *view, unsigned int vprot )
     if (ios_swap_churny( view->size ))   /* ml1258 */
     { ios_swap_churn_skips++; ios_swap_skip_bytes[IOS_SWK_CHURN] += view->size; return 0; }
     ios_swap_map_tag = " (whole reservation, ml1257)";
-    why = ios_swap_map( view->base, view->size, get_unix_prot( vprot ) );
+    why = ios_swap_map( view->base, view->size, get_unix_prot( vprot ), (vprot & VPROT_COMMITTED) != 0 );
     ios_swap_map_tag = "";
     if (why == IOS_SW_BACKED)
     {
@@ -22697,7 +22886,8 @@ static int ios_swap_image_map( char *va, size_t len, uint64_t off )
     }
     ios_swap_ext[ios_swap_n].va = va; ios_swap_ext[ios_swap_n].len = len; ios_swap_ext[ios_swap_n].off = off;
     ios_swap_ext[ios_swap_n].resv = 0; ios_swap_ext[ios_swap_n].key = 0; ios_swap_ext[ios_swap_n].born = 0;
-    ios_swap_ext[ios_swap_n].img = 1; ios_swap_n++;
+    ios_swap_ext[ios_swap_n].img = 1; ios_swap_ext[ios_swap_n].live = 0; ios_swap_n++;
+    ios_swap_live_add( ios_swap_n - 1, (long long)len );
     ios_swap_bytes += len; if (ios_swap_bytes > ios_swap_peak) ios_swap_peak = ios_swap_bytes;
     ios_swap_backs++;
     ios_swap_img_bytes += len; if (ios_swap_img_bytes > ios_swap_img_peak) ios_swap_img_peak = ios_swap_img_bytes;
@@ -23108,6 +23298,8 @@ static int ios_pool_foreign_overlap( uintptr_t rw_start, size_t size )
  * only the range's own ends can be partial pages. If an alias's slot was handed out
  * again, its part is left alone, as [alias-tomb] did, and the branch says so.
  * *verify / *vsize get the first part zeroed through an alias, for the read-back. */
+static void zero_partial_decommit_range( void *addr, SIZE_T len );
+
 static const char *ios_decommit_alias_split( char *base, size_t size,
                                              const void **verify, size_t *vsize )
 {
@@ -23169,10 +23361,31 @@ static const char *ios_decommit_alias_split( char *base, size_t size,
                     ios_swap_release_range( hs, he - hs, 0 );   /* ml1077 */
                     anon_mmap_fixed( hs, he - hs, PROT_READ | PROT_WRITE, 0 );
                 }
-                if (p < hs) memset( p, 0, hs - p );
-                if (he < part_end) memset( he, 0, part_end - he );
+                if (p < hs)
+                {
+#ifdef WINE_IOS
+                    zero_partial_decommit_range( p, hs - p );
+#else
+                    memset( p, 0, hs - p );
+#endif
+                }
+                if (he < part_end)
+                {
+#ifdef WINE_IOS
+                    zero_partial_decommit_range( he, part_end - he );
+#else
+                    memset( he, 0, part_end - he );
+#endif
+                }
             }
-            else memset( p, 0, part_end - p );
+            else
+            {
+#ifdef WINE_IOS
+                zero_partial_decommit_range( p, part_end - p );
+#else
+                memset( p, 0, part_end - p );
+#endif
+            }
             n_plain++;
         }
         p = part_end;
@@ -23188,14 +23401,27 @@ static const char *ios_decommit_alias_split( char *base, size_t size,
 
 static void zero_partial_decommit_range( void *addr, SIZE_T len )
 {
+    extern uintptr_t ios_jit_anon_alias_lookup(uintptr_t fault_addr);
     char *hp = ROUND_ADDR( addr, host_page_mask );
     BYTE vp = get_host_page_vprot( hp );
-    int unix_prot;
+    uintptr_t rw_alias;
+    vm_prot_t cur_prot = 0, max_prot = 0;
+    int unix_prot, has_phys;
     if (!(vp & VPROT_COMMITTED)) return;
+    rw_alias = ios_jit_anon_alias_lookup( (uintptr_t)addr );
+    if (rw_alias)
+    {
+        if (!ios_pool_foreign_overlap( rw_alias, len ))
+            memset( (void *)rw_alias, 0, len );
+        return;
+    }
     unix_prot = get_unix_prot( vp );
-    if (!(unix_prot & PROT_WRITE))
+    has_phys = ios_dc_query( hp, &cur_prot, &max_prot );
+    if (!(unix_prot & PROT_WRITE) || (has_phys && !(cur_prot & VM_PROT_WRITE)))
     {
         if (mprotect_exec( hp, host_page_size, unix_prot | PROT_READ | PROT_WRITE ))
+            return;
+        if (ios_dc_query( hp, &cur_prot, &max_prot ) && !(cur_prot & VM_PROT_WRITE))
             return;
         memset( addr, 0, len );
         return;
@@ -29243,7 +29469,10 @@ static NTSTATUS allocate_virtual_memory( void **ret, SIZE_T *size_ptr, ULONG typ
     {
         int was_committed = (get_page_vprot( base ) & VPROT_COMMITTED) != 0;
         int any_committed = 0;   /* ml1077: only FRESH commits may be file-backed (a hole reads as zero) */
+        size_t fresh_bytes = 0;   /* madeira-bcd: the pages of a mixed commit that were not committed (swap-mb counts them) */
         { const char *pg; for (pg = base; pg < (const char *)base + size; pg += page_size) if (get_page_vprot( pg ) & VPROT_COMMITTED) { any_committed = 1; break; } }
+        if (any_committed && ios_swap_fd >= 0 && ios_swap_n)
+        { const char *pg; for (pg = base; pg < (const char *)base + size; pg += page_size) if (!(get_page_vprot( pg ) & VPROT_COMMITTED)) fresh_bytes += page_size; }
         if (!(view = find_view( base, size ))) status = STATUS_NOT_MAPPED_VIEW;
         else if (view->protect & SEC_FILE) status = STATUS_ALREADY_COMMITTED;
         else if (view->protect & VPROT_FREE_PLACEHOLDER) status = STATUS_CONFLICTING_ADDRESSES;
@@ -29253,6 +29482,7 @@ static NTSTATUS allocate_virtual_memory( void **ret, SIZE_T *size_ptr, ULONG typ
             ios_swap_init();
             if (any_committed) ios_swap_note( IOS_SW_RECOMMIT, size );   /* census only; never backed */
             else if (!get_vprot_flags( protect, &sv, 0 )) ios_swap_commit( base, size, sv, view );
+            if (any_committed) ios_swap_recommit( base, size, fresh_bytes );   /* madeira-bcd: its fresh pages in the file count */
         }
         if (!status && view && (view->protect & SEC_RESERVE))
         {
@@ -36044,10 +36274,24 @@ static inline __attribute__((always_inline)) NTSTATUS ios_nt_impl_NtMapViewOfSec
         return STATUS_INVALID_PARAMETER_4;
 
     /* If both addr_ptr and zero_bits are passed, they have match */
-    if (zero_bits && zero_bits < 32 && ((UINT_PTR)*addr_ptr >> (32 - zero_bits)))
-        return STATUS_INVALID_PARAMETER_4;
-    if (zero_bits >= 32 && ((UINT_PTR)*addr_ptr & ~zero_bits))
-        return STATUS_INVALID_PARAMETER_4;
+    {
+        /* madeira-bcd (round 620): a 32-bit program's explicit base arrives here window-biased (guest 0x50000000 is
+         * <window base> + 0x50000000) with wow64's zero_bits 0xffffffff, so the mask test below refused EVERY explicit base
+         * in a WoW64 window with STATUS_INVALID_PARAMETER_4 (c00000f2). DirectPlay's dplayx maps its static data at
+         * 0x50000000 and retries without a base only on ERROR_INVALID_ADDRESS (487), so it gave up ("unable to map static
+         * data into process memory space (87)") and read through NULL: Requiem: Avenging Angel (EDZH2K, build 614),
+         * Hotline Miami (15HRX1, build 580); StarCraft (TS5WR4) hit the same refusal. The test now uses the guest address
+         * for a base inside this process's own window, as Windows sees it. Only calls that were refused change; the
+         * mapping itself still goes through virtual_map_section, whose window limits refuse a range that does not fit
+         * (STATUS_CONFLICTING_ADDRESSES, the answer dplayx falls back on). */
+        UINT_PTR check_addr = (UINT_PTR)*addr_ptr;
+        if (check_addr && process == NtCurrentProcess() && ios_wow_in_window( *addr_ptr ))
+            check_addr -= ios_wow_base();
+        if (zero_bits && zero_bits < 32 && (check_addr >> (32 - zero_bits)))
+            return STATUS_INVALID_PARAMETER_4;
+        if (zero_bits >= 32 && (check_addr & ~zero_bits))
+            return STATUS_INVALID_PARAMETER_4;
+    }
 
     if (!is_win64 && !is_wow64())
     {

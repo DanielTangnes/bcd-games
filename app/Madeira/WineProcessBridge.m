@@ -1854,6 +1854,7 @@ static void *wine_process_thread(void *arg) {
                     "MADEIRA_FEX_AVX",           /* ml1184: the game's "AVX and AVX2" */
                     "MADEIRA_FRAMEGEN",          /* ml1184: the game's "Frame generation" */
                     "DXMT_ENABLE_NVEXT", "DXMT_WSI_MONITOR_IDENTITY", "DXMT_WSI_MODE_TABLE",   /* the game's "Report an NVIDIA GPU" */
+                    "BCD_SERVICES_DIR", "BCD_SERVICES_TARGET",   /* round 620: the services batch's non-ASCII folder and program */
                 };
                 enum { per_launch_count = sizeof(per_launch) / sizeof(per_launch[0]) };
                 BOOL game_set[per_launch_count];
@@ -2343,7 +2344,12 @@ static void *wine_process_thread(void *arg) {
              * which upstream's aborts in. Wine's d2d1 calls it around every draw:
              * the Rockstar Games Launcher exited with code 3 there. Off by default,
              * linked like dxgi-src.dll above (system32 + sysx64, relinked from the
-             * bundle every session, so dropping the line restores upstream's). */
+             * bundle every session, so dropping the line restores upstream's).
+             * Round 620: upstream's binary has SwapDeviceContextState since the
+             * 2026-10-15 merge; d3d11-src.dll is built again because it is the
+             * only 64-bit d3d11.dll that carries BCD's Direct3D 11 patches
+             * (CopyStructureCount without a buffer: F1 2020; render target views
+             * on a buffer: Frostbite 2 games). */
             {
                 const char *d3d11Src = getenv("MADEIRA_D3D11_SRC");
                 if (d3d11Src && d3d11Src[0] == '1') {
@@ -2358,7 +2364,7 @@ static void *wine_process_thread(void *arg) {
                             [fm removeItemAtPath:dst error:nil];
                             [fm createSymbolicLinkAtPath:dst withDestinationPath:srcDll error:nil];
                         }
-                        dprintf(STDERR_FILENO, "[WineProc] MADEIRA_D3D11_SRC=1: d3d11.dll -> d3d11-src.dll (DXMT source build with SwapDeviceContextState; %s)\n",
+                        dprintf(STDERR_FILENO, "[WineProc] MADEIRA_D3D11_SRC=1: d3d11.dll -> d3d11-src.dll (DXMT source build with BCD's Direct3D 11 patches; %s)\n",
                                 use_arm64ec ? "system32 + sysx64" : "sysx64 only");
                     } else {
                         dprintf(STDERR_FILENO, "[WineProc] MADEIRA_D3D11_SRC=1 but this build has no d3d11-src.dll -- upstream's d3d11.dll stays\n");
@@ -3158,6 +3164,7 @@ static void wine_session_end(void)
     unsetenv("MADEIRA_DINPUT_PAD");        /* ml1240 */
     unsetenv("MADEIRA_FEX_AVX"); unsetenv("MADEIRA_FRAMEGEN");   /* ml1184 */
     unsetenv("DXMT_ENABLE_NVEXT"); unsetenv("DXMT_WSI_MONITOR_IDENTITY"); unsetenv("DXMT_WSI_MODE_TABLE");
+    unsetenv("BCD_SERVICES_DIR"); unsetenv("BCD_SERVICES_TARGET");   /* round 620 */
     /* madeira-bcd: Horizon Zero Dawn's per-game switches must not reach a later game
      * of this app run (GTA V Enhanced runs without them). */
     unsetenv("MADEIRA_UCRT_X64_MATH"); unsetenv("MADEIRA_SRV_FGETPATH");
@@ -3179,6 +3186,8 @@ static void wine_session_end(void)
     unsetenv("MADEIRA_POOL_CLAMP_SECTIONS"); /* madeira-bcd: likewise */
     unsetenv("MADEIRA_LUM_PROBE");      /* madeira-bcd: likewise */
     unsetenv("MADEIRA_FEX_BAND_KEEP_MB"); /* madeira-bcd: likewise */
+    unsetenv("MADEIRA_BUFFER_RTV_EMPTY"); /* round 620: likewise (Frostbite 2's render target views on a buffer) */
+    unsetenv("MADEIRA_D3D11_SRC");        /* round 620: likewise (the 64-bit d3d11.dll with BCD's patches) */
     g_madeira_srv_fgetpath = 0;
     /* madeira-bcd: the server's per-launch switches end with the session as well */
     unsetenv("MADEIRA_SRV_ECO_FOLLOW"); unsetenv("MADEIRA_SRV_DIRECT");

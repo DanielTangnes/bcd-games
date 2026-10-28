@@ -169,7 +169,7 @@ enum LogUpload {
             config.timeoutIntervalForResource = 600
             let session = URLSession(configuration: config)
             session.uploadTask(with: req, fromFile: gz) { data, response, error in
-                // Sent or not, the compressed copy goes now (owner: "gönderildiği an silinir").
+                // Sent or not, the compressed copy goes now (owner: deleted the moment it is sent).
                 try? FileManager.default.removeItem(at: gz)
                 session.finishTasksAndInvalidate()
                 if let error { return finish(.failure(error)) }

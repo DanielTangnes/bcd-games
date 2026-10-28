@@ -64,8 +64,14 @@ check("off: the old order, as before (retire every buffer, upload-guard, then th
       "                if (g_upload_guard) mad_ug_verify(d, job.serial);   /* madeira-bcd: before the game may reuse the data */\n"
       "                ID3D12Fence_Signal(job.fence, job.value);\n" in block)
 check("on: only without upload-guard and query results, and only when the ring took the buffers",
-      "if (mad_fence_early_on() && !g_upload_guard && !mad_vis_job_pending(d, job.cbs, job.ncbs) &&\n"
+      "int fe = mad_fence_early_on();" in block and
+      "if (fe && !g_upload_guard && !mad_vis_job_pending(d, job.cbs, job.ncbs) &&\n"
       "                mad_retire_defer(d, job.cbs, job.ncbs)) {" in block)
+# Build 618 (Spider-Man 2, 2026-10-27): fence-early = 2 first publishes the job's query results (mad_vis_retire_ex without waiting for
+# the command buffer) for a batch that did not fail, then the same decision as 1.
+check("fence-early = 2: the job's query results are published first, only without upload-guard and for a batch that did not fail",
+      "if (fe >= 2 && !g_upload_guard && (LONG64)job.serial > d->gpu_serial_failed)\n"
+      "                for (k = 0; k < job.ncbs; k++) mad_vis_retire_ex(d, job.cbs[k], 0);" in block)
 rel = function("static ULONG STDMETHODCALLTYPE device_Release(ID3D12Device *This) {")
 check("teardown stops the retire thread after the fence thread",
       rel.index("if (d->fence_thread) {") < rel.index("if (d->retire_thread) {") and
@@ -144,6 +150,7 @@ struct mad_device {
     obj_handle_t retire_q[256]; unsigned retire_head, nretire;
     HANDLE retire_wake, retire_thread;
     volatile LONG retire_quit;
+    LONG64 gpu_serial_failed;   /* build 618: the last batch that failed */
 };
 typedef struct { UINT64 serial; void *fence; UINT64 value; obj_handle_t cbs[16]; unsigned ncbs; } fjob;
 
@@ -166,6 +173,7 @@ static void note( char kind, UINT64 v )
 static int retire_ms = 20;
 static void mad_cb_retire( struct mad_device *d, obj_handle_t cb ) { usleep( retire_ms * 1000 ); note( 'r', cb ); }
 static void mad_ug_verify( struct mad_device *d, UINT64 serial ) { note( 'u', serial ); }
+static void mad_vis_retire_ex( struct mad_device *d, obj_handle_t cb, int wait_cb ) { note( 'q', cb ); }   /* build 618: publish queries */
 #define ID3D12Fence_Signal( f, v ) note( 's', (v) )
 static volatile LONG g_fe_early, g_fe_inline;
 static volatile int g_fence_early = -1;
@@ -273,6 +281,22 @@ int main( void )
         d->retire_thread = t;
     }
     if (nrec != 17 || rec[16].kind != 's' || rec[0].v != 600) fail( "a full ring: the job retires inline, then the fence" );
+
+    /* fence-early = 2 (build 618): the query results of a batch that did not fail are published first, then the fence as with 1;
+     * a batch at or below the last failed serial, and upload-guard, publish nothing early */
+    cfg_fence_early = 2; g_fence_early = -1; nrec = 0; retire_ms = 2;
+    d = new_dev();
+    process_job( d, job_of( 30, 800, 2 ) );
+    if (idx( 'q', 800 ) < 0 || idx( 'q', 801 ) < 0 || idx( 'q', 801 ) > idx( 's', 30 )) fail( "fence-early 2: both buffers' queries published before the fence" );
+    d->gpu_serial_failed = 31; nrec = 0;
+    process_job( d, job_of( 31, 810, 1 ) );
+    if (idx( 'q', 810 ) >= 0 || idx( 's', 31 ) < 0) fail( "fence-early 2: a failed batch publishes nothing early" );
+    d->gpu_serial_failed = 0; nrec = 0; g_upload_guard = 1;
+    process_job( d, job_of( 32, 820, 1 ) );
+    g_upload_guard = 0;
+    if (idx( 'q', 820 ) >= 0) fail( "fence-early 2: upload-guard publishes nothing early" );
+    stop( d );
+    cfg_fence_early = 1; g_fence_early = -1;
 
     /* teardown drains the ring */
     cfg_fence_early = 1; nrec = 0; retire_ms = 2;

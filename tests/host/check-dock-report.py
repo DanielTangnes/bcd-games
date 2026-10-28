@@ -58,6 +58,10 @@ for key in ["launch-install-directory-verified", "launch-client-discovery-publis
 assert(hostLaunch.fields["launch-host-result"] == "0" && hostLaunch.failure == nil)
 assert(parse("[steam-host] ml1830 session-authenticated-online=1\n[steam-host] ml1830 probe-result=34\n").failure!.contains("license check for this game timed out"))
 assert(parse("[steam-host] ml1830 probe-result=34\n").failure!.contains("sign-in didn't complete"))
+// Round 620 (Half-Life 2, 6XBJKH): an expired saved sign-in (EResult 15 in callback 102/103) says so, not "check your connection".
+assert(parse("[steam-host] ml1830 session-connection-result=15\n[steam-host] ml1830 probe-result=34\n").failure!.contains("no longer accepts your sign-in"))
+assert(parse("[steam-host] ml1830 session-connection-result=3\n[steam-host] ml1830 probe-result=34\n").failure!.contains("sign-in didn't complete"))
+assert(parse("[steam-host] ml1830 session-authenticated-online=1\n[steam-host] ml1830 session-connection-result=15\n[steam-host] ml1830 probe-result=34\n").failure!.contains("license check"))
 // Offline start (ml2016): Valve's client decides; each refusal has its own words.
 let offline = parse("[steam-host] ml2016 session-offline-abi=1\n[steam-host] ml2016 session-offline-requested=1\n[steam-host] ml2016 session-offline-can=2\n[steam-host] ml1830 probe-result=50\n")
 assert(offline.fields["session-offline-can"] == "2" && offline.failure!.contains("no saved data yet") && offline.failure!.contains("once while online"))
@@ -76,6 +80,13 @@ with tempfile.TemporaryDirectory(prefix='madeira-dock-report-') as directory:
     source.write_text('import Foundation\nenum MadeiraDock {\n' + parser + '\n}\n' + checks)
     subprocess.run([SWIFTC, str(source), '-o', str(binary)], check=True)
     subprocess.run([str(binary)], check=True)
+
+# Round 620: the Dock's expired-sign-in results are SteamError.signInExpiredCodes, as text.
+import re as _re
+_err = (root / "app/Madeira/SwiftSteam/Core/SteamError.swift").read_text()
+_codes = set(_re.search(r"signInExpiredCodes: Set<UInt32> = \[([0-9, ]+)\]", _err).group(1).replace(" ", "").split(","))
+_dock = set(_re.search(r"expiredSignInResults: Set<String> = \[([^\]]*)\]", text).group(1).replace('"', "").replace(" ", "").split(","))
+assert _codes == _dock, (_codes, _dock)
 
 # The rounds the parser accepts are the ones the pinned host writes.
 if host.exists():

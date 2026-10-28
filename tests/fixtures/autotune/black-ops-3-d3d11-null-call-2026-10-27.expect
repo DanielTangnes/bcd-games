@@ -1,0 +1,10 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [],
+ "next": [],
+ "note": "Call of Duty: Black Ops III (64-bit, Direct3D 11), build 614, iPhone18,1, Send Log 097R76 (round 620): Settings has Direct3D 9 on Native ARM64 and the game calls address 0; the native D3D9 frontend is never loaded, so d3d9-native-null-call must not match (it did before build 620). Cause of the crash unknown.",
+ "outcome": "crashed",
+ "stage": 2,
+ "status": "stuck"
+}

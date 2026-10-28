@@ -421,10 +421,10 @@ struct RecommendationsPolicy {
     static let allowedEnvNames: Set<String> = [
         "BCD_EPIC_HOST_START",
         "_JAVA_OPTIONS", "DOTNET_EnableWriteXorExecute", "DOTNET_GCRegionRange",
-        "DXMT_SMALL_RINGS", "DXMT_WSI_MODE_TABLE", "DXMT_WSI_MONITOR_IDENTITY", "FEX_VECTORTSOENABLED", "FEX_X87REDUCEDPRECISION", "LC_ALL",
+        "DXMT_SMALL_RINGS", "DXMT_WSI_MODE_TABLE", "DXMT_WSI_MONITOR_IDENTITY", "FEX_MEMCPYSETTSOENABLED", "FEX_TSOENABLED", "FEX_VECTORTSOENABLED", "FEX_X87REDUCEDPRECISION", "LC_ALL",
         "MADEIRA_ALIAS_RELEASE", "MADEIRA_ANON_CAS_FLUSH", "MADEIRA_ANON_LDADDAL32", "MADEIRA_APP_DLL_SHADOW", "MADEIRA_BAND_CENSUS", "MADEIRA_CAGE_RELEASE",
         "MADEIRA_CHILD_ARGS", "MADEIRA_CTX_FRAME", "MADEIRA_D3D11_SRC", "MADEIRA_D3D9", "MADEIRA_D3D9_LAST", "MADEIRA_D3D9_X64", "MADEIRA_DEVICE_STATS", "MADEIRA_STEAM_IDENTITY", "MADEIRA_DOCK_GAME_SCM",
-        "MADEIRA_DOCK_KEEP_ALIVE", "MADEIRA_DOCK_SCRIPT_REGISTRY", "MADEIRA_DXGI_BUDGET_EVENTS", "MADEIRA_DXGI_SRC", "MADEIRA_EC_HOOK_TRACE",
+        "MADEIRA_DOCK_KEEP_ALIVE", "MADEIRA_DOCK_SCRIPT_REGISTRY", "MADEIRA_DXGI_BUDGET_EVENTS", "MADEIRA_DXGI_SRC", "MADEIRA_EC_HOOK_TRACE", "MADEIRA_ECO_NATIVE",
         "MADEIRA_EXECREQ_LEAVE", "MADEIRA_FASTSYNC_SEM", "MADEIRA_FAULT_GUARD_GUEST_RIP", "MADEIRA_FAULT_GUARD_RATE", "MADEIRA_FEX_AVX", "MADEIRA_FEX_BAND_KEEP_MB",
         "MADEIRA_FILE_TRACE", "MADEIRA_FILE_TRACE_LIMIT", "MADEIRA_FREE_DELAY_MS", "MADEIRA_GUEST_LOG", "MADEIRA_GUEST_LOG_LIMIT",
         "MADEIRA_INPUT_FOREGROUND", "MADEIRA_JUMBO_HALF", "MADEIRA_KMT_ADAPTER", "MADEIRA_LD_BOUNDS",
@@ -445,9 +445,12 @@ struct RecommendationsPolicy {
         "MADEIRA_X64_GRAPHICS_ENTRY", "MADEIRA_X64_IMAGE_NOCOPY", "MADEIRA_X64_MACHINE", "SteamDeck", "WINEDEBUG",
         "MADEIRA_ZERO_MITIGATION_POLICY",   // build 600 (Glyphica: Typing Survival, ChakraCore's fail-fast over an unwritten policy buffer)
         "MADEIRA_KUSER_KEEP_REGS",   // build 602 (The Adventures of Elliot: registers that only hold a KUSER-looking value stay as the guest set them)
+        "MADEIRA_DLL_LOCAL",
         "WINEDLLOVERRIDES",
         "WINE_D3D_CONFIG",
         "MADEIRA_D3D8", "MADEIRA_DDRAW",   // build 602: d3d8to9 as a 32-bit game's d3d8.dll and cnc-ddraw as its ddraw.dll (BCDGraphicsRoutes.c); one value each
+        "MADEIRA_REAL_SUSPEND",   // build 620: SuspendThread really stops the thread (wineserver mach_ios.c, opt-in): Unity IL2CPP games whose GC marks objects while it believes the world is stopped (thebcd69/bcd-games#18: Big Walk, Megabonk, BALL x PIT)
+        "MADEIRA_BUFFER_RTV_EMPTY",   // build 620: a render target view on a buffer gets S_OK and no view (DXMT, opt-in; Frostbite 2: Need for Speed: The Run)
     ]
 
     var configKeys: Set<String>
@@ -475,11 +478,12 @@ struct RecommendationsPolicy {
                 // wmadmod: Wine's ASF byte stream handler and the WMV and WMA decoder MFTs (Resident Evil 2).
                 // oledlg, fwpuclnt and sensapi: small system DLLs a program imports (2026-10-23). ddraw: Dying Light's renderer (same day).
                 // msi, mspatcha, odbccp32, sxs and rstrtmgr: what the EA app's 64-bit EABackgroundService.exe imports (same day).
+                // gamingtcui: what Forza Horizon 4's exe imports as api-ms-win-gaming-tcui-l1-1-0.dll (round 620).
                 let names = value.lowercased().split(whereSeparator: { ",; ".contains($0) })
                 guard !names.isEmpty, names.allSatisfy({ ["dxva2", "evr", "xpsprint", "sfc", "sfc_os", "tbs", "twinapi.appcore", "setupapi"].contains($0)
                         || ["mfasfsrcsnk", "wmvdecod", "wmadmod"].contains($0) || ["oledlg", "fwpuclnt", "sensapi", "ddraw"].contains($0)
-                        || ["msi", "mspatcha", "odbccp32", "sxs", "rstrtmgr"].contains($0) || ["glu32", "tdh"].contains($0) }) else {
-                    throw RecommendationsError.policy("\(path): MADEIRA_OPTIN_DLLS may only name dxva2, evr, xpsprint, sfc, sfc_os, tbs, twinapi.appcore or setupapi, or mfasfsrcsnk, wmvdecod, wmadmod, or oledlg, fwpuclnt, sensapi, ddraw, or msi, mspatcha, odbccp32, sxs, rstrtmgr, or glu32, tdh")
+                        || ["msi", "mspatcha", "odbccp32", "sxs", "rstrtmgr"].contains($0) || ["glu32", "tdh", "gamingtcui"].contains($0) }) else {
+                    throw RecommendationsError.policy("\(path): MADEIRA_OPTIN_DLLS may only name dxva2, evr, xpsprint, sfc, sfc_os, tbs, twinapi.appcore or setupapi, or mfasfsrcsnk, wmvdecod, wmadmod, or oledlg, fwpuclnt, sensapi, ddraw, or msi, mspatcha, odbccp32, sxs, rstrtmgr, or glu32, tdh, gamingtcui")
                 }
             case "MADEIRA_STEAM_IDENTITY":
                 // No Steam game identity for this session (build 598, Rockstar's launcher of the Epic GTA V / RDR2): the one value, none.
@@ -632,9 +636,15 @@ struct RecommendationsPolicy {
                     throw RecommendationsError.policy("\(path): DOTNET_GCRegionRange is a hexadecimal size from 1 GB to 64 GB")
                 }
             case "WINEDLLOVERRIDES":
-                // Only switching a DLL off, or to Wine's own: never a native DLL from a game's folder.
-                guard value.range(of: #"^[A-Za-z0-9_.,-]+=b?(;[A-Za-z0-9_.,-]+=b?)*$"#, options: .regularExpression) != nil else {
-                    throw RecommendationsError.policy("\(path): WINEDLLOVERRIDES may only switch DLLs off or to Wine's own")
+                // Switching a DLL off, to Wine's own, or (for rdr2-other from build 616) socialclub/version to native,builtin.
+                let entry = #"([A-Za-z0-9_.,-]+=b?|(socialclub|version)=n,b)"#
+                guard value.range(of: "^" + entry + "(;" + entry + ")*$", options: .regularExpression) != nil else {
+                    throw RecommendationsError.policy("\(path): WINEDLLOVERRIDES may only switch DLLs off, to Wine's own, or socialclub/version=n,b")
+                }
+            case "MADEIRA_DLL_LOCAL":
+                let dll = #"[A-Za-z0-9_.-]+\.[Dd][Ll][Ll]"#
+                guard value.range(of: "^" + dll + "=" + dll + "(;" + dll + "=" + dll + ")*$", options: .regularExpression) != nil else {
+                    throw RecommendationsError.policy("\(path): MADEIRA_DLL_LOCAL is <target.dll>=<local.dll>")
                 }
             case "MADEIRA_SPAWN_SWAP":
                 // Build 598 (Fallout 4, Steam 377160): a program that is about to start is replaced by another program of the same folder,

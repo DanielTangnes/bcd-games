@@ -14,7 +14,6 @@ import smtplib
 import ssl
 import subprocess
 from urllib.parse import quote
-from zoneinfo import ZoneInfo
 
 
 # The app is "BCD" (owner, 2026-10-18), with its own bundle IDs. The internal names stay
@@ -145,9 +144,9 @@ def prune_plan(listing, reserve, budget, keep, current):
 
 
 def publication(version, build, secondary):
-    now = datetime.now(ZoneInfo("Europe/Istanbul"))
-    return dict(version=version, build=str(build), created=now.strftime("%Y-%m-%d %H:%M TRT"),
-                until=(now + timedelta(days=7)).strftime("%Y-%m-%d %H:%M TRT"),
+    now = datetime.now().astimezone()   # the Mac's own time zone
+    return dict(version=version, build=str(build), created=now.strftime("%Y-%m-%d %H:%M %Z"),
+                until=(now + timedelta(days=7)).strftime("%Y-%m-%d %H:%M %Z"),
                 variants=[dict(name=name, display=DISPLAY[name], bundle_id=bundle_id)
                           for name, bundle_id in VARIANTS[:2 if secondary else 1]])
 
@@ -162,13 +161,13 @@ def page_key(name, version):
 
 def install_page(data, variants):
     version, build = html.escape(data["version"]), html.escape(data["build"])
-    title = " ve ".join(html.escape(row["display"]) for row in variants)
+    title = " and ".join(html.escape(row["display"]) for row in variants)
     cards = []
     for row in variants:
         name = html.escape(row["display"])
         install = "itms-services://?action=download-manifest&url=" + quote(row["manifest_url"], safe="")
-        cards.append(f'<section><h2>{name}</h2><a class="b" href="{html.escape(install)}">{name} Yükle</a></section>')
-    return ('<!doctype html><html lang="tr"><head><meta charset="utf-8">'
+        cards.append(f'<section><h2>{name}</h2><a class="b" href="{html.escape(install)}">Install {name}</a></section>')
+    return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width, initial-scale=1">'
             f'<title>{title} {version}</title><style>'
             'body{font-family:-apple-system,system-ui,sans-serif;background:#111;color:#eee;'
@@ -178,7 +177,7 @@ def install_page(data, variants):
             'color:#fff;text-decoration:none;font-size:18px;font-weight:600}p{color:#aaa;font-size:14px}'
             f'</style></head><body><div class="c"><h1>{title} {version}</h1>'
             f'<p>Build {build} &middot; {html.escape(data["created"])}</p>' + ''.join(cards) +
-            f'<p>Dokun, ardından "Yükle"yi onayla. Linkler {html.escape(data["until"])} tarihine kadar geçerli.</p>'
+            f'<p>Tap it, then confirm "Install". The links work until {html.escape(data["until"])}.</p>'
             '</div></body></html>')
 
 
@@ -196,33 +195,33 @@ def render(data, directory):
 
 
 # The signed .ipa links under the install buttons (owner, 2026-10-17, for testers who re-sign).
-# Off since the same day: "maildeki şu kısımları da kaldır şimdilik. belki sonra ihtiyacımız olur".
+# Off since the same day (owner: leave these parts out of the mail for now, maybe later).
 MAIL_IPA_LINKS = False
 
 
 def email_message(data, sender, recipient):
-    names = " ve ".join(row["display"] for row in data["variants"])
+    names = " and ".join(row["display"] for row in data["variants"])
     message = EmailMessage()
-    message["Subject"] = f'{names} {data["version"]} kuruluma hazır'
+    message["Subject"] = f'{names} {data["version"]} is ready to install'
     message["From"], message["To"] = sender, recipient
-    links = '\n\n'.join(row["display"] + ' kurulum sayfası:\n' + row["page_url"] for row in data["variants"])
+    links = '\n\n'.join(row["display"] + ' install page:\n' + row["page_url"] for row in data["variants"])
     # Owner, 2026-10-17: every mail also carries the signed .ipa itself, under the
     # install buttons, for testers who re-sign it (same pre-signed URL as the manifest's).
-    ipas = '\n\n'.join(row["display"] + ' .ipa (doğrudan indirme):\n' + row["ipa_url"] for row in data["variants"])
-    message.set_content(f'{names} {data["version"]} (build {data["build"]}) imzalandı.\n\n{links}\n\n'
-                        f'iPhone’da açıp Yükle’ye dokun. Linkler {data["until"]} tarihine kadar geçerli.\n'
+    ipas = '\n\n'.join(row["display"] + ' .ipa (direct download):\n' + row["ipa_url"] for row in data["variants"])
+    message.set_content(f'{names} {data["version"]} (build {data["build"]}) is signed.\n\n{links}\n\n'
+                        f'Open it on the iPhone and tap Install. The links work until {data["until"]}.\n'
                         + (f'\n{ipas}\n' if MAIL_IPA_LINKS else ''))
     buttons = ''.join(f'<p><a href="{html.escape(row["page_url"])}" style="display:inline-block;'
                       'padding:12px 24px;border-radius:10px;background:#0a84ff;color:#fff;'
-                      f'text-decoration:none;font-weight:600">{html.escape(row["display"])} Kurulum</a></p>'
+                      f'text-decoration:none;font-weight:600">Install {html.escape(row["display"])}</a></p>'
                       for row in data["variants"])
-    downloads = ''.join(f'<p><a href="{html.escape(row["ipa_url"])}">{html.escape(row["display"])} .ipa indir</a></p>'
+    downloads = ''.join(f'<p><a href="{html.escape(row["ipa_url"])}">Download the {html.escape(row["display"])} .ipa</a></p>'
                         for row in data["variants"])
     message.add_alternative(f'<p>{html.escape(names)} <b>{html.escape(data["version"])}</b> '
-                            f'(build {html.escape(data["build"])}) imzalandı.</p>{buttons}'
-                            '<p style="color:#888">Açılan sayfada Yükle’ye dokun. '
-                            f'Linkler {html.escape(data["until"])} tarihine kadar geçerli.</p>'
-                            + ('<p style="color:#888">İmzalı .ipa dosyasının kendisi (doğrudan indirme):</p>'
+                            f'(build {html.escape(data["build"])}) is signed.</p>{buttons}'
+                            '<p style="color:#888">On the page that opens, tap Install. '
+                            f'The links work until {html.escape(data["until"])}.</p>'
+                            + ('<p style="color:#888">The signed .ipa itself (direct download):</p>'
                                f'{downloads}' if MAIL_IPA_LINKS else ''), subtype="html")
     return message
 

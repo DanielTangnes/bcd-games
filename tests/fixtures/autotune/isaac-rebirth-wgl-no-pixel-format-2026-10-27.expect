@@ -1,0 +1,12 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "opengl-only-no-context"
+ ],
+ "next": [],
+ "note": "The Binding of Isaac: Rebirth, build 614, Send Log WVBQ7V (round 620): GLFW says WGL: No pixel formats found on [exc-disp] lines; OpenGL is absent. No setting helps.",
+ "outcome": "crashed",
+ "stage": 2,
+ "status": "known"
+}

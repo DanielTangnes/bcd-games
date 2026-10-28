@@ -118,7 +118,7 @@ corpus = [
     "D 24 Handled self-modifying code: pc: 1590D5560 fault: 71016B1F99",
     "[xp] 23:25:02.028 +970.32 dt=300 cpu=43 P=17 E=26 GHz P=1.90 E=1.84 IPC=2.86",
     "self-modifying - with - four - dashes - here",
-    "Ünïcödé ışık 東京 user users USERS Users",
+    "Ünïcödé façade 東京 user users USERS Users",
     r"C:\Program Files (x86)\Steam\userdata\123456789\config\localconfig.vdf USERDATA/42/x",
     "steamid 76561198012345678 and 765611980123456789 (18 digits) and 1234567890123456",
     "mac a4:83:e7:12:34:56 and A4-83-E7-12-34-56, not 12:53:43.615",

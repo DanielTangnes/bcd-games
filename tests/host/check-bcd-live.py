@@ -145,9 +145,11 @@ check("LibraryController.shared.configure(enabled: true, ownsInput: true)" in bl
 start = block(store, "private func start(_ game: BCDGame)")
 # Four starts, all through the connected Play: a GOG game's entry (BCDLiveStoreGOG's hook, which returns nil for
 # every other game), an Epic game's entry (BCDLiveStoreEpic's, the same), a game from Files or the desktop, and a Steam game.
-check(start.count("launch(entry)") == 4 and "guard let launch else { return }" in start
-      and "if let entry = gogPlayEntry(game) { launch(entry); return }" in start
-      and "if let entry = epicPlayEntry(game) { launch(entry); return }" in start,
+# Build 622: through begin(), which shows a heavy game's one-time graphics tip first (BCDGraphicsTip, check-bcd-launch.py).
+check(start.count("begin(entry, launch)") == 4 and "launch(entry)" not in start.replace("begin(entry, launch)", "")
+      and "guard let launch else { return }" in start
+      and "if let entry = gogPlayEntry(game) { begin(entry, launch); return }" in start
+      and "if let entry = epicPlayEntry(game) { begin(entry, launch); return }" in start,
       "Play: the live store starts a game only through the connected Play (GOG, Epic, local, Steam)")
 # Wave 3 (2026-10-19): the classic Game details page, which asked this check too, is deleted; the check moved
 # unchanged to SteamGames.swift (SteamPlayCheck.blocker) and BCD's Play is the only caller.
@@ -207,7 +209,7 @@ check("settingsOverride" not in shell and "showSettings = true" in block(shell, 
 check("LibrarySettingsForm" not in lib and "BCDInterfacePicker" not in lib,
       "the classic Settings form and its interface picker are gone")
 check("if let jitProblem { jitConnectionActions(jitProblem, retry: enableJIT) { library.error = nil } }" in front
-      and 'isPresented: Binding(get: { steam.error != nil }' in front,
+      and ('isPresented: Binding(get: { steam.error != nil }' in front or 'isPresented: Binding<Bool>(get: { steam.error != nil }' in front),
       "the library's and Steam's errors show over BCD's interface")
 check("LogUploadSettingsSection" not in front and "sendLog" not in front and "BCDSteamSignInSheet()" in front
       and "SteamSignInView()" not in front,

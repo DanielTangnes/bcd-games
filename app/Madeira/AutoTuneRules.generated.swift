@@ -92,6 +92,41 @@ enum AutoTuneBuiltInRules {
   "all": [
    {
     "has": [
+     "[pool-section-reach]",
+     "NOT clamped"
+    ]
+   },
+   {
+    "has": [
+     "[av-detail] ml613",
+     "p0=EXECUTE",
+     "p1_in_carve=1"
+    ]
+   }
+  ],
+  "evidence": [
+   "limbo-pool-section-reach-2026-10-27 (BW135Z, build 611)"
+  ],
+  "id": "pool-section-reach-clamp",
+  "lines": [
+   "env.MADEIRA_POOL_CLAMP_SECTIONS = 1"
+  ],
+  "noRetry": true,
+  "none": [
+   {
+    "has": [
+     "[pool-section-reach]",
+     "clamped to the copy"
+    ]
+   }
+  ],
+  "priority": 0,
+  "reason": "A 32-bit module's data section is declared far larger than the module, and protecting it took away the right to run code from the emulator's code buffer next to it; the line keeps that protection inside the module."
+ },
+ {
+  "all": [
+   {
+    "has": [
      "[exec-recover] pg=",
      "mprotect_rx=-1",
      "pool-rx"
@@ -1061,18 +1096,176 @@ enum AutoTuneBuiltInRules {
   "all": [
    {
     "has": [
-     "[madeira-d3d12] unimplemented: ID3D12Device10::CreatePipelineLibrary"
+     "hostfxr_get_runtime_delegate failed with code: -2147450743"
     ]
    },
+   {
+    "has": [
+     "[jumbo] kernel-pick reserve failed (0xc0000017) for size=0x3f"
+    ]
+   }
+  ],
+  "evidence": [
+   "slay-the-spire-2-gc-region-2026-10-27 (2K0RGS, build 611)"
+  ],
+  "id": "dotnet-gc-region-range-hostfxr",
+  "lines": [
+   "env.DOTNET_GCRegionRange = 400000000"
+  ],
+  "noRetry": true,
+  "none": [
+   {
+    "has": [
+     "[madeira-env] game DOTNET_GCRegionRange="
+    ]
+   },
+   {
+    "has": [
+     "[device] address-map=",
+     " 454GB",
+     "increased-memory=0"
+    ]
+   }
+  ],
+  "priority": 10,
+  "reason": "The game's .NET runtime could not start because it tried to reserve 256 GB of address space for its heap and BCD's address map has no such gap; the line gives the runtime a 16 GB range."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "[mach_exc] pc PE: d3d11.dll+0x8af18"
+    ]
+   }
+  ],
+  "evidence": [
+   "f1-2020-copy-structure-count-2026-10-27 (4W6WMV, build 614)",
+   "tests/host/check-dxmt-copy-structure-count.py (build 620)"
+  ],
+  "id": "dxmt-copy-structure-count-null",
+  "lines": [
+   "env.MADEIRA_D3D11_SRC = 1"
+  ],
+  "noRetry": true,
+  "priority": 8,
+  "reason": "Direct3D 11's CopyStructureCount was given a resource with no buffer behind it and the renderer crashed; the source-built d3d11.dll skips such a call."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "CreateRenderTargetView",
+     "E_INVALIDARG"
+    ]
+   }
+  ],
+  "any": [
+   {
+    "has": [
+     "[rtv-fail]",
+     "resource=buffer"
+    ]
+   },
+   {
+    "has": [
+     "D3D11Resource(buffer): Unknown interface query"
+    ]
+   }
+  ],
+  "evidence": [
+   "need-for-speed-the-run-buffer-rtv-2026-10-28 (Discord log, build 614)",
+   "tests/host/check-dxmt-buffer-rtv.py (build 620)"
+  ],
+  "id": "d3d11-buffer-render-target-view",
+  "lines": [
+   "env.MADEIRA_BUFFER_RTV_EMPTY = 1",
+   "env.MADEIRA_D3D11_SRC = 1"
+  ],
+  "noRetry": true,
+  "none": [
+   {
+    "has": [
+     "S_OK with no view (env.MADEIRA_BUFFER_RTV_EMPTY)"
+    ]
+   }
+  ],
+  "priority": 9,
+  "reason": "The game asked Direct3D 11 for a render target view on a buffer, which BCD's renderer does not have, and stopped with a DirectX error; this answers it without a view, as other Direct3D translators do."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "NtMapViewOfSection status=c00000f2",
+     "zb=0xffffffff"
+    ]
+   },
+   {
+    "has": [
+     "DPLAYX_ConstructData : unable to map static data into process memory space"
+    ]
+   }
+  ],
+  "evidence": [
+   "requiem-dplayx-map-2026-10-27 (EDZH2K, build 614)",
+   "tests/host/check-wow-map-zero-bits.py (build 620)"
+  ],
+  "fixedIn": 620,
+  "id": "wow-map-explicit-base-refused",
+  "lines": [],
+  "priority": 8,
+  "reason": "A 32-bit game's DirectPlay could not map its shared data because BCD refused the address it asked for; fixed in build 620."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "No support for Typed UAV Load Additional Formats"
+    ]
+   }
+  ],
+  "evidence": [
+   "just-volleyball-demo-typed-uav-2026-10-27 (CJN86P, build 611)"
+  ],
+  "id": "d3d12-typed-uav-load-required",
+  "lines": [
+   "d3d12-typed-uav-load = 1"
+  ],
+  "noRetry": true,
+  "none": [
+   {
+    "has": [
+     "[d3d12-caps] ml1970 typed-uav-load-additional=1"
+    ]
+   }
+  ],
+  "priority": 12,
+  "reason": "The game's Direct3D 12 renderer needs a capability BCD reports only on request (typed UAV loads of more formats) and refused the device; the line reports it for this game."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "[madeira-d3d12] unimplemented: ID3D12Device10::CreatePipelineLibrary"
+    ]
+   }
+  ],
+  "any": [
    {
     "has": [
      "LowLevelFatalError",
      "CreatePipelineLibrary"
     ]
+   },
+   {
+    "has": [
+     "NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0x3)"
+    ]
    }
   ],
   "evidence": [
    "returnal-2026-10-20 (CWKVD7, build 574)",
+   "tiny-tinas-wonderlands-2026-10-27 (YV7VB5, build 614: exit 3, fatal text unreadable)",
    "tests/host/check-d3d12-pipeline-library.py (build 576)"
   ],
   "id": "d3d12-pipeline-library-fatal",
@@ -1160,7 +1353,7 @@ enum AutoTuneBuiltInRules {
    "env.LC_ALL = en_US.UTF-8"
   ],
   "priority": 12,
-  "reason": "Wine used the phone's Turkish locale and the game failed right after loading its code page; the line gives Wine an English locale for this game."
+  "reason": "Wine used the phone's non-English locale and the game failed right after loading its code page; the line gives Wine an English locale for this game."
  },
  {
   "all": [
@@ -1204,7 +1397,7 @@ enum AutoTuneBuiltInRules {
   ],
   "noRetry": true,
   "priority": 12,
-  "reason": "The game asked for the phone's Turkish code page and ended at start-up; Rift Apart did the same and ran with an English locale, so this attempt gives Wine one for this game."
+  "reason": "The game asked for the phone's own (non-English) code page and ended at start-up; Rift Apart did the same and ran with an English locale, so this attempt gives Wine one for this game."
  },
  {
   "all": [
@@ -3192,6 +3385,136 @@ enum AutoTuneBuiltInRules {
   "all": [
    {
     "has": [
+     "err:module:import_dll Library",
+     "not found"
+    ]
+   }
+  ],
+  "any": [
+   {
+    "has": [
+     "err:module:import_dll Library api-ms-win-gaming-tcui-l1-1-0.dll",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library API-MS-WIN-GAMING-TCUI-L1-1-0.DLL",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library api-ms-win-gaming-tcui-l1-1-0.DLL",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library gamingtcui.dll",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library GAMINGTCUI.DLL",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library gamingtcui.DLL",
+     "not found"
+    ]
+   }
+  ],
+  "evidence": [
+   "forza-horizon-4-2026-10-27 (YFK3A6, build 614, c0000135 at once)"
+  ],
+  "id": "gamingtcui-dll-optin",
+  "lines": [
+   "env.MADEIRA_OPTIN_DLLS = gamingtcui"
+  ],
+  "noRetry": true,
+  "none": [
+   {
+    "has": [
+     "MADEIRA_OPTIN_DLLS: gamingtcui.dll -> gamingtcui-optin.dll"
+    ]
+   }
+  ],
+  "priority": 10,
+  "reason": "The game imports the Xbox title-callable UI library (api-ms-win-gaming-tcui-l1-1-0.dll, Wine's gamingtcui.dll), which BCD does not ship for every 64-bit game; the line gives this game Wine's gamingtcui.dll."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "err:module:import_dll Library dxva2.dll",
+     "not found"
+    ]
+   }
+  ],
+  "any": [
+   {
+    "has": [
+     "err:module:import_dll Library api-ms-win-gaming-tcui-l1-1-0.dll",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library API-MS-WIN-GAMING-TCUI-L1-1-0.DLL",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library api-ms-win-gaming-tcui-l1-1-0.DLL",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library gamingtcui.dll",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library GAMINGTCUI.DLL",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library gamingtcui.DLL",
+     "not found"
+    ]
+   }
+  ],
+  "evidence": [
+   "forza-horizon-4-2026-10-27 (YFK3A6, build 614: both imports missing, c0000135 at once)"
+  ],
+  "id": "gamingtcui-dxva2-dll-optin",
+  "lines": [
+   "env.MADEIRA_OPTIN_DLLS = dxva2,gamingtcui"
+  ],
+  "noRetry": true,
+  "none": [
+   {
+    "has": [
+     "MADEIRA_OPTIN_DLLS: gamingtcui.dll -> gamingtcui-optin.dll"
+    ]
+   }
+  ],
+  "priority": 9,
+  "reason": "The game imports both the Xbox title-callable UI library (Wine's gamingtcui.dll) and dxva2.dll, which BCD ships only for the games that list them; the line gives this game both."
+ },
+ {
+  "all": [
+   {
+    "has": [
      "err:module:import_dll Library msi.dll (which is needed by",
      "EABackgroundService.exe"
     ]
@@ -3414,8 +3737,21 @@ enum AutoTuneBuiltInRules {
   "all": [
    {
     "has": [
+     "[msgbox-origin] box"
+    ]
+   }
+  ],
+  "any": [
+   {
+    "has": [
      "[msgbox-origin] box",
      "does not appear to be installed and the installer could not be found"
+    ]
+   },
+   {
+    "has": [
+     "[msgbox-origin] box",
+     "Cannot find essential information in the registry"
     ]
    }
   ],
@@ -4928,10 +5264,10 @@ enum AutoTuneBuiltInRules {
    }
   ],
   "evidence": [
-   "eaapp-installer-turkish-locale-2026-10-23 (build 593)",
+   "eaapp-installer-locale-2026-10-23 (build 593)",
    "tests/host/check-bcd-launchers.py (build 594)"
   ],
-  "id": "eaapp-installer-turkish-locale",
+  "id": "eaapp-installer-locale",
   "lines": [
    "env.LC_ALL = en_US.UTF-8"
   ],
@@ -4944,7 +5280,7 @@ enum AutoTuneBuiltInRules {
    }
   ],
   "priority": 5,
-  "reason": "The EA app's installer fails with the phone's Turkish language settings; the line gives it an English locale."
+  "reason": "The EA app's installer fails when the phone is set to a language other than English; the line gives it an English locale."
  },
  {
   "all": [
@@ -5227,6 +5563,11 @@ enum AutoTuneBuiltInRules {
    {
     "has": [
      "D3D9 frontend: MADEIRA_D3D9=native via bcd.cfg d3d9"
+    ]
+   },
+   {
+    "has": [
+     "[d3d9-native] ready:"
     ]
    },
    {
@@ -5526,6 +5867,42 @@ enum AutoTuneBuiltInRules {
     "has": [
      "[session-log] Steam game GeometryDash.exe:"
     ]
+   },
+   {
+    "has": [
+     "WGL: The driver does not appear to support OpenGL",
+     "[exc-disp]"
+    ]
+   },
+   {
+    "has": [
+     "WGL: No pixel formats found",
+     "[exc-disp]"
+    ]
+   },
+   {
+    "has": [
+     "Failed to create OpenGL window",
+     "[exc-disp]"
+    ]
+   },
+   {
+    "has": [
+     "[win-name] #",
+     "Could not create SDL Window"
+    ]
+   },
+   {
+    "has": [
+     "[win-name] #",
+     "Could not find appropriate pixel format"
+    ]
+   },
+   {
+    "has": [
+     "[msgbox-origin] box",
+     "Could not find appropriate pixel format"
+    ]
    }
   ],
   "evidence": [
@@ -5541,6 +5918,36 @@ enum AutoTuneBuiltInRules {
   "noFix": true,
   "priority": 2,
   "reason": "This game draws with OpenGL, and BCD has no OpenGL yet: the game cannot make its window and stops. This is not a setting; Direct3D games are not affected."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "[win-name] #",
+     "Unable to initialize Vulkan video driver"
+    ]
+   },
+   {
+    "has": [
+     "VulkanContext::",
+     "vulkan_context.cpp"
+    ]
+   },
+   {
+    "has": [
+     "[unixlib] opengl32 (GL-absent stub table)"
+    ]
+   }
+  ],
+  "evidence": [
+   "buckshot-roulette-godot-vulkan-2026-10-20 (Send Log T9R22Z, build 574)",
+   "docs/OPENGL.md"
+  ],
+  "id": "godot-vulkan-or-opengl-only",
+  "lines": [],
+  "noFix": true,
+  "priority": 2,
+  "reason": "This game's engine (Godot 4.0 to 4.2) draws only with Vulkan or OpenGL, and BCD has neither yet: the game cannot start its renderer. This is not a setting; games made with Godot 4.3 or later can use Direct3D 12."
  },
  {
   "all": [

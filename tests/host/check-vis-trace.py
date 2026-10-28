@@ -128,8 +128,8 @@ check('a line per present, after the present is counted',
 for key in ('typed-view-shadow', 'vis-trace', 'readback-far'):
     check('settings catalog: ' + key, 'ConfigOption(key: "%s"' % key in catalog)
 hzd = rule_config(recs, 'horizon-zero-dawn')
-check('Horizon Zero Dawn (v17: v16 + the Dock MFC link; v16: v15, proven, + frame-rate switches): typed-view-shadow on; the trace, fence-strict, desc-guard, readback-swap and readback-far not',
-      next(r for r in recs['rules'] if r['id'] == 'horizon-zero-dawn')['version'] == 17 and 'typed-view-shadow = 1' in hzd and not any(k in hzd for k in ('fence-strict', 'vis-trace', 'desc-guard',
+check('Horizon Zero Dawn (v18: v17 + 30 FPS and the graphics tip; v17: v16 + the Dock MFC link; v16: v15, proven, + frame-rate switches): typed-view-shadow on; the trace, fence-strict, desc-guard, readback-swap and readback-far not',
+      next(r for r in recs['rules'] if r['id'] == 'horizon-zero-dawn')['version'] == 18 and 'typed-view-shadow = 1' in hzd and not any(k in hzd for k in ('fence-strict', 'vis-trace', 'desc-guard',
                                                                                            'readback-swap', 'readback-far')))
 rbs = body('static int mad_readback_swap_on(void) {')
 check('readback-swap: on by default (as before); off keeps only READBACK buffers off the file tier',

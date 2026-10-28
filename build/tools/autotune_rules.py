@@ -70,8 +70,8 @@ UNHANDLED = [s("Unhandled exception"), s("ACCEPTING terminal root frame"), s("Ru
 
 # Memory: iOS closed the game at its memory limit (a "killed" session whose last footprint line
 # was at the limit), or the game's own error box said it ran out of memory. A swap file moves
-# large allocations out of RAM; how much depends on the device (owner, 2026-10-16: "cihazın
-# ihtiyacına göre"). Never added ahead of a failure: on a 12 GB phone the lines cost GTA V Legacy
+# large allocations out of RAM; how much depends on the device (owner, 2026-10-16: as the device
+# needs). Never added ahead of a failure: on a 12 GB phone the lines cost GTA V Legacy
 # smoothness when it did not need them (OYUN-AYARLARI, 2026-10-15). swap-mb alone did nothing
 # under classic coverage (HANDOFF: GoT 515), hence swap-mode and swap-min-mb with the first step.
 # The second step raises swap-mb when the first was in use ([swap] ml1077 backed) and the game
@@ -182,6 +182,29 @@ RULES = [
         "evidence": ["graveyard-keeper-2-2026-10-19-19-06-53", "tevi-2026-10-19 (J75807)",
                      "Cult of the Lamb Q2MJ7N, Mafia II DE 8KJGTX, Caves of Qud PZYMXY",
                      "tests/host/check-excl-rmw.py (build 575)"],
+    },
+    {
+        "id": "pool-section-reach-clamp",
+        "lines": ["env.MADEIRA_POOL_CLAMP_SECTIONS = 1"],
+        "priority": 0,
+        "noRetry": True,
+        # Round 620: LIMBO (Steam 48000, 32-bit; BW135Z, build 611, iPhone18,2): an unnamed 32-bit image at 0x10000000 whose sections
+        # declare VirtualSize = RVA + 0x10000000 ("[pool-section-overrun] ? .text rva=0x1000 vsize=0x10001000", L10902); the RW mprotect of
+        # its .data "reaches 0x10034000 bytes past its copy ... NOT clamped" (L10905) and covers the 16 MB code buffer FEX had carved
+        # earlier (carve idx=3 base 0x13d728000, state=live), so the first block faults: "[av-detail] ml613 #1 p0=EXECUTE ... p1_in_carve=1"
+        # (L10932), then a dispatcher storm. Build 576's tail-carve refusal (the rule below, fixedIn 576) only helps when the dead run exists
+        # BEFORE the carve, so that rule showed "known" for a crash it does not fix. env.MADEIRA_POOL_CLAMP_SECTIONS = 1 (virtual_ios.c,
+        # ios_pool_section_clamp) keeps the mprotect inside the copy; it stays off by default because games run today with such an
+        # image (LEGO Batman 2). Gated on the fatal sign, not on the overrun line: of the 47 archived logs (2026-10-16..28) with
+        # "NOT clamped", 45 (Fallout: New Vegas, GTA Vice City and 3, Max Payne 2, Monkey Island SE, MDK 2, Batman Arkham City...) have
+        # no fault in a code buffer; only LIMBO (BW135Z) and FINAL FANTASY XIII (T4KWG2) do. Priority 0: ahead of tail-carve-lost-exec,
+        # whose fixedIn would otherwise end the search with "known".
+        "all": [s("[pool-section-reach]", "NOT clamped"),
+                s("[av-detail] ml613", "p0=EXECUTE", "p1_in_carve=1")],
+        "none": [s("[pool-section-reach]", "clamped to the copy")],
+        "reason": "A 32-bit module's data section is declared far larger than the module, and protecting it took away the right to run "
+                  "code from the emulator's code buffer next to it; the line keeps that protection inside the module.",
+        "evidence": ["limbo-pool-section-reach-2026-10-27 (BW135Z, build 611)"],
     },
     {
         "id": "tail-carve-lost-exec",
@@ -780,6 +803,96 @@ RULES = [
                      "fortune-mill-2026-10-22 (NMDFT1: the 454 GB map of an install without memory rights has no such gap; no match)"],
     },
     {
+        "id": "dotnet-gc-region-range-hostfxr",
+        "lines": ["env.DOTNET_GCRegionRange = 400000000"],
+        "priority": 10,
+        "noRetry": True,
+        # Round 620: Slay the Spire 2 (Godot 4 + .NET; 2K0RGS, 6YPKSD, HV84ES, ZNRMDX, builds 611/614, iPad17,3) fails the same 256 GB GC
+        # reserve ("[jumbo] kernel-pick reserve failed (0xc0000017) for size=0x3fa214e000", 2K0RGS L14782), but the CLR's own text is not
+        # in its logs; Godot's host prints "hostfxr_get_runtime_delegate failed with code: -2147450743" (0x80008089, CoreCLR init
+        # failure; 2K0RGS L14848) and then calls a NULL plugin entry. The rule above never matched. This one needs both lines: of the
+        # archived logs (2026-10-16..28) with that host error, the 12 with the 256 GB reserve failure are all Slay the Spire 2 and none
+        # had the range; Fortune Mill (NMDFT1, range already set, 454 GB map) has no such reserve line. Same line, same "none".
+        "all": [s("hostfxr_get_runtime_delegate failed with code: -2147450743"),
+                s("[jumbo] kernel-pick reserve failed (0xc0000017) for size=0x3f")],
+        "none": [s("[madeira-env] game DOTNET_GCRegionRange="), s("[device] address-map=", " 454GB", "increased-memory=0")],
+        "reason": "The game's .NET runtime could not start because it tried to reserve 256 GB of address space for its heap and BCD's "
+                  "address map has no such gap; the line gives the runtime a 16 GB range.",
+        "evidence": ["slay-the-spire-2-gc-region-2026-10-27 (2K0RGS, build 611)"],
+    },
+    {
+        "id": "dxmt-copy-structure-count-null",
+        "lines": ["env.MADEIRA_D3D11_SRC = 1"],
+        "priority": 8,
+        "noRetry": True,
+        # Round 620: F1 2020 (F1_2020_dx12.exe; 4W6WMV, G1WB9T, build 614, iPad17,4): about 20 s in, DXMT's encode thread faults in the
+        # CopyStructureCount encoder lambda ("[mach_exc] pc PE: d3d11.dll+0x8af18", `ldr x20,[x8,#8]` with x8 = 0: an empty destination or
+        # counter buffer), then 2,001 "AV EXEC of 0" until the redelivery guard ends the process; the same in both logs. Build 620 skips
+        # such a call (tools/patch-dxmt-copy-structure-count.py; tests/host/check-dxmt-copy-structure-count.py), but the CI compiles only
+        # the 32-bit d3d11.dll: a 64-bit game gets the patch from d3d11-src.dll (tools/build-d3d11-dll.sh), which env.MADEIRA_D3D11_SRC = 1
+        # selects. The offset is that of upstream's committed 64-bit d3d11.dll (builds 611 and later); d3d11-src.dll has other offsets.
+        "all": [s("[mach_exc] pc PE: d3d11.dll+0x8af18")],
+        "reason": "Direct3D 11's CopyStructureCount was given a resource with no buffer behind it and the renderer crashed; "
+                  "the source-built d3d11.dll skips such a call.",
+        "evidence": ["f1-2020-copy-structure-count-2026-10-27 (4W6WMV, build 614)", "tests/host/check-dxmt-copy-structure-count.py (build 620)"],
+    },
+    {
+        "id": "d3d11-buffer-render-target-view",
+        "lines": ["env.MADEIRA_BUFFER_RTV_EMPTY = 1", "env.MADEIRA_D3D11_SRC = 1"],
+        "priority": 9,
+        "noRetry": True,
+        # Round 620: Need for Speed: The Run (Frostbite 2, 32-bit; FRGCNV and the Discord log of 2026-10-28, build 614, iPhone18,2): while
+        # loading, the game's box "DirectX function g_dxRenderer->getDevice()->CreateRenderTargetView(...) failed with E_INVALIDARG", just
+        # after DXMT's "D3D11Resource(buffer): Unknown interface query 6f15aaf2-..." (the game asking a buffer for ID3D11Texture2D): it
+        # wants a render target view on a buffer, which DXMT does not have. DXVK answered S_OK and no view for that until 2026-08 (Battlefield
+        # 3 and 4). env.MADEIRA_BUFFER_RTV_EMPTY = 1 does the same (tools/patch-dxmt-buffer-rtv.py); a 64-bit game also needs
+        # env.MADEIRA_D3D11_SRC = 1 (the CI compiles only the 32-bit d3d11.dll), which a 32-bit game ignores. Build 620 logs the failure as
+        # "[rtv-fail] ... CreateRenderTargetView E_INVALIDARG resource=buffer". A box that comes after 20 s of frames makes the session count
+        # as played (AutoTuneEngine.outcome), so the game's list carries the line; this rule is for the sessions that end otherwise.
+        "all": [s("CreateRenderTargetView", "E_INVALIDARG")],
+        "any": [s("[rtv-fail]", "resource=buffer"),
+                # 6f15aaf2-... is ID3D11Texture2D; the fixture tool scrubs GUIDs, so the signal stops before it.
+                s("D3D11Resource(buffer): Unknown interface query")],
+        # With the line in force the [rtv-fail] line ends "-> S_OK with no view": the cause of a later failure is another.
+        "none": [s("S_OK with no view (env.MADEIRA_BUFFER_RTV_EMPTY)")],
+        "reason": "The game asked Direct3D 11 for a render target view on a buffer, which BCD's renderer does not have, and stopped with "
+                  "a DirectX error; this answers it without a view, as other Direct3D translators do.",
+        "evidence": ["need-for-speed-the-run-buffer-rtv-2026-10-28 (Discord log, build 614)", "tests/host/check-dxmt-buffer-rtv.py (build 620)"],
+    },
+    {
+        "id": "wow-map-explicit-base-refused",
+        "lines": [],
+        "fixedIn": 620,
+        "priority": 8,
+        # Round 620: Requiem: Avenging Angel (EDZH2K, build 614, iPad17,3): DirectPlay's dplayx.dll maps its static data at 0x50000000; BCD's
+        # NtMapViewOfSection refused the window-biased base with wow64's zero_bits 0xffffffff ("[nt-fail] #2 NtMapViewOfSection status=c00000f2
+        # ... hint=0x7950000000 zb=0xffffffff", L11394), dplayx retries only on 487, gives up ("DPLAYX_ConstructData : unable to map static data
+        # into process memory space (87)", L11395) and reads through NULL; the game shows "Network Problem: Could not connect." Same in Hotline
+        # Miami (15HRX1, build 580). Build 620 judges the guest address (virtual_ios.c, ios_nt_impl_NtMapViewOfSection;
+        # tests/host/check-wow-map-zero-bits.py). No line changes it on an older build.
+        "all": [s("NtMapViewOfSection status=c00000f2", "zb=0xffffffff"),
+                s("DPLAYX_ConstructData : unable to map static data into process memory space")],
+        "reason": "A 32-bit game's DirectPlay could not map its shared data because BCD refused the address it asked for; fixed in build 620.",
+        "evidence": ["requiem-dplayx-map-2026-10-27 (EDZH2K, build 614)", "tests/host/check-wow-map-zero-bits.py (build 620)"],
+    },
+    {
+        "id": "d3d12-typed-uav-load-required",
+        "lines": ["d3d12-typed-uav-load = 1"],
+        "priority": 12,
+        "noRetry": True,
+        # Round 620: just volleyball Demo (Steam 5401090, volleyballdemo.exe, Godot 4; CJN86P, build 611, iPad17,1): Godot's Direct3D 12 driver
+        # checks D3D12_OPTIONS.TypedUAVLoadAdditionalFormats and refuses the device ("[guest-log] #1 ... ERROR: No support for Typed UAV Load
+        # Additional Formats has been found.", L11884; "Failed to initialize driver for device", L11888), finds no Vulkan, falls back to OpenGL
+        # and ends ("Failed to create native OpenGL window", L11975; 73 s, no frame). madeira_d3d12.c (ml1970) answers the option FALSE unless
+        # d3d12-typed-uav-load = 1 (the GTA V Enhanced lists set it): FALSE by default because reporting it can move an engine that runs onto
+        # other paths; an engine that requires it rejects the device before creating anything, as here. The game's own sentence is the signal.
+        "all": [s("No support for Typed UAV Load Additional Formats")],
+        "none": [s("[d3d12-caps] ml1970 typed-uav-load-additional=1")],
+        "reason": "The game's Direct3D 12 renderer needs a capability BCD reports only on request (typed UAV loads of more formats) and refused "
+                  "the device; the line reports it for this game.",
+        "evidence": ["just-volleyball-demo-typed-uav-2026-10-27 (CJN86P, build 611)"],
+    },
+    {
         "id": "d3d12-pipeline-library-fatal",
         "lines": ["d3d12-pipeline-library = 1"],
         "priority": 12,
@@ -791,12 +904,18 @@ RULES = [
         # switch: d3d12-pipeline-library = 1 makes a library that keeps nothing (madeira_d3d12.c, build
         # 576; tests/host/check-d3d12-pipeline-library.py). Not proven on a Returnal run. The fatal
         # message is the discriminator: the stub line alone is in the logs of games that play on.
-        "all": [s("[madeira-d3d12] unimplemented: ID3D12Device10::CreatePipelineLibrary"),
-                s("LowLevelFatalError", "CreatePipelineLibrary")],
+        # Round 620: Tiny Tina's Wonderlands (UE4; YV7VB5 = GMP0KB, build 614, iPhone19,7) ends the same way, stub line L15071 then
+        # NtTerminateProcess(..., exit_code=0x3) L15085, but its fatal text is a wide string the log prints as dots, so the
+        # LowLevelFatalError line is missing. The game's own exit 3 is the second signal: of the 48 archived logs (2026-10-16..28)
+        # with the stub line, only Returnal and Wonderlands exit 3; the 45 others (GTA V, RDR2, inFamous, launchers) do not.
+        "all": [s("[madeira-d3d12] unimplemented: ID3D12Device10::CreatePipelineLibrary")],
+        "any": [s("LowLevelFatalError", "CreatePipelineLibrary"),
+                s("NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0x3)")],
         "none": [s("[madeira-d3d12] d3d12-pipeline-library = 1")],
         "reason": "The game's engine insists that Direct3D 12 can make a pipeline library and stops when "
                   "the call fails; the line makes BCD answer it with a library that keeps nothing.",
         "evidence": ["returnal-2026-10-20 (CWKVD7, build 574)",
+                     "tiny-tinas-wonderlands-2026-10-27 (YV7VB5, build 614: exit 3, fatal text unreadable)",
                      "tests/host/check-d3d12-pipeline-library.py (build 576)"],
     },
     {
@@ -827,11 +946,11 @@ RULES = [
         "lines": ["env.LC_ALL = en_US.UTF-8"],
         "priority": 12,
         # The game itself asked for the user locale's OEM code page: Wine loads 1252/437 at start,
-        # and in 30 sessions of other games on the same Turkish phone 857 never loaded. In all three
+        # and in 30 sessions of other games on the same phone (not set to English) that page never loaded. In all three
         # Rift Apart crashes it was the line right before the fatal C++ throw.
         "all": [s("[nls-getptr] type=11 id=857")],
         "any": UNHANDLED,
-        "reason": "Wine used the phone's Turkish locale and the game failed right after loading its code "
+        "reason": "Wine used the phone's non-English locale and the game failed right after loading its code "
                   "page; the line gives Wine an English locale for this game.",
         "evidence": ["rift-apart-2026-10-16-10-43-45", "rift-apart-2026-10-16-10-45-10", "rift-apart-2026-10-15-22-49-00",
                      "owner 2026-10-16: with LC_ALL added the game opened"],
@@ -846,17 +965,17 @@ RULES = [
         # are the same sessions): engine_x64_rwdi.dll takes a NULL from a named lookup on a singleton
         # (+0x332ee, `call [rax+0x330]` then `mov eax,[rax+0x4c]`), 2 s after the display enumeration
         # ("[Video] > Monitor(0)") and before any renderer DLL loads; no frame is ever presented.
-        # What points at the locale: the game itself asks for the Turkish ANSI code page (id=1254,
+        # What points at the locale: the game itself asks for the phone's own ANSI code page (id=1254,
         # in groups of six, four times; Wine's own start-up loads 1252/437), and in 96 logs of that
         # phone only Dying Light (5 logs) and one Counter-Strike 2 log load it. Ratchet & Clank: Rift
-        # Apart on the same phone asked for the Turkish OEM page (857), threw, and ran with LC_ALL
-        # (rule locale-en-us above). Against it: Turkish players run Dying Light on Windows. The line
+        # Apart on the same phone asked for its own OEM page (857), threw, and ran with LC_ALL
+        # (rule locale-en-us above). Against it: players with that language run Dying Light on Windows. The line
         # is the cheapest test; auto-tune keeps it only if the next session gets further.
         # Bound to the game's window title so no other 1254 loader (Counter-Strike 2 has a different
         # failure) is touched by this evidence.
         "all": [s("[nls-getptr] type=11 id=1254"), s("[win-name] #", 'text="Dying Light"')],
         "any": UNHANDLED,
-        "reason": "The game asked for the phone's Turkish code page and ended at start-up; Rift Apart did "
+        "reason": "The game asked for the phone's own (non-English) code page and ended at start-up; Rift Apart did "
                   "the same and ran with an English locale, so this attempt gives Wine one for this game.",
         "evidence": ["dying-light-owner-2026-10-20 (SAHIP4, SAHIP5, SAHIP6; MXXHZK, 8VB504)",
                      "rift-apart-2026-10-16-10-43-45 (same phone, same kind of event, LC_ALL fixed it)",
@@ -1847,6 +1966,42 @@ RULES = [
         "evidence": ["aniimo-2026-10-25 (9X37R0, build 600, c0000135 at once)"],
     },
     {
+        "id": "gamingtcui-dll-optin",
+        "lines": ["env.MADEIRA_OPTIN_DLLS = gamingtcui"],
+        "priority": 10,
+        "noRetry": True,
+        # Forza Horizon 4 (Steam 1293830, round 620: YFK3A6, TNE8NW, 5TZDYZ, SJT15P, build 614, iPad17,1): ForzaHorizon4.exe imports
+        # api-ms-win-gaming-tcui-l1-1-0.dll, which Wine's API set schema maps to gamingtcui.dll ("[dll-missing] #1 L"gamingtcui.dll"
+        # status=c0000135"); the 64-bit set had none and the loader ended with c0000135. Build 620 ships Wine's gamingtcui.dll as
+        # gamingtcui-optin.dll.
+        "all": [s("err:module:import_dll Library", "not found")],
+        "any": [s("err:module:import_dll Library " + n, "not found")
+                for n in ("api-ms-win-gaming-tcui-l1-1-0.dll", "API-MS-WIN-GAMING-TCUI-L1-1-0.DLL", "api-ms-win-gaming-tcui-l1-1-0.DLL",
+                          "gamingtcui.dll", "GAMINGTCUI.DLL", "gamingtcui.DLL")],
+        "none": [s("MADEIRA_OPTIN_DLLS: gamingtcui.dll -> gamingtcui-optin.dll")],
+        "reason": "The game imports the Xbox title-callable UI library (api-ms-win-gaming-tcui-l1-1-0.dll, Wine's gamingtcui.dll), which "
+                  "BCD does not ship for every 64-bit game; the line gives this game Wine's gamingtcui.dll.",
+        "evidence": ["forza-horizon-4-2026-10-27 (YFK3A6, build 614, c0000135 at once)"],
+    },
+    {
+        "id": "gamingtcui-dxva2-dll-optin",
+        "lines": ["env.MADEIRA_OPTIN_DLLS = dxva2,gamingtcui"],
+        "priority": 9,
+        "noRetry": True,
+        # Forza Horizon 4 lacks two DLLs in one start: the exe's gamingtcui (above) and dxva2.dll, which the game's own libcef.dll imports
+        # (YFK3A6 L9682). Each of the two single-DLL lines alone leaves the other import failing, so one line names both; priority 9 puts it
+        # before dxva2-dll-optin. On the tester's iPad auto-tune had stopped at "matched dxva2-dll-optin; status stuck" (four logs, why is
+        # not in the logs); this rule has its own id and line, so it is a new attempt there too.
+        "all": [s("err:module:import_dll Library dxva2.dll", "not found")],
+        "any": [s("err:module:import_dll Library " + n, "not found")
+                for n in ("api-ms-win-gaming-tcui-l1-1-0.dll", "API-MS-WIN-GAMING-TCUI-L1-1-0.DLL", "api-ms-win-gaming-tcui-l1-1-0.DLL",
+                          "gamingtcui.dll", "GAMINGTCUI.DLL", "gamingtcui.DLL")],
+        "none": [s("MADEIRA_OPTIN_DLLS: gamingtcui.dll -> gamingtcui-optin.dll")],
+        "reason": "The game imports both the Xbox title-callable UI library (Wine's gamingtcui.dll) and dxva2.dll, which BCD ships only "
+                  "for the games that list them; the line gives this game both.",
+        "evidence": ["forza-horizon-4-2026-10-27 (YFK3A6, build 614: both imports missing, c0000135 at once)"],
+    },
+    {
         "id": "eaapp-background-service-msi-dll",
         "lines": ["env.MADEIRA_OPTIN_DLLS = msi,mspatcha,odbccp32,sxs,rstrtmgr"],
         "priority": 10,
@@ -1934,7 +2089,7 @@ RULES = [
         # (0.8 s). Build 591 ships Wine's c_932, c_936, c_949, c_950, c_874 and c_1250 ... c_1258 in nls/extra and env.MADEIRA_NLS_EXTRA = 1
         # makes them visible (build/ntdll-unix/env_ios.c). Only a failed session of a direct start (library) that asked for one of
         # the Asian pages: Steam's own client asks for 932 in every Dock session and runs without it (a Dock session is left out, since
-        # the client would see the tables too), and games on a Turkish or Russian phone ask for 1254 or 1251 and run without them, so
+        # the client would see the tables too), and games on phones set to other languages ask for their own pages (1251, 1254) and run without them, so
         # neither starts an attempt. "none": the tables were already in use.
         "all": [s("[nls-getptr] type=11")],
         "any": [s("[nls-getptr] type=11 id=%d " % cp) for cp in (932, 936, 949, 950, 874)],
@@ -1981,7 +2136,14 @@ RULES = [
         # in the host and never the script, and BCD's install-script feature runs only its "Run Process" entries. The line makes the app write
         # the script's missing registry values before the start (DockScriptRegistry). "none": the line is on already ([dock-script-registry]
         # is printed whenever it is), so the box has another cause.
-        "all": [s("[msgbox-origin] box", "does not appear to be installed and the installer could not be found")],
+        # Round 620: Far Cry 3 (Steam 220240, through BCD Dock; 2H38A0 = 65GSHJ, 7VRX47 = WMGAZ8, X9ZXFB, build 614, iPad17,3): Ubisoft's
+        # FC3UpdaterSteam.exe shows "Failed to start the game. Cannot find essential information in the registry." (2H38A0 L11374) and
+        # nothing is drawn. The same class is likely (the updater reads an install key Steam's Windows client writes); not proven, as the
+        # game's installscript.vdf could not be read: the next log's [dock-script-registry] line says whether its script has such values.
+        # The switch writes a value only where the key is absent, so trying it changes nothing else.
+        "all": [s("[msgbox-origin] box")],
+        "any": [s("[msgbox-origin] box", "does not appear to be installed and the installer could not be found"),
+                s("[msgbox-origin] box", "Cannot find essential information in the registry")],
         "none": [s("[dock-script-registry] app=")],
         "reason": "The game's launcher looks in the registry for the install folder that Steam's install script writes on Windows, and BCD "
                   "Dock never wrote it; the line has BCD write the script's missing registry values before the start.",
@@ -2669,18 +2831,18 @@ RULES = [
         "evidence": ["battlenet-direct-no-services-2026-10-23 (build 593)", "tests/host/check-bcd-launchers.py (build 594)"],
     },
     {
-        "id": "eaapp-installer-turkish-locale",
+        "id": "eaapp-installer-locale",
         "lines": ["env.LC_ALL = en_US.UTF-8"],
         "priority": 5,
         "noRetry": True,
-        # EA app installer, build 593 (the owner's Windows desktop, logs 16:28 and 17:09:52): with the phone's Turkish locale its bootstrapper
+        # EA app installer, build 593 (the owner's Windows desktop, logs 16:28 and 17:09:52): with the phone's non-English locale its bootstrapper
         # loaded code page 1254 and died on an uncaught ATL::CAtlException right after its telemetry step (error box C7-2F79). With
         # env.LC_ALL = en_US.UTF-8 it went on to the MSI package (17:15:17). Build 594's launcher card sets the line for the EA app; this
         # rule covers the installer started by hand. Tied to EAappInstaller.exe.
         "all": [s("CAtlException@ATL"), s("[nls-getptr] type=11 id=1254"), s("EAappInstaller.exe")],
         "none": [s("[madeira-env] game LC_ALL=")],
-        "reason": "The EA app's installer fails with the phone's Turkish language settings; the line gives it an English locale.",
-        "evidence": ["eaapp-installer-turkish-locale-2026-10-23 (build 593)", "tests/host/check-bcd-launchers.py (build 594)"],
+        "reason": "The EA app's installer fails when the phone is set to a language other than English; the line gives it an English locale.",
+        "evidence": ["eaapp-installer-locale-2026-10-23 (build 593)", "tests/host/check-bcd-launchers.py (build 594)"],
     },
     # ajan14/ea-mono (2026-10-23) ------------------------------------------------------------------------------------------------------
     {
@@ -2827,7 +2989,12 @@ RULES = [
         # Resident Evil 6 plays on it at 60 FPS (round 591 B: 211 presents at 30 s, 2023 at 60 s). env.MADEIRA_D3D9 is read by the i386
         # d3d9.dll shim from the process environment; a game's env line is exported after the app's own d3d9 setting and wins. The rule needs
         # the native frontend on in this very log, so no session on the standard frontend can ever match it.
-        "all": [s("D3D9 frontend: MADEIRA_D3D9=native via bcd.cfg d3d9"), s("Unhandled exception code c0000005 flags 0 addr 0x0")],
+        # Round 620: the "D3D9 frontend" line is printed at every session start with that setting, Direct3D 9 game or not: Call of Duty:
+        # Black Ops III (64-bit, Direct3D 11; 097R76, build 614) matched on it and an unrelated call of address 0, and auto-tune spent a
+        # start on a line that cannot change a Direct3D 11 game. The rule now also needs "[d3d9-native] ready", which the native
+        # frontend prints when a game's process actually loads it (TPATQR L11216, 04G226); 097R76 has none.
+        "all": [s("D3D9 frontend: MADEIRA_D3D9=native via bcd.cfg d3d9"), s("[d3d9-native] ready:"),
+                s("Unhandled exception code c0000005 flags 0 addr 0x0")],
         "none": [s("[madeira-env] game MADEIRA_D3D9=emulated")],
         "reason": "The game's Direct3D 9 was set to the native ARM64 frontend (Settings > Graphics) and the game ended by calling address 0 through "
                   "it a few seconds after its first frame; the line gives this game the standard, emulated frontend.",
@@ -2988,19 +3155,48 @@ RULES = [
         # needed too. docs/OPENGL.md has the plan for OpenGL; until it lands no setting changes any of these. Priority 2 puts it ahead of
         # the 596 rule `wow64-native-iosb-completion-store`, which Cry of Fear RT4TB5 also matches through a console helper but which is
         # not why that game stops.
+        # Round 620 (text only; the same stub line is required): The Binding of Isaac: Rebirth prints GLFW's errors through
+        # OutputDebugString, which the log shows on "[exc-disp]" lines, not "[win-name]" (F2X5S9 L10439 "GLFW Error 65542: WGL: The driver
+        # does not appear to support OpenGL", L10442 "Failed to create OpenGL window / context"; WVBQ7V L10080 "WGL: No pixel formats
+        # found"); Friday Night Funkin' (Lime/SDL2, 9PV6NT L9821) names its window "Could not create SDL Window"; Lugaru HD (2A5176
+        # L9923) shows "Could not find appropriate pixel format".
         "all": [s("[unixlib] opengl32 (GL-absent stub table)")],
         "any": [s("[win-name] #", "ChoosePixelFormat failed"), s("[win-name] #", "Unable to create OpenGL window"),
                 s("[win-name] #", "Could not create window: No matching GL pixel format available"),
                 s("[win-name] #", "WGL: The driver does not appear to support OpenGL"),
                 s("[win-name] #", "Failed to create OpenGL window"),
                 s("[win-name] #", "Failed to create OpenGL context"),
-                s("Session log: logs/GeometryDash.exe-"), s("[session-log] Steam game GeometryDash.exe:")],
+                s("Session log: logs/GeometryDash.exe-"), s("[session-log] Steam game GeometryDash.exe:"),
+                s("WGL: The driver does not appear to support OpenGL", "[exc-disp]"), s("WGL: No pixel formats found", "[exc-disp]"),
+                s("Failed to create OpenGL window", "[exc-disp]"),
+                s("[win-name] #", "Could not create SDL Window"),
+                s("[win-name] #", "Could not find appropriate pixel format"),
+                s("[msgbox-origin] box", "Could not find appropriate pixel format")],
         "reason": "This game draws with OpenGL, and BCD has no OpenGL yet: the game cannot make its window and stops. This is not a setting; "
                   "Direct3D games are not affected.",
         "evidence": ["gp-bikes-opengl-2026-10-23 (Send Log CCKWDR, build 592)", "gravity-circuit-love-opengl-2026-10-23 (Send Log HESXRX, build 592)",
                      "geometry-dash-opengl-2026-10-23 (Send Log 1H4EFS, build 592)", "cry-of-fear-opengl-2026-10-23 (Send Log RT4TB5, build 592)",
                      "mewgenics-opengl-pixel-format-2026-10-26 (Send Logs 0CBF7Q, W4AJG1, Y6RAEH, build 600)",
                      "docs/OPENGL.md"],
+    },
+    {
+        "id": "godot-vulkan-or-opengl-only",
+        "lines": [],
+        "noFix": True,
+        "priority": 2,
+        # Round 620 (Discord game-reports 2026-10-27, Buckshot Roulette and the box's screenshot): Godot 4.0-4.2 draws with Vulkan, or with
+        # OpenGL 3 when started with --rendering-driver opengl3, and has no Direct3D renderer (Godot 4.3 added Direct3D 12 and falls back to
+        # it by itself: just volleyball Demo reached it). BCD has neither: Wine is built without Vulkan ("vulkan_init_once Wine was built
+        # without Vulkan support.") and opengl32 is the GL-absent stub, so the game shows its box "Unable to initialize Vulkan video driver"
+        # and stops. Buckshot Roulette (T9R22Z, build 574, L11178) and Until Then (2PY5VM, build 579, L12930). No setting changes it; the
+        # stub line is required, so this changes when OpenGL lands (docs/OPENGL.md). Godot's own debug output names the 4.0-4.2 Vulkan
+        # class ("at: VulkanContext::_initialize_instance_extensions (drivers\vulkan\vulkan_context.cpp:441)", T9R22Z L10435), which 4.3
+        # replaced: a 4.3+ game whose Direct3D 12 start failed for a reason a line can fix is not taken for this one.
+        "all": [s("[win-name] #", "Unable to initialize Vulkan video driver"), s("VulkanContext::", "vulkan_context.cpp"),
+                s("[unixlib] opengl32 (GL-absent stub table)")],
+        "reason": "This game's engine (Godot 4.0 to 4.2) draws only with Vulkan or OpenGL, and BCD has neither yet: the game cannot start "
+                  "its renderer. This is not a setting; games made with Godot 4.3 or later can use Direct3D 12.",
+        "evidence": ["buckshot-roulette-godot-vulkan-2026-10-20 (Send Log T9R22Z, build 574)", "docs/OPENGL.md"],
     },
     {
         "id": "justcause3-world-stall",

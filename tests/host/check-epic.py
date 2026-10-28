@@ -315,7 +315,7 @@ def epic_code_lines(text):
 
 STORE_HOOKS = sorted([
     "epicChanges,", "epicMerge(&games)", "let downloads = downloadList(names: names) + gogDownloads() + epicDownloads()", "epicAccount(),",
-    "if let entry = epicPlayEntry(game) { launch(entry); return }", "if epic(.install, game.id, place: place) { return }", "if epic(.update, game.id) { return }",
+    "if let entry = epicPlayEntry(game) { begin(entry, launch); return }", "if epic(.install, game.id, place: place) { return }", "if epic(.update, game.id) { return }",
     "if epic(.verify, game.id) { return }", "if epic(.uninstall, game.id) { return }", "if epic(.pause, id) { return }", "if epic(.resume, id) { return }",
     "if epic(.cancel, id) { return }", "if epicAccountAction(signIn: true, front) { return }", "if epicAccountAction(signIn: false, front) { return }", "epicRefresh()"])
 check(epic_code_lines((APP / "BCDLiveStore.swift").read_text()) == STORE_HOOKS, "BCDLiveStore holds exactly these Epic lines (every shared-file hook is one line; nothing else names Epic)",

@@ -6,7 +6,7 @@ import Foundation
 import CoreGraphics
 
 // The performance HUD, as plain values (docs/BCD-UI-ARCHITECTURE.md; design: the Winlator-family study, section 3, and the
-// owner's choice of 2026-10-25, "4'lü HUD düzenini beğendim"): Off, four finished layouts (1 Pulse, 2 Strip, 3 Tune, 4 Report)
+// owner's choice of 2026-10-25: the four layouts): Off, four finished layouts (1 Pulse, 2 Strip, 3 Tune, 4 Report)
 // and a Custom one the player builds from items. Nothing in this file touches the engine, UIKit or SwiftUI: what to show
 // (BCDHUDLayout, BCDHUDItem, BCDHUDCustom), how an old setting carries over (BCDHUDMigration), the frame-rate arithmetic
 // (BCDFrameMath), the colours' rules (BCDHUDRules), the rows a layout makes of the readings (BCDHUDRows) and where the HUD sits

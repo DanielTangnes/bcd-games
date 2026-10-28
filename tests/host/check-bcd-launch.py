@@ -122,10 +122,18 @@ check("if library.current != nil {\n                    sessionBody" in content 
       and "LibraryController.shared.configure(enabled: true, ownsInput: true)" in block(lib, "func refreshFlag()"),
       "BCD's interface runs with the library engine always on: its Play, JIT prompt and alerts are the library's")
 start = code(block(store, "private func start(_ game: BCDGame)"))
-check(start.count("launch(entry)") == 4 and "guard let launch else { return }" in start
-      and "if let entry = gogPlayEntry(game) { launch(entry); return }" in start
-      and "if let entry = epicPlayEntry(game) { launch(entry); return }" in start,
-      "BCDLiveStore.start: the connected Play is its only way to start a game (GOG, Epic, a game from Files or the desktop, Steam)")
+# Build 622: every start goes through begin(), which shows a heavy game's one-time graphics tip first (BCDGraphicsTip) and
+# otherwise hands the entry to the connected Play; the tip's OK hands it over too.
+begin = code(block(store, "private func begin(_ entry: LibraryEntry, _ launch: (LibraryEntry) -> Void)"))
+answered = code(block(store, "func graphicsTipAnswered()"))
+check(start.count("begin(entry, launch)") == 4 and "launch(entry)" not in start.replace("begin(entry, launch)", "")
+      and "guard let launch else { return }" in start
+      and "if let entry = gogPlayEntry(game) { begin(entry, launch); return }" in start
+      and "if let entry = epicPlayEntry(game) { begin(entry, launch); return }" in start
+      and "if BCDGraphicsTip.due(entry) {" in begin and begin.count("launch(entry)") == 1
+      and "launch?(entry)" in answered and "BCDGraphicsTip.markShown(entry)" in answered,
+      "BCDLiveStore.start: the connected Play is its only way to start a game (GOG, Epic, a game from Files or the desktop, Steam), "
+      "after a heavy game's one-time graphics tip")
 check("library.entries.first(where: { $0.id == id })\n"
       "                    ?? (id == LibraryEntry.desktopID ? LibraryEntry.desktopEntry : nil)" in start,
       "a program added from Files and the Windows desktop: the stored entry, or the desktop's stand-in before its first start")
@@ -139,7 +147,7 @@ check("library.steamEntry(installed, title: title)" in start
       and "func steamEntry(_ game: DockGame, title: String? = nil) -> LibraryEntry" in lib,
       "a Steam game: the entry the classic Steam card opens Game details with (LibraryModel.steamEntry, the item's name)")
 check("if let blocker = SteamPlayCheck.blocker(entry) {\n                library.error = blocker\n                return\n            }" in start
-      and ordered(start, "library.steamEntry(installed, title: title)", "SteamPlayCheck.blocker(entry)", "launch(entry)"),
+      and ordered(start, "library.steamEntry(installed, title: title)", "SteamPlayCheck.blocker(entry)", "begin(entry, launch)"),
       "a Steam game: the Steam check (SteamPlayCheck.blocker) before Play, then Play")
 # Wave 3 (2026-10-19): the classic Game details page, the other caller of this check, is deleted
 # (its "asks the same function first" assertion is retired); the function itself moved, unchanged.
@@ -160,7 +168,7 @@ check("refreshLibrary()" in gone[:gone.index("return")]
       "a Steam game Steam no longer lists: BCD reads the installs again itself and says so (no control it lacks is named)")
 system = code(block(store, "private func refreshSystem()"))
 home = (APP / "BCDHomeView.swift").read_text()
-check(start.index("startingGame = game.id") < start.index("launch(entry)")
+check(start.index("startingGame = game.id") < start.index("begin(entry, launch)")
       and "if let game = self?.startingGame { self?.playing = (entry.id, game) }" in block(store, "func connect(play:")
       and "let waiting = LibraryModel.shared.startingJIT.flatMap(gameID)" in system
       and "if let playing, playing.entry == entry { return playing.game }" in block(store, "private func gameID(_ entry: UUID) -> String?")
@@ -226,7 +234,7 @@ gog_live = (APP / "BCDGOG/BCDLiveStoreGOG.swift").read_text()
 gog_core = (APP / "BCDGOG/BCDGOG.swift").read_text()
 queue_src = (APP / "BCDContent/BCDContentQueue.swift").read_text()
 check(ordered(start, "guard let launch else { return }", "startingGame = game.id",
-              "if let entry = gogPlayEntry(game) { launch(entry); return }", "switch BCDLiveID.parse(game.id) {")
+              "if let entry = gogPlayEntry(game) { begin(entry, launch); return }", "switch BCDLiveID.parse(game.id) {")
       and "guard BCDGOG.enabled, let id = Self.gogProduct(game.id) else { return nil }" in block(gog_live, "func gogPlayEntry(_ game: BCDGame) -> LibraryEntry?"),
       "a GOG game: its hook gives the installed game's library entry (nil for every other game), handed to the same Play")
 make = code(block(gog_core, "private func makeEntry(_ record: inout BCDGOGInstallRecord)"))

@@ -109,8 +109,10 @@ check("only Minecraft Dungeons II's list names twinapi.appcore (Hellblade II's o
 # c0000135. The 32-bit set has all three; the 64-bit one had none. Same mechanism as the DLLs above, one rule each.
 NEW3 = {'oledlg': ('oledlg.dll', 'digimon-story-cyber-sleuth-2026-10-22'), 'fwpuclnt': ('fwpuclnt.dll', 'ffxv-demo-2026-10-22'),
         'sensapi': ('SensApi.dll', 'borderlands-3-2026-10-22'), 'glu32': ('GLU32.dll', 'amnesia-rebirth-2026-10-24'),
-        'tdh': ('tdh.dll', 'aniimo-2026-10-25')}
-check('OPTIN_WANT also lists oledlg, fwpuclnt, sensapi, glu32 and tdh', set(NEW3) <= set(names))
+        'tdh': ('tdh.dll', 'aniimo-2026-10-25'),
+        # gamingtcui (round 620): Forza Horizon 4's exe imports it under its API set name (YFK3A6, c0000135 at once).
+        'gamingtcui': ('api-ms-win-gaming-tcui-l1-1-0.dll', 'forza-horizon-4-2026-10-27')}
+check('OPTIN_WANT also lists oledlg, fwpuclnt, sensapi, glu32, tdh and gamingtcui', set(NEW3) <= set(names))
 check('none of the three is in the list shipped under its own name', not any(re.search(r'\b%s\b' % n, want) for n in NEW3))
 wine = Path(os.environ.get('WINE_SRC') or (root / 'wine'))
 shipdir = root / 'app/Madeira/arm64ec-windows'

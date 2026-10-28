@@ -221,6 +221,9 @@ enum MadeiraDock {
     struct Report {
         var fields: [String: String] = [:]
         var result: Int? { fields["probe-result"].flatMap(Int.init) }
+        /// Valve's EResult values that mean the saved sign-in is no longer accepted: SteamError.signInExpiredCodes, as text
+        /// (tests/host/check-dock-report.py keeps the two equal).
+        static let expiredSignInResults: Set<String> = ["5", "15", "18", "26", "27", "94"]
         var failure: String? {
             guard let result, result != 0 else { return nil }
             if result == 30 {
@@ -232,9 +235,16 @@ enum MadeiraDock {
             // The host waits 90 s after sign-in for Valve's client to count the game
             // among the account's subscriptions (madeira-dock src/session.c).
             if result == 34 {
-                return fields["session-authenticated-online"] == "1"
-                    ? "Steam signed in, but the license check for this game timed out. Export the log, then try again."
-                    : "Steam's sign-in didn't complete. Check your connection, then try again."
+                if fields["session-authenticated-online"] == "1" {
+                    return "Steam signed in, but the license check for this game timed out. Export the log, then try again."
+                }
+                // Round 620 (Half-Life 2, 6XBJKH): Valve's client reported EResult 15 (access denied) for the saved sign-in
+                // (callback 102/103, "session-connection-result=15"); the old text sent the player to their connection. The
+                // codes are SteamError.signInExpiredCodes (the library's own "no longer accepts your sign-in" answer).
+                if let code = fields["session-connection-result"], Self.expiredSignInResults.contains(code) {
+                    return "Steam no longer accepts your sign-in. Sign out of Steam in Settings, then sign in again."
+                }
+                return "Steam's sign-in didn't complete. Check your connection, then try again."
             }
             if result == 35 { return "Steam couldn't confirm that the signed-in account has a license for this game." }
             // Offline start (madeira-dock docs/OFFLINE.md): Valve's client decides.

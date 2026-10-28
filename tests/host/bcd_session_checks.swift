@@ -117,7 +117,7 @@ func sample() -> BCDSessionSummary {
               && BCDScreenshotRules.fileName(game: "", year: 2026, month: 1, day: 2, hour: 3, minute: 4, second: 5) == "BCD 2026-01-02 03.04.05.jpg"
               && BCDScreenshotRules.fileName(game: String(repeating: "A", count: 90), year: 2026, month: 1, day: 2, hour: 3, minute: 4, second: 5).count == 40 + 1 + 19 + 4)
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Europe/Istanbul")!
+        calendar.timeZone = TimeZone(secondsFromGMT: 3 * 3600)!   // UTC+3, no daylight saving
         let start = BCDScreenshotRules.start(ofLogNamed: "war3.exe-2026-10-16_22-24-07.txt", calendar: calendar)
         check("a session log's name has its start: 2026-10-16 22:24:07 local", start.map { Int($0.timeIntervalSince1970) } == 1_792_178_647, "\(String(describing: start))")
         check("bcd-log.txt has none", BCDScreenshotRules.start(ofLogNamed: "bcd-log.txt", calendar: calendar) == nil)

@@ -1,0 +1,189 @@
+[11:51:26.938] [INFO] Checking entitlements...
+[11:51:26.938] [INFO] [build] v0.1.614 (614)
+[11:51:26.939] [INFO] [device] model=iPad17,3 idiom=pad os=iPadOS Version 27.2 (Build 24B119) ram=15389MB available=16358MB cores=10
+[11:51:26.939] [INFO] [device] address-map=[0x10203c000,0x8000000000) 512GB increased-memory=1 extended-va=1
+[11:51:26.959] [INFO] [device] gpu="Apple M5 GPU" family=apple10 argument-buffers=tier2 mesh=1 bc=1 atomics64=1 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[11:58:27.294] [INFO] Requesting JIT with Built-in StikJIT...
+[11:58:35.228] [INFO] [bcd] library launch Far Cry 3: avx=0 wine-vcrt=0 nvidia=0 game-config=1 metalfx=off
+[11:58:49.921] [INFO] [dock-launch] image-retire=1
+[11:58:49.921] [INFO] [dock-launch] image-map-guard=1
+[11:58:50.325] [INFO] [dock-installers] app=220240 program=directx file=DXSETUP.exe status=done key=HKLM\Software\Valve\Steam\Apps\220240 recorded=1 minimum=1 machine=0x14c
+[11:58:50.358] [INFO] [dock-installers] app=220240 program=d3d11 support file=D3D11InstallX86.exe status=done key=HKLM\Software\Valve\Steam\Apps\220240 recorded=1 minimum=1 machine=0x14c
+[11:58:50.390] [INFO] [dock-installers] app=220240 program=microsoft visual studio 2010 c redistributable file=VS_2010_vcredist_x86.exe status=done key=HKLM\Software\Valve\Steam\Apps\220240 recorded=1 minimum=1 machine=0x14c
+[11:58:50.422] [INFO] [dock-installers] app=220240 program=microsoft visual studio 2008 c redistributable file=VS_2008_vcredist_sp1_x86.exe status=done key=HKLM\Software\Valve\Steam\Apps\220240 recorded=1 minimum=1 machine=0x14c
+[11:58:50.455] [INFO] [dock-installers] app=220240 program=microsoft .net framework - winxp file=dotNetFx35setup.exe status=done key=HKLM\Software\Valve\Steam\Apps\220240 recorded=1 minimum=1 machine=0x14c
+[11:58:50.487] [INFO] [dock-installers] app=220240 program=microsoft .net framework - vista file=dotNetFx35setup.exe status=done key=HKLM\Software\Valve\Steam\Apps\220240 recorded=1 minimum=1 machine=0x14c
+[11:58:50.520] [INFO] [dock-installers] app=220240 program=microsoft .net framework - win7 file=dotNetFx35setup.exe status=done key=HKLM\Software\Valve\Steam\Apps\220240 recorded=1 minimum=1 machine=0x14c
+[11:58:50.552] [INFO] [dock-installers] app=220240 program=ubisoft connect pc client file=UbisoftConnectInstaller.exe status=done key=HKLM\Software\Valve\Steam\Apps\220240 recorded=1 minimum=1 machine=0x14c
+[11:58:50.584] [INFO] [dock-installers] app=220240 program=punkbuster file=pbsvc_fc3.exe status=missing key=HKLM\Software\Valve\Steam\Apps\220240 recorded=- minimum=1 machine=-
+[11:58:50.617] [INFO] [dock-installers] app=220240 program=firewall-d3d9 file=FirewallInstall.exe status=missing key=HKLM\Software\Valve\Steam\Apps\220240 recorded=- minimum=1 machine=-
+[11:58:50.649] [INFO] [dock-installers] app=220240 program=firewall-d3d1 file=FirewallInstall.exe status=missing key=HKLM\Software\Valve\Steam\Apps\220240 recorded=- minimum=1 machine=-
+[11:58:50.649] [INFO] [dock-installers] app=220240 scripts=1 programs=11 pending=0 done=8 missing=3 unsupported=0 provided=0 default-key=1 services-step=- session-madsync-off=0 installs-only=0
+[11:58:50.649] [INFO] [madeira-dock] starting the host for app 220240; Valve's client authenticates and authorizes the launch
+[11:58:50.658] [INFO] Running full Wine sequence...
+[11:58:50.658] [INFO] [device] launch: cs-flags=0x32003005 get-task-allow=1 cs-debugged=1 debugger-attached=1 traced=1 address-map=[0x10203c000,0x8000000000) 512GB available=16324MB low-power=0 thermal=nominal
+[11:58:50.662] [INFO] Allocating 896MB JIT pool (BRK will suspend process)...
+[11:58:50.663] [INFO] Allocating 896MB JIT pool via debugger...
+[11:58:50.663] [INFO] [jit-pool] path: debugger (attached at the pool request; it makes every region)
+[11:58:50.663] [INFO] [jit-debugger] attached=1 at the pool request
+[11:58:50.664] [ERR] ml1036: no hole fits a 896MB pool — SHRINKING to 592MB (the alternative is a pool in the guest window or on top of 0x140000000, both of which are fatal)
+[11:58:51.292] [INFO] RX pool at 0x148000000
+[11:58:51.307] [INFO] Detaching debugger...
+[phase] wine-start             t+  0.699s rev=ml526
+[shell-dir] user folders for madeira, mobile: 0 created (Start Menu included)
+[cage] holdback reserved 0x7200000000+0x1ffff0000 rev=ml433
+[11:58:51.565] [Wine init_process] reply_pipe=43, sending init_first_thread...
+ml992: os_proc_available_memory=15717 MB + phys_footprint=666 MB = 16384 MB (hw.memsize says 15389 MB)
+ml985: preferred base 0x140000000+0x70000 REFUSED status=0xc0000018 image_flags=0x4 charact=0x22 map_addr=0 info_base=0x140000000 | STAGE=fixed-map err=3 at 0x140000000+0x70000 rev=ajan5-motor
+[wow-rwx] ml1279 MADEIRA_WOW_RWX_PLAIN=(unset) -> 32-bit guest RWX memory is plain read/write in a window once Wine Mono is mapped there
+[copy-verify] ?: OK, 4 .text pages executable (copy @0x148004000)
+[copy-verify] ntdll.dll: OK, 29 .text pages executable (copy @0x148078000)
+0024:err:seh:init_syscall_frame page0: trying debugger (BRK #0xf00d, x16=3)...
+[copy-verify] KERNEL32.dll: OK, 12 .text pages executable (copy @0x148190000)
+[copy-verify] kernelbase.dll: OK, 30 .text pages executable (copy @0x148238000)
+[nls-getptr] type=11 id=1252 peb=0x71ffff0000
+[nls-getptr] type=11 id=437 peb=0x71ffff0000
+[copy-verify] rpcrt4.dll: OK, 18 .text pages executable (copy @0x1483b8000)
+[copy-verify] advapi32.dll: OK, 9 .text pages executable (copy @0x14848c000)
+[footprint] rev=ml358 phys=676 MB (peak 676) internal=673 MB compressed=0 MB external=98 MB reusable=56 MB (cycle=1)
+[nls-getptr] type=11 id=20127 peb=0x71ffff0000
+[gdi-shared] session table 0x7025f50000 (1572864 bytes, section-backed, name=L"\\KernelObjects\\__wine_ios_gdi_shared")
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=1252 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+0024:err:module:load_dll [dll-missing] ml718 UNCAPPED L"winemac.drv" status=c0000135 (subsystem dependency)
+0024:err:module:load_dll [dll-missing] rev=ml336 #1 L"winemac.drv" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] ml718 UNCAPPED L"winex11.drv" status=c0000135 (subsystem dependency)
+0024:err:module:load_dll [dll-missing] rev=ml336 #2 L"winex11.drv" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] ml718 UNCAPPED L"winewayland.drv" status=c0000135 (subsystem dependency)
+0024:err:module:load_dll [dll-missing] rev=ml336 #3 L"winewayland.drv" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[win-name] #3 hwnd=0x10020 class='' text="madeira - Wine Desktop" rev=ml853
+[win-name] #8 hwnd=0x10032 class='' text="WineAppBar" rev=ml853
+[win-name] #11 hwnd=0x1003e class='' text="Default IME" rev=ml853
+[phase] spawn:L"C:\\windows\\system32\\dockhost.exe" t+  1.098s rev=ml526
+[Wine child thread] calling wine_ios_child_main...
+[copy-verify] ntdll.dll: OK, 30 .text pages executable (copy @0x1498d4000)
+[copy-verify] libarm64ecfex.dll: OK, 131 .text pages executable (copy @0x149a0e000)
+[copy-verify] actxprxy.dll: OK, 1 .text pages executable (copy @0x149e28000)
+[file-wfail] ml669 #2 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[phase] spawn:L"C:\\windows\\system32\\conhost.exe" t+  1.161s rev=ml526
+[Wine child thread] calling wine_ios_child_main...
+[copy-verify] win32u.dll: OK, 9 .text pages executable (copy @0x14ae70000)
+D 38 Load module dockhost.exe (dockhost.exe-09dbbefb7c42a67b): 11EF10000
+D 38 Load module ntdll.dll (ntdll.dll-391ab96a83e82f14): 71FE610000
+D 38 Load module ADVAPI32.dll (advapi32.dll-e40c14e1190b1df2): 71FC190000
+D 38 Load module sechost.dll (sechost.dll-b36ef44c04b21a0b): 71FC110000
+D 38 Load module msvcrt.dll (msvcrt.dll-237acf236e8130e9): 71FC000000
+D 38 Load module rsaenh.dll (rsaenh.dll-6cd5b371ff05d55f): 71FBF40000
+[free-delay] #1 release of 0x702a5f0000+0x100000 held for 2000 ms (1 in flight)
+[free-delay] #2 release of 0x702a6f0000+0x200000 held for 2000 ms (2 in flight)
+[free-delay] #3 release of 0x702a8f0000+0x400000 held for 2000 ms (3 in flight)
+[free-delay] #4 release of 0x702acf0000+0x800000 held for 2000 ms (4 in flight)
+[file-wfail] ml669 #3 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[xp-names] m653460 "wine-x18-exc"
+[alloc-fail] ml814 #1 status=c000000d hint=0xffeeffeeffeeffee size=0x1 type=0x2000 protect=0x1 tid=0038 | STAGE=none err=3 at 0x73fff60000+0x90000
+[nt-fail] #1 NtAllocateVirtualMemory status=c000000d proc=dockhost.exe tid=0038 size=0x1 type=0x2000 prot=0x1 hint=0xffeeffeeffeeffee zb=0x0 hits=1 rev=ajan5-rockstar
+[copy-verify] dxgi.dll: OK, 50 .text pages executable (copy @0x14ee8d000)
+[file-wfail] ml669 #5 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:seh:ios_exc_dump_str [exc] ml812   OutputDebugStringW: ".......................l"
+[file-wfail] ml669 #8 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:seh:NtGetContextThread [ec-getctx] ml715 #1 handle=0000000000000104 status=c0000022 native_pc=0000000000000000 is_ec=-1 -> returned rip=0000000000000000 rsp=0000000000000000 flags=00000000
+[file-wfail] ml669 #9 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:module:import_dll Library libavcodec-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavfilter-11.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavformat-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavutil-60.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libswresample-6.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libswscale-9.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavcodec-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavfilter-11.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavformat-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavutil-60.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libswresample-6.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libswscale-9.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+[file-wfail] ml669 #11 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:seh:NtGetContextThread [ec-getctx] ml715 #2 handle=00000000000002B8 status=c0000022 native_pc=0000000000000000 is_ec=-1 -> returned rip=0000000000000000 rsp=0000000000000000 flags=00000000
+[footprint] rev=ml358 phys=1110 MB (peak 1110) internal=1107 MB compressed=0 MB external=175 MB reusable=56 MB (cycle=2)
+[footprint] rev=ml358 phys=1160 MB (peak 1160) internal=1157 MB compressed=0 MB external=175 MB reusable=62 MB (cycle=3)
+[file-wfail] ml669 #56 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[file-wfail] ml669 #57 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[file-wfail] ml669 #58 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[footprint] rev=ml358 phys=1164 MB (peak 1164) internal=1161 MB compressed=0 MB external=175 MB reusable=62 MB (cycle=4)
+[phase] spawn:L"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Far Cry 3\\bin\\FC3UpdaterSteam.exe" t+  8.554s rev=ml526
+[wow-window] session armed: a 32-bit process is expected
+[Wine child thread] calling wine_ios_child_main...
+[wow-window] B=0x7100000000 REJECTED: the 4GB range is not free (PARTIALLY OCCUPIED: free 0x7100000000..0x71f56f0000, then OCCUPIED 0x71f56f0000+0x40000 prot=3/7 shared=0 (0xa910000 of the range is not free))
+[wow-window] B=0x7200000000 REJECTED: the 4GB range is not free (OCCUPIED 0x7200000000+0x8000000 prot=0/7 shared=0 (and the range continues past this region))
+[wow-window] B=0x7a00000000: window body after failed reservations (FREE: all 0x100000000 bytes from 0x7a00000000 are free, next region 0x7c00000000 (+0x100000000 past the end) <-- iOS REFUSED A FREE RANGE)
+[wow-window] B=0x7a00000000 REJECTED: 4GB+guard unavailable and the page at 0x7b00000000 is not an inaccessible neighbour (FREE: all 0x4000 bytes from 0x7b00000000 are free, next region 0x7c00000000 (+0xffffc000 past the end) <-- iOS REFUSED A FREE RANGE)
+[wow-window] B=0x7900000000: reserved 4GB + own guard page (+0x4000)
+[wow-window] band full: spilled into the Chromium pool range B=0x7900000000..0x7a00000000 (MADEIRA_WOW_SPILL_CEF=0 disables)
+[wow-window] reserved B=0x7900000000..0x7a00000000 (slot 0) guard=owned
+[wow-window] slot 0 B=0x7900000000 bound to peb=0x7900310000
+00b0:err:module:load_dll [dll-missing] rev=ml336 #1 L"\\??\\C:\\windows\\system32\\wow64cpu.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+00b0:err:wow:load_cpu_dll CPU backend wow64cpu.dll not available, falling back to the platform default xtajit.dll
+[file-wfail] ml669 #59 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[nls-getptr] type=11 id=10001 peb=0x7900310000
+[nls-getptr] type=11 id=10000 peb=0x7900310000
+[nls-getptr] type=11 id=10000 peb=0x7900310000
+00b0:err:module:load_dll [dll-missing] rev=ml336 #6 L"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Far Cry 3\\bin\\FC3UpdaterSteamLOC.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[unixlib] opengl32 (GL-absent stub table) (module 0x797a0b0000) -> wow64 table (0x104ddc618)
+[free-delay] #5 release of 0x790a890000+0x800000 held for 2000 ms (1 in flight)
+[free-delay] #6 release of 0x790b090000+0x800000 held for 2000 ms (2 in flight)
+[free-delay] #7 release of 0x7026630000+0x800000 held for 2000 ms (3 in flight)
+[free-delay] #8 release of 0x7909e70000+0x800000 held for 2000 ms (4 in flight)
+[win-name] #33 hwnd=0x1006e class='' text="Default IME" rev=ml853
+[win-name] #34 hwnd=0x10068 class='' text="WineD3D fake window" rev=ml853
+00b0:err:d3d:wined3d_adapter_gl_init Failed to get a GL context for adapter 0290B6A0.
+[copy-verify] ?: OK, 5 .text pages executable (copy @0x15247e000)
+[footprint] rev=ml358 phys=1417 MB (peak 1417) internal=1414 MB compressed=0 MB external=181 MB reusable=62 MB (cycle=5)
+D B0 Load module msvfw32.dll (msvfw32.dll-a54072a416599465): 7978E90000
+D B0 Load module msrle32.dll (msrle32.dll-a301bb19351ca51f): 7978E70000
+D B0 Load module msvidc32.dll (msvidc32.dll-94652812bd2f8f9a): 7978E70000
+D B0 Load module iccvid.dll (iccvid.dll-18c680a1e4a2ac2d): 7978E70000
+00b0:err:module:load_dll [dll-missing] rev=ml336 #7 L"ir50_32.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+D B0 Load module msacm32.drv (msacm32.drv-c413c908d8e9803b): 7978E70000
+D B0 Load module midimap.dll (midimap.dll-08e332885fd98f02): 7978E50000
+[nls-getptr] type=11 id=10000 peb=0x7900310000
+[nls-getptr] type=11 id=10000 peb=0x7900310000
+[win-name] #37 hwnd=0x2006e class='' text="Default IME" rev=ml853
+00b0:err:dialog:madeira_msgbox_origin [msgbox-origin] box L"Far Cry 3 Updater" / L"Failed to start the game. Cannot find essential information in the registry.\r\n\nRe-installing the game may fix this problem.\r\n": main exe base 00400000 size 0xd7000
+[win-name] #155 hwnd=0x100aa class='' text="Failed to start the game. Cannot find essential information in the registry.???Re-installing the game may fix this problem.??" rev=ml853
+[nls-getptr] type=11 id=10000 peb=0x7900310000
+[launch-view] dismissed reason=game-window logs=0
+0050:err:module:load_dll [dll-missing] rev=ml336 #43 L"C:\\Program Files (x86)\\Steam\\bin\\steamservice.dll" status=c000007b -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0050:err:module:load_dll [dll-missing] rev=ml336 #44 L"C:\\Program Files (x86)\\Steam\\bin\\steamservice.dll" status=c000007b -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0050:err:module:load_dll [dll-missing] rev=ml336 #45 L"steamservice.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0050:err:module:load_dll [dll-missing] rev=ml336 #46 L"steamservice.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[file-wfail] ml669 #62 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[11:59:00.661] [INFO] [dock-report] launch-game-running=1
+[footprint] rev=ml358 phys=1276 MB (peak 1417) internal=1272 MB compressed=0 MB external=181 MB reusable=62 MB (cycle=6)
+[wow-stack-free] #1 the dead thread 00d8's 32-bit stack (guest 0x8470000) is in window 0x7900000000 (live), the thread freeing its TEB is in window 0x0: the old address 0x8470000 is not a live view -> released at the old address (as before) rev=ajan11
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16e939040 NATIVE (unresolved: OffsetToBlockTail implausible) sp-cand=[ ]
+[thread-stacks] port=0x1450f "wine-x18-exc" pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 run=3 susp=0 cpu=0 x8=0x0 x18=0x0 sp=0x16e939040
+[11:59:21.457] [INFO] detach-wait: presents=0 running=1 elapsed=30s
+[freeze] alive t+30s beats=1 gaps=0 iter=119 gen=1 threads=47 resident=1506MB dbg=DEBUGGED rev=ml525
+[thread-stacks] port=0x1450f "wine-x18-exc" pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 run=3 susp=0 cpu=0 x8=0x0 x18=0x0 sp=0x16e939040
+[footprint] rev=ml358 phys=1263 MB (peak 1417) internal=1260 MB compressed=0 MB external=181 MB reusable=62 MB (cycle=22)
+[footprint] rev=ml358 phys=1263 MB (peak 1417) internal=1260 MB compressed=0 MB external=181 MB reusable=62 MB (cycle=23)
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16e939040 NATIVE (unresolved: OffsetToBlockTail implausible) sp-cand=[ ]
+[footprint] rev=ml358 phys=1263 MB (peak 1417) internal=1260 MB compressed=0 MB external=181 MB reusable=62 MB (cycle=24)
+[footprint] rev=ml358 phys=1263 MB (peak 1417) internal=1260 MB compressed=0 MB external=181 MB reusable=62 MB (cycle=25)
+[win-name] #175 hwnd=0x20068 class='' text="Far Cry 3 Updater" rev=ml853
+[win-name] #176 hwnd=0x20068 class='' text="Far Cry 3 Updater" rev=ml853
+[win-name] #177 hwnd=0x20068 class='' text="Far Cry 3 Updater" rev=ml853
+[win-name] #178 hwnd=0x20068 class='' text="Far Cry 3 Updater" rev=ml853
+[win-name] #179 hwnd=0x20068 class='' text="Far Cry 3 Updater" rev=ml853
+[win-name] #180 hwnd=0x20068 class='' text="Far Cry 3 Updater" rev=ml853
+00b0:err:process:NtTerminateProcess NtTerminateProcess(handle=0x0, exit_code=0x0) syscalls=0 unix_calls=8881
+00b0:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0x0) syscalls=0 unix_calls=8883
+[Wine ntdll/server] process_exit_wrapper(0): closing child fd_socket=470
+[wow-window] slot 0 B=0x7900000000 released (owner peb=0x7900310000 exited); torn down when the next 32-bit process starts
+[Wine ntdll/server] process_exit_wrapper(0)
+[footprint] rev=ml358 phys=1262 MB (peak 1417) internal=1259 MB compressed=0 MB external=181 MB reusable=62 MB (cycle=26)
+[store-noalias] #1 rev=ml348 addr=0x1095ff44 insn=0xb9000280 pc=0x1034cb318 NO pool/anon alias | region 0x10203c000+0x26cc000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[hwinput] keyboard focus: elsewhere (pointer left the game view)
+[hwinput] mouse focus: elsewhere (pointer left the game view)
+[footprint] rev=ml358 phys=1262 MB (peak 1417) internal=1259 MB compressed=0 MB external=181 MB reusable=62 MB (cycle=27)
+[file-wfail] ml669 #63 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[11:59:44.367] [INFO] [session] length=53s partial=1 play=0s frames=0 stalls=0/0s peak=1441MB limit=16383MB thermal=nominal lpm=0 res=1112x832 cap=60 game=Far Cry® 3

@@ -1,0 +1,16 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "gamingtcui-dxva2-dll-optin",
+  "dxva2-dll-optin",
+  "gamingtcui-dll-optin"
+ ],
+ "next": [
+  "env.MADEIRA_OPTIN_DLLS = dxva2,gamingtcui"
+ ],
+ "note": "Forza Horizon 4 (Steam 1293830, ForzaHorizon4.exe), build 614, iPad17,1, Send Log YFK3A6 (round 620): with env.MADEIRA_X64_IMAGE_NOCOPY = 1 the loader reaches the imports and ends with c0000135: api-ms-win-gaming-tcui-l1-1-0.dll (gamingtcui.dll) and dxva2.dll (libcef.dll's import) are not found. env.MADEIRA_OPTIN_DLLS = dxva2,gamingtcui (build 620) links both. Not tried on a device.",
+ "outcome": "crashed",
+ "stage": 2,
+ "status": "trying"
+}

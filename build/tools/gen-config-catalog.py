@@ -69,9 +69,9 @@ OVERLAY = {
                             "build/ntdll-unix/virtual_ios.c"]},
     "env.LC_ALL": {"category": "Wine core (ntdll)", "title": "Wine's locale for this game",
                 "kind": "text", "default": "",
-                "note": "Empty: Wine takes the user locale from the phone's language (Turkish phone: tr-TR, code pages "
-                        "1254/857). en_US.UTF-8 gives the game an English system and user locale. Ratchet & Clank: "
-                        "Rift Apart threw an unhandled C++ exception right after loading the Turkish OEM code page "
+                "note": "Empty: Wine takes the user locale from the phone's language, with that language's code pages. "
+                        "en_US.UTF-8 gives the game an English system and user locale. Ratchet & Clank: Rift Apart "
+                        "threw an unhandled C++ exception right after loading a non-English OEM code page "
                         "(builds 550 and 553, R6025) and runs with it. Read at session start (init_locale).",
                 "sources": ["build/ntdll-unix/env_ios.c"]},
     "env.MADEIRA_NLS_EXTRA": {"category": "Wine core (ntdll)", "title": "Extra code page tables",
@@ -563,9 +563,9 @@ OVERLAY = {
                         "Only read-only opens and attribute queries are redirected. Missing local files, "
                         "writes, create/delete operations, relative paths and non-file devices keep the normal path. "
                         "Off by default; set only in the game's own file."},
-    "swap-mb": { "note": "Moves game data to a file on this device's storage when memory runs short, up to this size. Off by default; read at launch.", "category": "Memory & JIT pool","title": "Swap tier size", "kind": "choice",
+    "swap-mb": { "note": "Moves game data to a file on this device's storage when memory runs short, up to this size on the disk: once the file holds this much, new game data stays in memory. In broad mode (swap-mode = 2) this is asked for every new allocation since build 622; before, only when a reservation was first put in the file, and the file grew past it. Data already placed in the file can still take it a little past the size. Off by default; read at launch.", "category": "Memory & JIT pool","title": "Swap tier size", "kind": "choice",
                 "choices": [("", "Off"), ("1024", "1 GB"), ("2048", "2 GB"), ("3072", "3 GB"), ("4096", "4 GB")]},
-    "env.MADEIRA_SWAP_COVERAGE": {"category": "Memory & JIT pool", "note": "Which allocations the swap tier backs with its file (only when the tier is on). Large allocations (classic, the default): single 8 MB+ commits in the guest band. All allocations of 1 MB+ (blocks). 1 MB+ and overflow (wide): blocks plus allocations outside the band and fresh reservations. Whole reservations 4 MB+ (broad, ml1257): every new reservation of at least swap-min-mb (4 MB) below FEX's band backed whole when made, holes punched on decommit, swap-mb caps the disk it uses (a soft cap, checked when a block is backed). Unset: broad if swap-mode = 2, else classic.", "title": "Swap tier coverage", "kind": "choice",
+    "env.MADEIRA_SWAP_COVERAGE": {"category": "Memory & JIT pool", "note": "Which allocations the swap tier backs with its file (only when the tier is on). Large allocations (classic, the default): single 8 MB+ commits in the guest band. All allocations of 1 MB+ (blocks). 1 MB+ and overflow (wide): blocks plus allocations outside the band and fresh reservations. Whole reservations 4 MB+ (broad, ml1257): every new reservation of at least swap-min-mb (4 MB) below FEX's band backed whole when made, holes punched on decommit, swap-mb caps the disk the file occupies (since build 622 also for each commit into a reservation already in the file, which then stays in memory; before, the cap was only checked when a reservation was backed, and the file grew past it). Unset: broad if swap-mode = 2, else classic.", "title": "Swap tier coverage", "kind": "choice",
                 "choices": [("", "Large allocations (8 MB+)"), ("blocks", "All allocations of 1 MB+"), ("wide", "1 MB+ and overflow"), ("broad", "Whole reservations 4 MB+ (broad)")]},
     "swap-mode": {"category": "Memory & JIT pool", "title": "Swap tier mode (2 = broad)",
                 "note": "2 selects broad swap coverage (ml1257) when env.MADEIRA_SWAP_COVERAGE is unset; any other value, classic. The coverage key wins when set."},
@@ -832,6 +832,16 @@ OVERLAY = {
                         "pass, A13 with a one-time notice (no geometry shaders or tessellation). 0: start them "
                         "anyway; Direct3D then crashes or draws garbage on such a GPU.",
                 "sources": ["app/Madeira/DeviceCapability.swift"]},
+    # madeira-bcd (owner, 2026-10-28, build 622): app/Madeira/GameRecommendationsApply.swift (BCDGraphicsTip), shown by
+    # BCDLiveStore.begin; the heavy games' recommended lists set it (minBuild 622).
+    "low-graphics-tip": {"category": "Windows, display & input", "title": "Graphics tip before the first start",
+                "kind": "bool", "default": "0",
+                "note": "1: before this game's first start BCD says once to set the game's own graphics to the lowest "
+                        "preset (Very Low, or Low) and AMD FSR, where the game has it, to Balanced or Performance; OK "
+                        "starts the game, and the tip is not shown for it again. The recommended settings of the heavy "
+                        "games set it (RDR2, GTA V, Ghost of Tsushima, God of War, the Horizons, the Spider-Man games, "
+                        "Rift Apart, the Crysis remasters). 0 or unset: no tip.",
+                "sources": ["app/Madeira/GameRecommendationsApply.swift", "app/Madeira/BCDLiveStore.swift"]},
     "env.MADEIRA_UPDATE_CHECK": {"category": "App & front end", "title": "Say when a newer BCD is out",
                 "kind": "bool", "default": "1",
                 "note": "On (default): at most once a day, a few seconds after the library first appears, BCD reads its "
@@ -1021,14 +1031,25 @@ OVERLAY = {
                         "Off (default): the registration is refused, as before. Set it in the game's own file; read "
                         "at session start."},
     # madeira-bcd: the opt-in source build of DXMT's 64-bit d3d11.dll (tools/build-d3d11-dll.sh).
-    "env.MADEIRA_D3D11_SRC": {"category": "Direct3D 9/10/11 (DXMT)", "title": "D3D11 built from DXMT source (context state swap)",
+    "env.MADEIRA_D3D11_SRC": {"category": "Direct3D 9/10/11 (DXMT)", "title": "D3D11 built from DXMT source (BCD's Direct3D 11 fixes)",
                 "kind": "bool", "default": "0",
-                "note": "1: the game runs the 64-bit d3d11.dll the CI builds from the dxmt submodule (d3d11-src.dll): "
-                        "upstream's DXMT d3d11 plus SwapDeviceContextState, which Wine's Direct2D (d2d1) calls and "
-                        "upstream's aborts in (Rockstar Games Launcher exited with code 3). Off (default): upstream's "
-                        "committed d3d11.dll. Set it in the game's own file, not for every game; read at session start. "
-                        "Since build 543 (the 2026-10-15 upstream merge) upstream's d3d11.dll has SwapDeviceContextState "
-                        "itself, no d3d11-src.dll is built and this switch changes nothing."},
+                "note": "1: a 64-bit game runs the d3d11.dll the CI builds from the dxmt submodule (d3d11-src.dll) instead of "
+                        "upstream's committed one: the same DXMT code plus BCD's Direct3D 11 fixes, which otherwise reach only "
+                        "32-bit games (the CI compiles only the 32-bit d3d11.dll). Since build 620: CopyStructureCount without a "
+                        "buffer is skipped instead of crashing the renderer (F1 2020), and render target views on a buffer are "
+                        "logged and, with env.MADEIRA_BUFFER_RTV_EMPTY = 1, answered without a view (Frostbite 2 games). "
+                        "Off (default): upstream's committed d3d11.dll. A 32-bit game is not affected. Set it in the game's own "
+                        "file, not for every game; read at session start. (Builds 543-619 built no d3d11-src.dll and the "
+                        "switch changed nothing.)"},
+    # madeira-bcd (round 620): render target views on a buffer (tools/patch-dxmt-buffer-rtv.py; DXMT reads it).
+    "env.MADEIRA_BUFFER_RTV_EMPTY": {"category": "Direct3D 9/10/11 (DXMT)", "title": "Render target views on a buffer: no view instead of an error",
+                "kind": "bool", "default": "0", "sources": ["tools/patch-dxmt-buffer-rtv.py"],
+                "note": "1: when a game asks for a render target view on a buffer, which DXMT does not have, it gets S_OK and no "
+                        "view instead of E_INVALIDARG, as DXVK did for Battlefield 3 and 4 until 2026-08; the game then draws "
+                        "without that target. Frostbite 2 games ask for one while loading and stop with \"DirectX error ... "
+                        "CreateRenderTargetView ... failed with E_INVALIDARG\" otherwise (Need for Speed: The Run). Off (default): "
+                        "the error, as before; every failed view is logged as [rtv-fail]. A 64-bit game needs "
+                        "env.MADEIRA_D3D11_SRC = 1 as well. Set it in the game's own file; read once per game start."},
     # madeira-bcd (2026-10-24): no Steam game identity for one game's session (WineProcessBridge.m).
     "env.MADEIRA_STEAM_IDENTITY": {"category": "Steam & Dock", "title": "No Steam game identity for this game",
                 "kind": "choice", "default": "",
@@ -1292,8 +1313,9 @@ OVERLAY = {
                         "library, whose missing import raised UE4's delay-load exception) ended at once with c0000135. ddraw is Wine's DirectDraw for a 64-bit "
                         "program that imports it (Dying Light's renderer, rd3d11_x64_rwdi.dll: \"Cannot initialize renderer\"). msi, mspatcha, odbccp32, sxs and "
                         "rstrtmgr are what the EA app's 64-bit background service imports (msi.dll and RstrtMgr.dll, msi.dll the other three); "
-                        "without them the service never starts and the MSI rolls back with 1627. An earlier session's links are removed when a name is gone. "
-                        "Set it in the game's own file; read at session start. Auto-tune adds dxva2, xpsprint, oledlg, fwpuclnt, sensapi, "
+                        "without them the service never starts and the MSI rolls back with 1627. gamingtcui is what Forza Horizon 4's program imports as "
+                        "api-ms-win-gaming-tcui-l1-1-0.dll (c0000135 at once; build 620). An earlier session's links are removed when a name is gone. "
+                        "Set it in the game's own file; read at session start. Auto-tune adds dxva2, xpsprint, oledlg, fwpuclnt, sensapi, gamingtcui, "
                         "setupapi and (with env.MADEIRA_WG_64BIT = 1) mfasfsrcsnk,wmvdecod,wmadmod after their failures."},
     "env.MADEIRA_WINTYPES": {"category": "Wine libraries", "title": "Give the game Wine's wintypes.dll",
                 "kind": "bool", "default": "0",

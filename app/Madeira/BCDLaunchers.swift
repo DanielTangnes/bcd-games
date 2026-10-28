@@ -105,8 +105,8 @@ struct BCDLauncherSpec: Identifiable, Hashable {
     /// The launchers BCD offers, in the order the Library lists them.
     static let all: [BCDLauncherSpec] = [battlenet, eaApp]
 
-    /// Build 600 (the owner, 2026-10-24: the public release goes out without Battle.net and the EA app, "komple gizle, anahtarla da
-    /// açılamasın"; the next local build turns them back on): no launcher chip, no launcher card, no library tile of a launcher's own
+    /// Build 600 (the owner, 2026-10-24: the public release goes out without Battle.net and the EA app, hide them completely, with no
+    /// switch to turn them on; the next local build turns them back on): no launcher chip, no launcher card, no library tile of a launcher's own
     /// entry, and no setting to bring them back. The engine, the lines and the checks stay as they are. Set to false to show them again.
     static let hiddenInThisBuild = false
     /// The launchers the interface offers: all of them, or none while they are hidden.
@@ -185,8 +185,8 @@ struct BCDLauncherSpec: Identifiable, Hashable {
                    "Program Files/Electronic Arts/EA Desktop/*/EA Desktop/EADesktop.exe",
                    "Program Files/Electronic Arts/EA Desktop/*/EA Desktop/EALauncher.exe"],
         entryID: "E53F8EF0-CFB7-49B2-9A3D-D1F488365F6D", setupEntryID: "73C20BA0-D7A0-40BF-B76F-B19AF0106335",
-        // madeira-bcd (lead, 2026-10-23): an English locale for the EA app. With the phone's Turkish one the installer's bootstrapper
-        // loaded code page 1254 and died on an uncaught ATL::CAtlException right after its telemetry step ("C7-2F79", logs 16:28 and
+        // madeira-bcd (lead, 2026-10-23): an English locale for the EA app. With the phone's non-English one the installer's bootstrapper
+        // loaded its code page (1254) and died on an uncaught ATL::CAtlException right after its telemetry step ("C7-2F79", logs 16:28 and
         // 17:09:52); with env.LC_ALL = en_US.UTF-8 it went on to the MSI package (17:15:17), as Rift Apart did with the same line.
         // ajan14/ea-mono (2026-10-23): env.MADEIRA_APC_BUSY_QUEUE = 1 for the package's first custom action. The MSI stopped at
         // "JunoInitializeSession" (1603): the action runs in rundll32.exe, which asks msiexec's custom action server for every MSI call

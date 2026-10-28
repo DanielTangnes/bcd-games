@@ -110,7 +110,7 @@ struct BCDLiveFrontEnd: View {
                 .alert("Memory limit", isPresented: Binding<Bool>(
                     get: {
                         guard memory.message != nil, library.current == nil, !onboarding.presented else { return false }
-                        return library.error == nil && steam.error == nil
+                        return library.error == nil && steam.error == nil && live.graphicsTip == nil
                     },
                     set: { if !$0 { memory.message = nil } })) {
                     Button("OK", role: .cancel) { memory.message = nil }
@@ -121,11 +121,18 @@ struct BCDLiveFrontEnd: View {
                     get: {
                         guard update.message != nil, library.current == nil, !onboarding.presented else { return false }
                         guard library.error == nil, steam.error == nil, memory.message == nil else { return false }
-                        return live.sheet == nil
+                        return live.sheet == nil && live.graphicsTip == nil
                     },
                     set: { if !$0 { update.message = nil } })) {
                     Button("OK", role: .cancel) { update.message = nil }
                 } message: { Text(update.message ?? "") }
+                // madeira-bcd (build 622): a heavy game's one-time graphics tip before its first start (BCDGraphicsTip,
+                // BCDLiveStore.begin); OK is the only button and starts the game.
+                .alert(BCDGraphicsTip.title, isPresented: Binding<Bool>(
+                    get: { live.graphicsTip != nil && library.error == nil && steam.error == nil },
+                    set: { if !$0 { live.graphicsTipAnswered() } })) {
+                    Button("OK") { live.graphicsTipAnswered() }
+                } message: { Text(BCDGraphicsTip.message) }
         )
     }
 

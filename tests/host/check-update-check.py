@@ -102,7 +102,7 @@ check(start.index("UserDefaults.standard.set(today") > start.index("BCDUpdateChe
       "the day is marked only after an answer (offline asks again at the next start)")
 check("[update-check] latest=" in notice, "the log says what the check found")
 alert = front[front.index('.alert("Update available"'):]
-alert = alert[:alert.index("// First-run setup")]
+alert = alert[:alert.index("// madeira-bcd (build 622): a heavy game's one-time graphics tip")]   # the tip's own alert follows (BCDGraphicsTip)
 check("library.current == nil" in alert and "!onboarding.presented" in alert and "library.error == nil" in alert
       and "steam.error == nil" in alert and "memory.message == nil" in alert,
       "the alert waits for the library: no game, no first-run setup, no other alert (the memory box first)")

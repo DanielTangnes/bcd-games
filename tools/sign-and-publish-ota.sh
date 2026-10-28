@@ -14,7 +14,7 @@
 # Optional, so the owner need not log in to B2 at all: with these three the
 # install page's own 7-day pre-signed link is e-mailed to the owner (Gmail /
 # Google Workspace SMTP, STARTTLS on smtp.gmail.com:587). Tapping it in Mail
-# opens the page in Safari without any login; "Yükle" installs.
+# opens the page in Safari without any login; "Install" installs.
 #   OTA_MAIL_USER           the sending Gmail/Workspace address
 #   OTA_MAIL_APP_PASSWORD   an app password of that account (not its password)
 #   OTA_MAIL_TO             where to send it (usually the same address)
@@ -22,7 +22,7 @@
 # Nothing is public. The IPA, its manifest and kurulum-<version>.html (the install page)
 # sit in the private bucket; the page's button and the manifest carry 7-day
 # pre-signed URLs, the longest S3 allows. The owner opens kurulum-<version>.html from the
-# B2 panel or app and taps "Yükle". The repository and its Actions logs are
+# B2 panel or app and taps "Install". The repository and its Actions logs are
 # public, so nothing here prints a URL or key material (GitHub masks secrets).
 # The certificate files never enter the repository.
 #

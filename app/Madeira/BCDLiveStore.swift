@@ -36,6 +36,9 @@ import os
     let store = BCDStore()
     /// A screen of the existing interface an action opens (BCDLiveFrontEnd presents it).
     @Published var sheet: BCDLiveSheet?
+    /// madeira-bcd (build 622): a heavy game whose one-time graphics tip (BCDGraphicsTip) comes before its first start;
+    /// BCDLiveFrontEnd shows it, and its OK starts the game (graphicsTipAnswered).
+    @Published var graphicsTip: LibraryEntry?
 
     /// ContentView's Play (launchLibraryEntry) and Enable JIT, from BCDLiveFrontEnd.
     private var launch: ((LibraryEntry) -> Void)?
@@ -538,8 +541,8 @@ import os
     private func start(_ game: BCDGame) {
         guard let launch else { return }
         startingGame = game.id
-        if let entry = gogPlayEntry(game) { launch(entry); return }
-        if let entry = epicPlayEntry(game) { launch(entry); return }
+        if let entry = gogPlayEntry(game) { begin(entry, launch); return }
+        if let entry = epicPlayEntry(game) { begin(entry, launch); return }
         let library = LibraryModel.shared
         switch BCDLiveID.parse(game.id) {
         case .local(let id)?:
@@ -549,7 +552,7 @@ import os
                 return
             }
             LogStore.shared.log("[bcd-ui] play \(entry.desktop == true ? "desktop" : "local")")
-            launch(entry)
+            begin(entry, launch)
         case .steam(let appID)?:
             // The entry the classic Steam card opens Game details with, and that page's own check
             // before Play (SteamPlayCheck.blocker: an update still downloading, then Steam's
@@ -568,12 +571,31 @@ import os
                 return
             }
             LogStore.shared.log("[bcd-ui] play app=\(appID)")
-            launch(entry)
+            begin(entry, launch)
         case nil:
             // GOG's and Epic's games start through gogPlayEntry and epicPlayEntry, above: a library
             // entry handed to the same connected Play. Any other id is nothing to start.
             return
         }
+    }
+
+    /// A start: a heavy game's one-time graphics tip first (BCDGraphicsTip), else the game at once.
+    private func begin(_ entry: LibraryEntry, _ launch: (LibraryEntry) -> Void) {
+        if BCDGraphicsTip.due(entry) {
+            LogStore.shared.log("[graphics-tip] \(entry.title): the one-time tip before the first start")
+            graphicsTip = entry
+            return
+        }
+        launch(entry)
+    }
+
+    /// The graphics tip's OK: never shown again for this game, and the game starts.
+    func graphicsTipAnswered() {
+        guard let entry = graphicsTip else { return }
+        graphicsTip = nil
+        BCDGraphicsTip.markShown(entry)
+        LogStore.shared.log("[graphics-tip] \(entry.title): OK, starting")
+        launch?(entry)
     }
 
     func install(_ game: BCDGame, place: BCDInstallPlace) {

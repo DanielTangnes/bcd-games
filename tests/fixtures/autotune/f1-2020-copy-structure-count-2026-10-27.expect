@@ -1,0 +1,14 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "dxmt-copy-structure-count-null"
+ ],
+ "next": [
+  "env.MADEIRA_D3D11_SRC = 1"
+ ],
+ "note": "F1 2020 (F1_2020_dx12.exe), build 614, iPad17,4, Send Log 4W6WMV (round 620): DXMT's encode thread faults at d3d11.dll+0x8af18 in the CopyStructureCount encoder (empty captured buffer), then an AV EXEC of 0 storm. The 64-bit d3d11.dll is upstream's committed binary; build 620's d3d11-src.dll skips the call, selected by env.MADEIRA_D3D11_SRC = 1.",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "trying"
+}

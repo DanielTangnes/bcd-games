@@ -1,0 +1,15 @@
+{
+ "dialogs": [
+  "ERROR",
+  "Could not find appropriate pixel format"
+ ],
+ "end": {},
+ "matched": [
+  "opengl-only-no-context"
+ ],
+ "next": [],
+ "note": "Lugaru HD, build 614, Send Log 2A5176 (round 620): box 'Could not find appropriate pixel format' with the GL-absent stub. OpenGL is absent; no setting helps.",
+ "outcome": "crashed",
+ "stage": 2,
+ "status": "known"
+}

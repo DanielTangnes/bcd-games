@@ -148,8 +148,12 @@ check('485: a copy of CPU-written memory keeps the CPU\'s bytes at replay and ho
       'r->cpu && (r->heap == D3D12_HEAP_TYPE_UPLOAD || r->heap == D3D12_HEAP_TYPE_CUSTOM) && (c->snap = malloc(len))' in cap and
       'c->src = r; ID3D12Resource_AddRef((ID3D12Resource *)r);' in cap)
 tbv = body('static int mad_typed_buffer_view(struct mad_device *d, struct mad_resource *r, DXGI_FORMAT fmt,')
-check('typed views: every refusal names its reason, the cut-short view is still made',
-      all(('*why = %d' % k) in tbv for k in (1, 2, 3, 4, 5, 7, 8, 9)) and '*why = width ? 6 : 5;' in tbv)
+# Build 618 (Spider-Man 2): a view wider than Metal's 2^28-texel texture-buffer limit is cut to 2^28 (the descriptor keeps the full
+# GPU address and size for the RawBuffer rewrite) instead of refused with reason 6; an empty view is still refused (5).
+check('typed views: every refusal names its reason, the cut-short view is still made, a view past 2^28 texels is cut, not refused',
+      all(('*why = %d' % k) in tbv for k in (1, 2, 3, 4, 5, 7, 8, 9)) and
+      'if (!width) { LeaveCriticalSection(&d->view_lock); if (why) *why = 5; return 0; }' in tbv and
+      'if (width > (1u << 28)) { width = (1u << 28); cut = 1; }' in tbv and '*why = 6' not in tbv)
 srv = body('static void STDMETHODCALLTYPE device_CreateShaderResourceView(ID3D12Device *This,')
 uav = body('static void STDMETHODCALLTYPE device_CreateUnorderedAccessView(ID3D12Device *This,')
 for name, f, u in (('SRV', srv, '0'), ('UAV', uav, '1')):

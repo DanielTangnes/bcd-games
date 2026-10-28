@@ -420,9 +420,12 @@ check("the unpatched DLL links the submodule's core, d3d11-src.dll the copy's",
       and 'link_dll "$OUT/plain/d3d11.dll" "$OUT/plain/libdxmt.a" "${PLAIN_OBJ[@]}"' in sh
       and 'link_dll "$OUT/d3d11.dll" "$OUT/libdxmt.a" "${PATCHED_OBJ[@]}"' in sh
       and 'local out="$1" dxmt="$2"; shift 2' in sh and '"$OUT/libDXBCParser.a" "$dxmt" -L"$OUT"' in sh)
+# Round 620: the pin's own source has carried the small rings since the 2026-10-15 upstream merge, so the unpatched
+# build is refused for the marker only when the pin's source lacks it (PIN_RINGS=0).
 check("build script refuses a result that lacks the patch it applied, and an unpatched DLL that has it",
       'if [ -n "$SMALL_RINGS" ]; then\n    LC_ALL=C grep -aqF "[small-rings] madeira-bcd" "$OUT/d3d11.dll" || fail' in sh
-      and 'LC_ALL=C grep -aqF "[small-rings] madeira-bcd" "$OUT/plain/d3d11.dll" && fail' in sh)
+      and 'if [ "$PIN_RINGS" = 0 ] && LC_ALL=C grep -aqF "[small-rings] madeira-bcd" "$OUT/plain/d3d11.dll"; then\n    fail' in sh
+      and 'PIN_RINGS=0; grep -qF "[small-rings] madeira-bcd" "$D/src/dxmt/dxmt_ring_bump_allocator.hpp" && PIN_RINGS=1' in sh)
 check("the marker the build greps is the one the patch logs",
       'WARN("[small-rings] madeira-bcd: ", exe,' in patch_mod.HELPERS)
 wf = (root / ".github/workflows/build-ipa.yml").read_text()

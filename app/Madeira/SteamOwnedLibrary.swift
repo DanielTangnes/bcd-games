@@ -1105,7 +1105,7 @@ final class SteamOwnedLibrary: ObservableObject {
         pause(appID)
         downloads[appID] = nil
         guard !installed, let game = game(appID) else { return }
-        // BCD DLC (owner, 2026-10-22: "DLC cevabını hatırlamasın, her seferinde sorsun"): a cancelled first install keeps no
+        // BCD DLC (owner, 2026-10-22: never remember the DLC answer, ask every time): a cancelled first install keeps no
         // DLC answer; the next Install asks again.
         dlc.choices.forget(appID)
         let apps = Self.steamApps

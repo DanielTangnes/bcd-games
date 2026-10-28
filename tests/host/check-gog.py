@@ -155,7 +155,7 @@ wired = {
     "games": "gogMerge(&games)" in store,
     "downloads": "downloadList(names: names) + gogDownloads()" in store,
     "account": "gogAccount()," in store,
-    "play": "if let entry = gogPlayEntry(game) { launch(entry); return }" in store,
+    "play": "if let entry = gogPlayEntry(game) { begin(entry, launch); return }" in store,   # begin: the graphics tip first (build 622)
     "actions": all(f"if gog(.{a}, {arg}) {{ return }}" in store
                    for a, arg in [("install", "game.id"), ("update", "game.id"), ("verify", "game.id"), ("uninstall", "game.id"),
                                   ("pause", "id"), ("resume", "id"), ("cancel", "id")]),

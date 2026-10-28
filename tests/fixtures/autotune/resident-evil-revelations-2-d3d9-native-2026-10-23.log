@@ -65,6 +65,7 @@ D 38 Load module msvcrt.dll (msvcrt.dll-237acf236e8130e9): 71FC000000
 D 38 Load module rsaenh.dll (rsaenh.dll-6cd5b371ff05d55f): 71FBF40000
 [free-delay] #1 release of 0x702b450000+0x100000 held for 2000 ms (1 in flight)
 [file-wfail] ml669 #3 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[xp-names] m12622686 "wine-x18-exc"
 [alloc-fail] ml814 #1 status=c000000d hint=0xffeeffeeffeeffee size=0x1 type=0x2000 protect=0x1 tid=0038 | STAGE=none err=3 at 0x73fff60000+0x90000
 [nt-fail] #1 NtAllocateVirtualMemory status=c000000d proc=dockhost.exe tid=0038 size=0x1 type=0x2000 prot=0x1 hint=0xffeeffeeffeeffee zb=0x0 hits=1 rev=ajan5-rockstar
 [file-wfail] ml669 #4 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
@@ -73,6 +74,7 @@ D 38 Load module rsaenh.dll (rsaenh.dll-6cd5b371ff05d55f): 71FBF40000
 [file-wfail] ml669 #7 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
 [file-wfail] ml669 #9 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
 [file-wfail] ml669 #10 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:seh:NtGetContextThread [ec-getctx] ml715 #1 handle=00000000000001F8 status=c0000022 native_pc=0000000000000000 is_ec=-1 -> returned rip=0000000000000000 rsp=0000000000000000 flags=00000000
 0050:err:module:import_dll Library libavcodec-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
 0050:err:module:import_dll Library libavfilter-11.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
 0050:err:module:import_dll Library libavformat-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
@@ -86,6 +88,7 @@ D 38 Load module rsaenh.dll (rsaenh.dll-6cd5b371ff05d55f): 71FBF40000
 0050:err:module:import_dll Library libavutil-60.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
 0050:err:module:import_dll Library libswresample-6.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
 0050:err:module:import_dll Library libswscale-9.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:seh:NtGetContextThread [ec-getctx] ml715 #2 handle=00000000000002B8 status=c0000022 native_pc=0000000000000000 is_ec=-1 -> returned rip=0000000000000000 rsp=0000000000000000 flags=00000000
 [footprint] rev=ml358 phys=1083 MB (peak 1083) internal=1081 MB compressed=0 MB external=161 MB reusable=7 MB (cycle=3)
 [file-wfail] ml669 #60 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
 [file-wfail] ml669 #61 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
@@ -111,6 +114,7 @@ D 38 Load module rsaenh.dll (rsaenh.dll-6cd5b371ff05d55f): 71FBF40000
 [nls-getptr] type=11 id=1252 peb=0x7900310000
 [nls-getptr] type=11 id=437 peb=0x7900310000
 [nls-getptr] type=11 id=20127 peb=0x7900310000
+[unixlib] opengl32 (GL-absent stub table) (module 0x797b2a0000) -> wow64 table (0x1031c2e50)
 [free-delay] #2 release of 0x7902a40000+0x100000 held for 2000 ms (1 in flight)
 [file-wfail] ml669 #78 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
 [free-delay] #3 release of 0x7904d40000+0x120000 held for 2000 ms (2 in flight)
@@ -123,6 +127,7 @@ D 38 Load module rsaenh.dll (rsaenh.dll-6cd5b371ff05d55f): 71FBF40000
 [win-name] #31 hwnd=0x2005a class='' text="RESIDENT EVIL REVELATIONS 2 / BIOHAZARD REVELATIONS 2" rev=ml853
 [nls-getptr] type=11 id=10000 peb=0x7900310000
 [08:51:49.179] [INFO] [dock-report] launch-game-running=1
+[d3d9-native] ready: 324 slots, host page 16384, arena root B=0x7900000000
 [win-name] #34 hwnd=0x2005a class='' text="RESIDENT EVIL REVELATIONS 2 / BIOHAZARD REVELATIONS 2" rev=ml853
 [win-name] #35 hwnd=0x2005a class='' text="RESIDENT EVIL REVELATIONS 2 / BIOHAZARD REVELATIONS 2" rev=ml853
 [launch-view] dismissed reason=game-window logs=0
@@ -161,11 +166,19 @@ D B4 Load module mmdevapi.dll (mmdevapi.dll-57d37935cbc428cc): 7978420000
 0050:err:module:load_dll [dll-missing] rev=ml336 #50 L"steamservice.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
 [file-wfail] ml669 #85 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
 [wow-window] TEB block 0x79001e0000 dropped, not pooled: it belongs to a guest window that is no longer live
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16fc81280 NATIVE (unresolved: OffsetToBlockTail implausible) sp-cand=[ ]
+[thread-stacks] port=0xc50b "wine-x18-exc" pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 run=3 susp=0 cpu=2 x8=0x0 x18=0x0 sp=0x16fc81280
 [free-delay] #7 release of 0x70274a0000+0x800000 held for 2000 ms (1 in flight)
 [free-delay] #8 release of 0x702f3b0000+0x120000 held for 2000 ms (2 in flight)
 [08:51:56.275] [INFO] [dock-report] launch-game-ended=1
 0038:err:process:NtTerminateProcess NtTerminateProcess(handle=0x0, exit_code=0x0) syscalls=0 unix_calls=9322
+[unwind] term ml661 begin rip=11b3a11d4 rsp=702950fdb8 window=[702950fdb8..7029d0fdb8) max=32
+[unwind] term ml661 #00 pc=11b3a11d4 rsp=702950fdb8  <no module — STOP>
+[unwind] term ml661 end
 0038:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0x0) syscalls=0 unix_calls=9330
+[unwind] term ml661 begin rip=11ac9216c rsp=702950fbd0 window=[702950fbd0..7029d0fbd0) max=32
+[unwind] term ml661 #00 pc=11ac9216c rsp=702950fbd0  <no module — STOP>
+[unwind] term ml661 end
 [Wine ntdll/server] process_exit_wrapper(0): closing child fd_socket=102
 [Wine ntdll/server] process_exit_wrapper(0): closing child fd_socket=133
 [Wine ntdll/server] process_exit_wrapper(0)

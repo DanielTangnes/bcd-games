@@ -164,7 +164,10 @@ fi
 # RstrtMgr.dll; the 64-bit set has neither, the loader stopped with c0000135, services.exe answered 1053 and the MSI rolled back
 # (1627, "INST-14-1627"). msi.dll in turn imports mspatcha, odbccp32 and sxs, the three others the 64-bit set lacks; all
 # their own imports ship. Only the EA app's launcher entry names them.
-OPTIN_WANT="dxva2 evr xpsprint sfc sfc_os tbs twinapi.appcore mfasfsrcsnk wmvdecod wmadmod oledlg fwpuclnt sensapi ddraw msi mspatcha odbccp32 sxs rstrtmgr glu32 tdh"
+# gamingtcui (2026-10-28, round 620, Forza Horizon 4, testers' logs YFK3A6/TNE8NW/5TZDYZ/SJT15P, build 614): ForzaHorizon4.exe
+# imports api-ms-win-gaming-tcui-l1-1-0.dll, which Wine's API set schema maps to gamingtcui.dll; only the 32-bit set has it, so
+# the 64-bit loader ended with c0000135 ("[dll-missing] #1 L"gamingtcui.dll""). Wine's gamingtcui imports nothing beyond the kernel.
+OPTIN_WANT="dxva2 evr xpsprint sfc sfc_os tbs twinapi.appcore mfasfsrcsnk wmvdecod wmadmod oledlg fwpuclnt sensapi ddraw msi mspatcha odbccp32 sxs rstrtmgr glu32 tdh gamingtcui"
 OPT=""
 if [ "${MADEIRA_OPTIN_BUILD:-1}" != 0 ]; then
     for d in $OPTIN_WANT; do

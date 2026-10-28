@@ -102,12 +102,29 @@ done
 # not built, a stale copy is removed, and env.MADEIRA_D3D11_SRC = 1 keeps
 # upstream's d3d11.dll (WineProcessBridge.m logs that). An older pin builds it
 # as before.
-if grep -qF "madeira-bcd: context state swap" "$D/src/d3d11/d3d11_context_impl.cpp" \
-        && grep -qF "[small-rings] madeira-bcd" "$D/src/dxmt/dxmt_ring_bump_allocator.hpp" \
+# madeira-bcd (round 620): BCD's own Direct3D 11 fixes are applied by the
+# workflow's "Patch DXMT" steps, which only reach the d3d11.dll the CI compiles
+# (the 32-bit one); the 64-bit d3d11.dll is upstream's committed binary. So
+# d3d11-src.dll is built again whenever the committed binary lacks one of them
+# (BCD_PATCHES: the script, then the marker its code leaves in the DLL), and a
+# 64-bit game gets them with env.MADEIRA_D3D11_SRC = 1:
+#   tools/patch-dxmt-copy-structure-count.py  F1 2020 (CopyStructureCount without a buffer)
+#   tools/patch-dxmt-buffer-rtv.py            Frostbite 2 games (render target views on a buffer, [rtv-fail])
+BCD_PATCHES=("patch-dxmt-copy-structure-count.py" "[copy-structure-count] skipped #"
+             "patch-dxmt-buffer-rtv.py" "[rtv-fail] #")
+SHIP_HAS_BCD=1
+for ((i = 1; i < ${#BCD_PATCHES[@]}; i += 2)); do
+    LC_ALL=C grep -aqF "${BCD_PATCHES[$i]}" "$SHIP/d3d11.dll" || SHIP_HAS_BCD=0
+done
+# What the pin's own source already has (upstream merged both in 2026-10): the
+# unpatched recipe build then carries their markers too.
+PIN_SWAP=0; grep -qF "madeira-bcd: context state swap" "$D/src/d3d11/d3d11_context_impl.cpp" && PIN_SWAP=1
+PIN_RINGS=0; grep -qF "[small-rings] madeira-bcd" "$D/src/dxmt/dxmt_ring_bump_allocator.hpp" && PIN_RINGS=1
+if [ "$PIN_SWAP" = 1 ] && [ "$PIN_RINGS" = 1 ] && [ "$SHIP_HAS_BCD" = 1 ] \
         && LC_ALL=C grep -aqF "$MARK" "$SHIP/d3d11.dll" \
         && LC_ALL=C grep -aqF "[small-rings] madeira-bcd" "$SHIP/d3d11.dll"; then
     [ "${D3D11_NO_SHIP:-0}" = "1" ] || rm -f "$DEST"
-    echo "::notice::d3d11-src.dll not needed: DXMT $(git -C "$D" rev-parse --short HEAD 2>/dev/null || echo unknown) and upstream's committed d3d11.dll both carry SwapDeviceContextState and the opt-in small staging rings (env.DXMT_SMALL_RINGS); env.MADEIRA_D3D11_SRC = 1 keeps upstream's d3d11.dll"
+    echo "::notice::d3d11-src.dll not needed: DXMT $(git -C "$D" rev-parse --short HEAD 2>/dev/null || echo unknown) and upstream's committed d3d11.dll both carry SwapDeviceContextState, the opt-in small staging rings (env.DXMT_SMALL_RINGS) and BCD's Direct3D 11 patches; env.MADEIRA_D3D11_SRC = 1 keeps upstream's d3d11.dll"
     exit 0
 fi
 
@@ -201,6 +218,17 @@ python3 "$R/tools/patch-d3d11-src-small-rings.py" "$OUT/tree/src/dxmt" || {
     SMALL_RINGS=""
     echo "::warning::tools/patch-d3d11-src-small-rings.py did not apply: d3d11-src.dll is built without small staging rings (env.DXMT_SMALL_RINGS has no effect)"
 }
+# madeira-bcd (round 620): BCD's Direct3D 11 patches on the copy. The scripts
+# patch "dxmt/src/..." under the directory they run in, so they run in one whose
+# "dxmt" is the copy. A patch that does not apply fails the build: d3d11-src.dll
+# exists for them now, and a 64-bit game's list line asks for it by name.
+mkdir -p "$OUT/patchroot"
+ln -sfn "$OUT/tree" "$OUT/patchroot/dxmt"
+BCD_NOTE=""
+for ((i = 0; i < ${#BCD_PATCHES[@]}; i += 2)); do
+    (cd "$OUT/patchroot" && python3 "$R/tools/${BCD_PATCHES[$i]}") || fail "tools/${BCD_PATCHES[$i]} did not apply to the copy"
+    BCD_NOTE="$BCD_NOTE + ${BCD_PATCHES[$i]%.py}"
+done
 
 # DXMT's meson.build: compiler_args, the project defines, buildtype=release
 # (-O3, b_ndebug=if-release -> NDEBUG), C++20. -fmacro-prefix-map maps the
@@ -344,11 +372,22 @@ diff "$OUT/imports.upstream" "$OUT/imports.built" > "$OUT/imports.diff" \
     || { cat "$OUT/imports.diff"; fail "it imports from other DLLs than the committed d3d11.dll"; }
 "$READOBJ" --file-headers "$OUT/d3d11.dll" | grep -q "IMAGE_FILE_MACHINE_ARM64EC" || fail "the result is not an ARM64EC image"
 LC_ALL=C grep -aqF "$MARK" "$OUT/d3d11.dll" || fail "the SwapDeviceContextState patch is not in the result"
-LC_ALL=C grep -aqF "$MARK" "$OUT/plain/d3d11.dll" && fail "the unpatched build carries the patch marker: the submodule is not pristine"
+# The unpatched build may carry a marker only when the pin's own source has it.
+if [ "$PIN_SWAP" = 0 ] && LC_ALL=C grep -aqF "$MARK" "$OUT/plain/d3d11.dll"; then
+    fail "the unpatched build carries the patch marker: the submodule is not pristine"
+fi
 if [ -n "$SMALL_RINGS" ]; then
     LC_ALL=C grep -aqF "[small-rings] madeira-bcd" "$OUT/d3d11.dll" || fail "the small staging rings patch is not in the result"
 fi
-LC_ALL=C grep -aqF "[small-rings] madeira-bcd" "$OUT/plain/d3d11.dll" && fail "the unpatched build carries the small rings marker: the submodule is not pristine"
+if [ "$PIN_RINGS" = 0 ] && LC_ALL=C grep -aqF "[small-rings] madeira-bcd" "$OUT/plain/d3d11.dll"; then
+    fail "the unpatched build carries the small rings marker: the submodule is not pristine"
+fi
+for ((i = 1; i < ${#BCD_PATCHES[@]}; i += 2)); do
+    LC_ALL=C grep -aqF "${BCD_PATCHES[$i]}" "$OUT/d3d11.dll" || fail "${BCD_PATCHES[$((i - 1))]} is not in the result (no \"${BCD_PATCHES[$i]}\")"
+    if LC_ALL=C grep -aqF "${BCD_PATCHES[$i]}" "$OUT/plain/d3d11.dll"; then
+        fail "the unpatched build carries \"${BCD_PATCHES[$i]}\": the submodule is not pristine"
+    fi
+done
 LC_ALL=C grep -aqF "$VER" "$OUT/d3d11.dll" || fail "the DXMT version string is not in the result"
 
 # The recipe check: the unpatched link against upstream's binary. Same
@@ -370,8 +409,8 @@ else
 fi
 
 if [ "${D3D11_NO_SHIP:-0}" = "1" ]; then
-    echo "d3d11.dll built at $OUT/d3d11.dll (not shipped, D3D11_NO_SHIP=1; DXMT $VER$SMALL_RINGS, $METAL_NOTE); the recipe $MATCH"
+    echo "d3d11.dll built at $OUT/d3d11.dll (not shipped, D3D11_NO_SHIP=1; DXMT $VER$SMALL_RINGS$BCD_NOTE, $METAL_NOTE); the recipe $MATCH"
     exit 0
 fi
 cp "$OUT/d3d11.dll" "$DEST.tmp" && mv -f "$DEST.tmp" "$DEST" || fail "copying into the bundle failed"
-echo "::notice::d3d11-src.dll built from DXMT $VER with SwapDeviceContextState$SMALL_RINGS ($(wc -c < "$DEST" | tr -d ' ') bytes, exports and imported DLLs = upstream's; $METAL_NOTE) and shipped next to upstream's d3d11.dll, which stays the default (env.MADEIRA_D3D11_SRC = 1 selects it); the recipe $MATCH"
+echo "::notice::d3d11-src.dll built from DXMT $VER with SwapDeviceContextState$SMALL_RINGS$BCD_NOTE ($(wc -c < "$DEST" | tr -d ' ') bytes, exports and imported DLLs = upstream's; $METAL_NOTE) and shipped next to upstream's d3d11.dll, which stays the default (env.MADEIRA_D3D11_SRC = 1 selects it); the recipe $MATCH"

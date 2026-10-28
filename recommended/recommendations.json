@@ -1,12 +1,12 @@
 {
   "format": 1,
-  "version": 16,
+  "version": 17,
   "generated": "2026-10-28",
   "rules": [
     {
       "id": "rdr2-steam",
       "title": "Red Dead Redemption 2 (Steam)",
-      "version": 11,
+      "version": 12,
       "match": {
         "steamAppIDs": [1174180],
         "steamFolders": ["red dead redemption 2"],
@@ -68,9 +68,10 @@
         "env.MADEIRA_X64_IMAGE_NOCOPY = 1",
         "env.WINEDLLOVERRIDES = video64=",
         "env.MADEIRA_DEVICE_STATS = 1",
-        "env.MADEIRA_METAL_HUD_MAIN = 1"
+        "env.MADEIRA_METAL_HUD_MAIN = 1",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
-      "switches": {"avx": false, "nvidia": false, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": false, "resolution": "screen@720", "display": "fit"},
+      "switches": {"avx": false, "nvidia": false, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": false, "fpsMode": 3, "resolution": "screen@720", "display": "fit"},
       "notes": [
         "Red Dead Redemption 2 from Steam, through Madeira Dock: the build 463",
         "list, plus build 466's memory and ExecuteIndirect switches, the DXGI",
@@ -106,13 +107,16 @@
         "session that had the line ended at the Launcher's \"Failed to connect to the Rockstar Games Library Service\"",
         "(builds 574 and 576, logs GBY65K, Y5MEB6, A50T0Q) while the same game connected with it off (8JXT6Q on the same",
         "phone, DGNRT5). The line pins AVX off, so a kept auto-tune line cannot switch it on again (the game's own file wins over",
-        "auto-tune's layer and a key the game's file sets is never proposed). Not tried on a device with a played session after it."
+        "auto-tune's layer and a key the game's file sets is never proposed). Not tried on a device with a played session after it.",
+        "Version 12 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (the player can change it), and",
+        "low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the lowest",
+        "preset and AMD FSR, where the game has it, to Balanced or Performance."
       ]
     },
     {
       "id": "rdr2-other",
       "title": "Red Dead Redemption 2 (not Steam)",
-      "version": 2,
+      "version": 3,
       "match": {
         "programs": [
           {"name": "rdr2.exe", "steam": false},
@@ -173,9 +177,10 @@
         {"line": "env.MADEIRA_DLL_LOCAL = socialclub.dll=version.dll", "minBuild": 616},
         "env.MADEIRA_DEVICE_STATS = 1",
         "env.MADEIRA_METAL_HUD_MAIN = 1",
-        "env.MADEIRA_EC_HOOK_TRACE = 0"
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
-      "switches": {"avx": false, "nvidia": false, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": false, "resolution": "screen@720", "display": "fit"},
+      "switches": {"avx": false, "nvidia": false, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": false, "fpsMode": 3, "resolution": "screen@720", "display": "fit"},
       "notes": [
         "Red Dead Redemption 2 started from its own RDR2.exe, PlayRDR2.exe or",
         "RDR2Launcher.exe outside a Steam library (owner's request, 2026-10-12;",
@@ -185,13 +190,16 @@
         "the launcher's and Social Club's rings), without the two only Madeira Dock",
         "reads when Steam starts the game (the service manager and the programs",
         "that keep that session alive), plus the local DLL lines and the [ec-hook]",
-        "reporter off."
+        "reporter off.",
+        "Version 3 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (the player can change it), and",
+        "low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the lowest",
+        "preset and AMD FSR, where the game has it, to Balanced or Performance."
       ]
     },
     {
       "id": "gta5e-steam",
       "title": "GTA V Enhanced (Steam)",
-      "version": 4,
+      "version": 5,
       "match": {
         "steamAppIDs": [3240220],
         "steamFolders": ["grand theft auto v enhanced"],
@@ -238,9 +246,10 @@
         "env.WINEDLLOVERRIDES = video64=",
         "env.MADEIRA_DEVICE_STATS = 1",
         "env.MADEIRA_PAD_MODE = hid",
-        "env.MADEIRA_METAL_HUD_MAIN = 1"
+        "env.MADEIRA_METAL_HUD_MAIN = 1",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
-      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": true, "fpsMode": 4, "display": "fit"},
+      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": true, "fpsMode": 3, "display": "fit"},
       "notes": [
         "GTA V Enhanced from Steam, through Madeira Dock (build 456: 18 minutes",
         "idle and 19 minutes of fast driving without a crash, 33-40 FPS at 40).",
@@ -256,13 +265,16 @@
         "session that had the line ended at the Launcher's \"Failed to connect to the Rockstar Games Library Service\"",
         "(builds 574 and 576, logs GBY65K, Y5MEB6, A50T0Q) while the same game connected with it off (8JXT6Q on the same",
         "phone, DGNRT5). The line pins AVX off, so a kept auto-tune line cannot switch it on again (the game's own file wins over",
-        "auto-tune's layer and a key the game's file sets is never proposed). Not tried on a device with a played session after it."
+        "auto-tune's layer and a key the game's file sets is never proposed). Not tried on a device with a played session after it.",
+        "Version 5 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (it was 40 FPS; the player can change",
+        "it), and low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the",
+        "lowest preset and AMD FSR, where the game has it, to Balanced or Performance."
       ]
     },
     {
       "id": "gta5e-other",
       "title": "GTA V Enhanced (not Steam)",
-      "version": 2,
+      "version": 3,
       "match": {
         "programs": [
           {"name": "playgtav.exe", "steam": false, "beside": "GTA5_Enhanced.exe"},
@@ -289,19 +301,23 @@
         "env.MADEIRA_FASTSYNC_SEM = 1",
         "env.FEX_VECTORTSOENABLED = 0",
         "env.MADEIRA_DEVICE_STATS = 1",
-        "env.MADEIRA_EC_HOOK_TRACE = 0"
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
-      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "fastSync": true, "resolution": "1280x720", "display": "fit"},
+      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "fastSync": true, "fpsMode": 3, "resolution": "1280x720", "display": "fit"},
       "notes": [
         "GTA V Enhanced started from its own PlayGTAV.exe outside a Steam",
         "library (build 451); Madeira's own settings only. Version 2: the same",
-        "orphan-lock reaper mode as the Steam copy (its launcher and Social Club too)."
+        "orphan-lock reaper mode as the Steam copy (its launcher and Social Club too).",
+        "Version 3 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (the player can change it), and",
+        "low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the lowest",
+        "preset and AMD FSR, where the game has it, to Balanced or Performance."
       ]
     },
     {
       "id": "gta5l-steam",
       "title": "GTA V Legacy (Steam)",
-      "version": 3,
+      "version": 4,
       "match": {
         "steamAppIDs": [271590],
         "steamFolders": ["grand theft auto v"],
@@ -340,10 +356,11 @@
         "env.DXMT_SMALL_RINGS = Launcher.exe;SocialClubHelper.exe",
         "env.WINEDLLOVERRIDES = video64=",
         "env.MADEIRA_DEVICE_STATS = 1",
-        "env.MADEIRA_METAL_HUD_MAIN = 1"
+        "env.MADEIRA_METAL_HUD_MAIN = 1",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
       "smallRAMConfig": ["swap-mb = 3072"],
-      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": true, "fpsMode": 4, "display": "fit"},
+      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": true, "fpsMode": 3, "display": "fit"},
       "notes": [
         "GTA V Legacy from Steam (App ID 271590, DirectX 11 through DXMT), being",
         "brought up: the Enhanced list without its D3D12 lines and its DualSense",
@@ -365,13 +382,16 @@
         "session that had the line ended at the Launcher's \"Failed to connect to the Rockstar Games Library Service\"",
         "(builds 574 and 576, logs GBY65K, Y5MEB6, A50T0Q) while the same game connected with it off (8JXT6Q on the same",
         "phone, DGNRT5). The line pins AVX off, so a kept auto-tune line cannot switch it on again (the game's own file wins over",
-        "auto-tune's layer and a key the game's file sets is never proposed). Not tried on a device with a played session after it."
+        "auto-tune's layer and a key the game's file sets is never proposed). Not tried on a device with a played session after it.",
+        "Version 4 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (it was 40 FPS; the player can change",
+        "it), and low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the",
+        "lowest preset and AMD FSR, where the game has it, to Balanced or Performance."
       ]
     },
     {
       "id": "gta5l-other",
       "title": "GTA V Legacy (not Steam)",
-      "version": 1,
+      "version": 2,
       "match": {
         "programs": [
           {"name": "playgtav.exe", "steam": false, "beside": "GTA5.exe", "notBeside": "GTA5_Enhanced.exe"},
@@ -407,10 +427,11 @@
         "env.WINEDLLOVERRIDES = video64=",
         "env.MADEIRA_DEVICE_STATS = 1",
         "env.MADEIRA_METAL_HUD_MAIN = 1",
-        {"line": "env.MADEIRA_STEAM_IDENTITY = none", "minBuild": 598}
+        {"line": "env.MADEIRA_STEAM_IDENTITY = none", "minBuild": 598},
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
       "smallRAMConfig": ["swap-mb = 3072"],
-      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": true, "fpsMode": 4, "display": "fit"},
+      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": true, "fpsMode": 3, "display": "fit"},
       "notes": [
         "GTA V Legacy outside a Steam library (owner, 2026-10-24): the Epic Games Store copy starts",
         "C:\\Program Files\\Epic Games\\GTAV\\PlayGTAV.exe (Epic launch logs DJAMF2, QTDJYC, VX8ZZ0, build 592, iPhone18,2), which",
@@ -421,13 +442,16 @@
         "27.2, build 592, 2026-10-24) started the launcher from the Desktop: the 896 MB pool shrank to 560/464 MB (no single",
         "hole), per-process copies of Wine's DLLs held 340 MB, and SocialClubHelper.exe's 240 MiB libcef.dll got",
         "\"[jit-pool] EXHAUSTED\" (c0000017) 42 and 116 times. NOCOPY runs libcef.dll from its file; the pool lines are",
-        "the Steam copy's. Not yet tried on a device in this form."
+        "the Steam copy's. Not yet tried on a device in this form.",
+        "Version 2 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (it was 40 FPS; the player can change",
+        "it), and low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the",
+        "lowest preset and AMD FSR, where the game has it, to Balanced or Performance."
       ]
     },
     {
       "id": "ghost-of-tsushima",
       "title": "Ghost of Tsushima",
-      "version": 3,
+      "version": 4,
       "match": {
         "steamAppIDs": [2215430],
         "steamFolders": ["ghost of tsushima director's cut", "ghost of tsushima"],
@@ -447,9 +471,10 @@
         "env.MADEIRA_PAD_MODE = hid",
         "swap-mb = 4096",
         "env.MADEIRA_EC_HOOK_TRACE = 0",
-        "env.MADEIRA_THREAD_STACK_SPILL = 1"
+        "env.MADEIRA_THREAD_STACK_SPILL = 1",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
-      "switches": {"avx": true, "nvidia": true, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": false, "resolution": "1280x720", "display": "fit"},
+      "switches": {"avx": true, "nvidia": true, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": false, "fpsMode": 3, "resolution": "1280x720", "display": "fit"},
       "notes": [
         "Ghost of Tsushima (build 336: DualSense input, rumble, triggers and light work).",
         "Build 492 adds Horizon Zero Dawn's proven fix for typed buffer views that",
@@ -463,13 +488,16 @@
         "protected sections), the swap file holds 4 GB, and a new thread's stacks may",
         "take the kernel's pick once Wine's band is full (a thread the game could not",
         "create froze it in a cutscene, 15:39). With the game's own graphics at their",
-        "lowest it stays under the memory limit on an iPhone 17 Pro Max."
+        "lowest it stays under the memory limit on an iPhone 17 Pro Max.",
+        "Version 4 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (the player can change it), and",
+        "low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the lowest",
+        "preset and AMD FSR, where the game has it, to Balanced or Performance."
       ]
     },
     {
       "id": "god-of-war",
       "title": "God of War",
-      "version": 1,
+      "version": 2,
       "match": {
         "steamAppIDs": [1593500],
         "steamFolders": ["godofwar", "god of war"],
@@ -485,17 +513,21 @@
         "swap-min-kb = 1024",
         "env.MADEIRA_LD_BOUNDS = 0",
         "env.WINEDEBUG = err+all,err-virtual,fixme-all",
-        "env.MADEIRA_PAD_MODE = hid"
+        "env.MADEIRA_PAD_MODE = hid",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
-      "switches": {"avx": false, "nvidia": false, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": false, "resolution": "1920x1080", "display": "fit"},
+      "switches": {"avx": false, "nvidia": false, "wineVCRT": false, "fastSync": true, "semaphoreFastPath": false, "fpsMode": 3, "resolution": "1920x1080", "display": "fit"},
       "notes": [
-        "God of War (2018) (build 335: 1080p, DualSense input)."
+        "God of War (2018) (build 335: 1080p, DualSense input).",
+        "Version 2 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (the player can change it), and",
+        "low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the lowest",
+        "preset and AMD FSR, where the game has it, to Balanced or Performance."
       ]
     },
     {
       "id": "horizon-zero-dawn",
       "title": "Horizon Zero Dawn",
-      "version": 17,
+      "version": 18,
       "match": {
         "steamAppIDs": [1151640],
         "steamFolders": ["horizon zero dawn"],
@@ -526,9 +558,10 @@
         "env.MADEIRA_LOCK_ORPHAN = stamped",
         "env.MADEIRA_SRV_FGETPATH = 1",
         "env.WINEDEBUG = fixme-input",
-        {"line": "env.MADEIRA_MFC_DOCK = 1", "minBuild": 591}
+        {"line": "env.MADEIRA_MFC_DOCK = 1", "minBuild": 591},
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
-      "switches": {"avx": false, "nvidia": false, "wineVCRT": false, "fastSync": true, "display": "fit"},
+      "switches": {"avx": false, "nvidia": false, "wineVCRT": false, "fastSync": true, "fpsMode": 3, "display": "fit"},
       "notes": [
         "Horizon Zero Dawn (Complete Edition, GOG or Steam), still being brought",
         "up: the list for build 471's test. Its shaders keep their constant",
@@ -627,13 +660,16 @@
         "overlay, which also links mfc140.dll and mfc140u.dll, is never applied to it. The switch links the two MFC DLLs into such a session",
         "only, where this game cannot get past its imports today (the Dock logs of Horizon Zero Dawn Remastered, which imports no MFC, are",
         "not this game); a start that already has the overlay is not changed by it. Not tried on a",
-        "device yet."
+        "device yet.",
+        "Version 18 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (the player can change it), and",
+        "low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the lowest",
+        "preset and AMD FSR, where the game has it, to Balanced or Performance."
       ]
     },
     {
       "id": "horizon-forbidden-west",
       "title": "Horizon Forbidden West",
-      "version": 5,
+      "version": 6,
       "match": {
         "steamAppIDs": [2420110],
         "steamFolders": ["horizon forbidden west complete edition"],
@@ -670,7 +706,8 @@
         "env.MADEIRA_X64_IMAGE_NOCOPY = 1",
         "env.MADEIRA_PAD_MODE = hid",
         "env.MADEIRA_LEAN_DIAG = 1",
-        "env.WINEDEBUG = err+all,err-virtual,fixme-all"
+        "env.WINEDEBUG = err+all,err-virtual,fixme-all",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
       "switches": {"avx": true, "nvidia": true, "wineVCRT": false, "fastSync": true, "fpsMode": 3, "display": "fit"},
       "notes": [
@@ -707,13 +744,16 @@
         "inpainting pyramid, created with MipLevels 0 (the full chain) but made with",
         "one level; its mip levels were written into FSR's motion-vector fields.",
         "mip0-full gives such textures their full chain (build 533: the squares are",
-        "gone)."
+        "gone).",
+        "Version 6 (owner, 2026-10-28): the frame-rate limit stays 30 FPS, and low-graphics-tip = 1 (build 622) shows once,",
+        "before the first start, that the game's own graphics go to the lowest preset and AMD FSR, where the game has it, to",
+        "Balanced or Performance."
       ]
     },
     {
       "id": "ratchet-clank-rift-apart",
       "title": "Ratchet & Clank: Rift Apart",
-      "version": 6,
+      "version": 8,
       "match": {
         "steamAppIDs": [1895880],
         "steamFolders": ["ratchet & clank - rift apart"],
@@ -725,7 +765,7 @@
         "# BCD's recommended settings for Ratchet & Clank: Rift Apart.",
         "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
         "vram-mb = 2048",
-        "swap-mb = 1024",
+        "swap-mb = 8192",
         "swap-mode = 2",
         "swap-min-mb = 1",
         "swap-images = 1",
@@ -752,7 +792,8 @@
         "env.MADEIRA_ALIAS_RELEASE = 1",
         "env.LC_ALL = en_US.UTF-8",
         "env.WINEDEBUG = err+all,err-virtual,fixme-all",
-        "env.MADEIRA_VA_PRESSURE_GAP_OK = 1"
+        "env.MADEIRA_VA_PRESSURE_GAP_OK = 1",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
       "switches": {"avx": true, "nvidia": true, "wineVCRT": false, "fastSync": true, "fpsMode": 3, "display": "fit"},
       "notes": [
@@ -783,7 +824,7 @@
         "Version 4 (owner's phone, build 553, logs RiftApart.exe 2026-10-16 10:43:45",
         "and 10:45:10, R6025 again): v3 left out env.LC_ALL, which the 23:21:48 run",
         "also had. Without it Wine takes the phone's language (tr-TR) as the user",
-        "locale; the game's main thread loads the Turkish OEM code page (857) and",
+        "locale; the game's main thread loads the phone's own OEM code page (857) and",
         "throws an unhandled C++ exception on the next line, in both runs as on",
         "550 22:49:00. LC_ALL = en_US.UTF-8 gives Wine an English locale for this game.",
         "Version 5 (owner's phone, build 555, log RiftApart.exe 2026-10-16 12:32:19: the",
@@ -804,13 +845,19 @@
         "    compressed.",
         "  - fence-early: no fps change was measured, and two runs went well with it.",
         "Known open problems, not solved by this list: flat textures on large surfaces,",
-        "and 5-16 fps once iOS clamps the power."
+        "and 5-16 fps once iOS clamps the power.",
+        "Version 7 (owner, 2026-10-28): swap-mb = 8192. Up to build 621 swap-mb did not cap broad mode (swap-mode = 2) once a",
+        "reservation was in the file: the owner's runs with 1024 and 512 put 0.9-2.5 GB on the disk (logs of 2026-10-16). From",
+        "build 622 it caps the disk for every commit, so 1024 would now keep later data in memory; 8192 keeps the room these runs used.",
+        "Version 8 (owner, 2026-10-28): the frame-rate limit stays 30 FPS, and low-graphics-tip = 1 (build 622) shows once,",
+        "before the first start, that the game's own graphics go to the lowest preset and AMD FSR, where the game has it, to",
+        "Balanced or Performance."
       ]
     },
     {
       "id": "crysis-remastered",
       "title": "Crysis Remastered",
-      "version": 1,
+      "version": 2,
       "match": {
         "steamAppIDs": [1715130],
         "steamFolders": ["crysis remastered"],
@@ -821,20 +868,24 @@
       "config": [
         "# BCD's recommended settings for Crysis Remastered.",
         "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
-        "env.MADEIRA_EC_HOOK_TRACE = 0"
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
-      "switches": {"avx": false, "nvidia": false, "wineVCRT": false, "display": "fit"},
+      "switches": {"avx": false, "nvidia": false, "wineVCRT": false, "fpsMode": 3, "display": "fit"},
       "notes": [
-        "Crysis Remastered (Steam): build 528, 2026-10-13 22:08, the owner: \"mükemmel",
-        "çalıştı\". It runs with the standard list and every switch off (AVX, NVIDIA,",
+        "Crysis Remastered (Steam): build 528, 2026-10-13 22:08, the owner: it ran",
+        "perfectly. It runs with the standard list and every switch off (AVX, NVIDIA,",
         "Wine's C++ runtime, MetalFX) at 1408x648 Fit, 5.2 GB at most; its own list so",
-        "that it keeps these when the standard one changes."
+        "that it keeps these when the standard one changes.",
+        "Version 2 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (the player can change it), and",
+        "low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the lowest",
+        "preset and AMD FSR, where the game has it, to Balanced or Performance."
       ]
     },
     {
       "id": "crysis-2-remastered",
       "title": "Crysis 2 Remastered",
-      "version": 1,
+      "version": 2,
       "match": {
         "steamAppIDs": [2096600],
         "steamFolders": ["crysis 2 remastered"],
@@ -845,21 +896,25 @@
       "config": [
         "# BCD's recommended settings for Crysis 2 Remastered.",
         "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
-        "env.MADEIRA_EC_HOOK_TRACE = 0"
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
-      "switches": {"avx": true, "nvidia": false, "wineVCRT": false, "display": "fit"},
+      "switches": {"avx": true, "nvidia": false, "wineVCRT": false, "fpsMode": 3, "display": "fit"},
       "notes": [
         "Crysis 2 Remastered (Steam 2096600), not yet run with this list. On build 540",
         "(2026-10-14 23:54) it ran with the standard list and every switch off, and",
         "stopped at its first AVX instruction (c000001d, FEX \"DISABLEAVX expected\"); the",
         "game needs AVX, on Windows too. Version 1: the standard line with AVX on, the",
-        "other switches off, at Fit (owner, 2026-10-15: \"çalışacaktır\")."
+        "other switches off, at Fit (owner, 2026-10-15: it will run).",
+        "Version 2 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (the player can change it), and",
+        "low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the lowest",
+        "preset and AMD FSR, where the game has it, to Balanced or Performance."
       ]
     },
     {
       "id": "crysis-3-remastered",
       "title": "Crysis 3 Remastered",
-      "version": 2,
+      "version": 3,
       "match": {
         "steamAppIDs": [2096610],
         "steamFolders": ["crysis 3 remastered"],
@@ -871,9 +926,10 @@
         "# BCD's recommended settings for Crysis 3 Remastered.",
         "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
         "env.MADEIRA_EC_HOOK_TRACE = 0",
-        "env.MADEIRA_APP_DLL_SHADOW = vcruntime140.dll"
+        "env.MADEIRA_APP_DLL_SHADOW = vcruntime140.dll",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
-      "switches": {"avx": true, "nvidia": false, "wineVCRT": false, "display": "fit"},
+      "switches": {"avx": true, "nvidia": false, "wineVCRT": false, "fpsMode": 3, "display": "fit"},
       "notes": [
         "Crysis 3 Remastered (Steam 2096610), not yet run with this list. On build 540",
         "(2026-10-14 23:55) it ran with the standard list and every switch off, and",
@@ -885,7 +941,10 @@
         "Microsoft's x64 vcruntime140.dll, and Wine's msvcp140 cannot call its x64",
         "memcpy (no exit thunk). Version 2: env.MADEIRA_APP_DLL_SHADOW =",
         "vcruntime140.dll makes the loader take Wine's vcruntime140, as in every",
-        "Steam game without its own copy; Wine's C++ runtime switch back off."
+        "Steam game without its own copy; Wine's C++ runtime switch back off.",
+        "Version 3 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (the player can change it), and",
+        "low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the lowest",
+        "preset and AMD FSR, where the game has it, to Balanced or Performance."
       ]
     },
     {
@@ -1538,7 +1597,7 @@
         "Build 577 ships setupapi-optin.dll, the same DLL with a lock round that table, linked as setupapi.dll for",
         "a game that lists setupapi in env.MADEIRA_OPTIN_DLLS; every other game keeps the shipped setupapi.dll.",
         "Not tried on a device yet.",
-        "Version 2 (owner's iPhone18,2, build 593, logs 17:20:29, 17:27:11 and 17:27:59): with the phone's Turkish locale the game loaded code",
+        "Version 2 (owner's iPhone18,2, build 593, logs 17:20:29, 17:27:11 and 17:27:59): with the phone's non-English locale the game loaded code",
         "page 1254 and died as its window was sized (the tiny window left on screen was the dead game, L13767); env.LC_ALL = en_US.UTF-8 got",
         "it past that (\"System locale is 'En'\"). It then stopped on \"Cannot load 'rd3d11_x64_rwdi.dll'\" / \"FATAL ERROR Cannot initialize",
         "renderer\": the renderer imports DDRAW.dll, which the 64-bit set lacks (L12657). Build 594 ships Wine's ddraw as ddraw-optin.dll and the",
@@ -1713,7 +1772,7 @@
       {
       "id": "marvels-spider-man-miles-morales",
       "title": "Marvel's Spider-Man: Miles Morales",
-      "version": 1,
+      "version": 2,
       "match": {
         "steamAppIDs": [1817190],
         "steamFolders": ["marvel's spider-man miles morales"],
@@ -1724,12 +1783,15 @@
       "config": [
         "# BCD's recommended settings for Marvel's Spider-Man: Miles Morales.",
         "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_X64_IMAGE_NOCOPY = 1", "minBuild": 576},
         "mip0-full = 1",
         "quiet-log = 1",
-        "env.MADEIRA_EC_HOOK_TRACE = 0",
-        "env.MADEIRA_X64_IMAGE_NOCOPY = 1"
+        {"line": "write-buffer-immediate = 1", "minBuild": 593},
+        "pso-warm = 2",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
-      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "display": "fit"},
+      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "fpsMode": 3, "display": "fit"},
       "notes": [
         "Marvel's Spider-Man: Miles Morales (Steam 1817190), a Direct3D 12 game (Nixxes engine lines in its own log). Seven logs: an",
         "iPad16,5 (M4, 16 GB; build 548, build 574 PD7S1E and HQFPWG, build 576 of 2026-10-21 10:37) and an iPhone19,2 (12 GB; build",
@@ -1757,12 +1819,17 @@
         "pipelines); fence-early and the DXGI source lines (no DirectStorage, no fence wait: the game was blocked 0.0 ms a frame);",
         "MADEIRA_CAGE_RELEASE (a Dock launch hands the holdback over itself, L28404); JUMBO_HALF (four jumbo reservations, 2,044",
         "and 3 x 1,024 MB, all granted); ALIAS_RELEASE (no [alias-tomb] line); LC_ALL (this tester's language is Italian: code pages",
-        "1252, 437 and 850 only, none of Rift Apart's Turkish 857); MADEIRA_VA_PRESSURE_GAP_OK (the pressure latch is false here too,",
+        "1252, 437 and 850 only, none of Rift Apart's 857); MADEIRA_VA_PRESSURE_GAP_OK (the pressure latch is false here too,",
         "free 7,149 MB at L8295, 16 steered reservations, 3,066 MB, but its memory effect on Rift Apart came from the swap tier not",
         "backing the steered range, and this list has no swap file); the pad, input and WINEDEBUG lines.",
         "env.MADEIRA_OPTIN_DLLS = evr is not listed: the crash reporter's helper crs-video.exe ends with c0000135 because EVR.dll is",
         "missing (L15712) and the game plays on without it (HQFPWG too); the line would make that helper run its 5 s video capture",
-        "inside a memory-bound session, which no log shows to be harmless."
+        "inside a memory-bound session, which no log shows to be harmless.",
+        "Version 2 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (the player can change it), and",
+        "low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the lowest",
+        "preset and AMD FSR, where the game has it, to Balanced or Performance.",
+        "The owner (2026-10-28): the same lines as Marvel's Spider-Man Remastered (the same Nixxes engine), for the Steam copy",
+        "and the DRM-free one (milesmorales.exe, any folder); this list had mip0-full, quiet-log and the two env lines."
       ]
     },
     {
@@ -2080,7 +2147,7 @@
     {
       "id": "marvels-spider-man-remastered",
       "title": "Marvel's Spider-Man Remastered",
-      "version": 2,
+      "version": 3,
       "match": {
         "steamAppIDs": [1817070],
         "steamFolders": ["marvel's spider-man remastered"],
@@ -2093,9 +2160,11 @@
         {"line": "env.MADEIRA_X64_IMAGE_NOCOPY = 1", "minBuild": 576},
         "mip0-full = 1",
         "quiet-log = 1",
-        {"line": "write-buffer-immediate = 1", "minBuild": 593}
+        {"line": "write-buffer-immediate = 1", "minBuild": 593},
+        "pso-warm = 2",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
-      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "display": "fit"},
+      "switches": {"avx": false, "nvidia": true, "wineVCRT": false, "fpsMode": 3, "display": "fit"},
       "notes": [
         "Marvel's Spider-Man Remastered (Steam 1817070), build 579, iPhone19,3 (11.5 GB; Send Log T3EXJB, 2026-10-21): the previous session",
         "ended on the JIT pool (auto-tune's header, L24: \"matched x64-image-nocopy,pool-split-exhausted\") and this one ran with",
@@ -2113,13 +2182,18 @@
         "values. Not tried on a device yet. If the screen stays black with it, the next line to try is query-timestamps = 1 (build 593,",
         "opt-in): the game's timestamps then resolve to a clock instead of zero.",
         "The owner's other lines of those runs are listed too (owner, 2026-10-23: the list carries the latest settings): mip0-full and",
-        "quiet-log (Miles Morales' lines) and the NVIDIA vendor id; gpu-sync and queue-trace were diagnostics and are left out."
+        "quiet-log (Miles Morales' lines) and the NVIDIA vendor id; gpu-sync and queue-trace were diagnostics and are left out.",
+        "Version 3 (owner, 2026-10-28): the frame-rate limit is 30 FPS at first sight (the player can change it), and",
+        "low-graphics-tip = 1 (build 622) shows once, before the first start, that the game's own graphics go to the lowest",
+        "preset and AMD FSR, where the game has it, to Balanced or Performance.",
+        "pso-warm = 2 (owner, 2026-10-28): on build 621 (16:09) the game stuttered when a new area brought about 450 new",
+        "pipelines, each built at its first draw (80 of them, 55 ms each); with pso-warm = 2 the owner found it smooth."
       ]
     },
     {
       "id": "marvels-spider-man-2",
       "title": "Marvel's Spider-Man 2",
-      "version": 7,
+      "version": 8,
       "match": {
         "steamAppIDs": [2651280],
         "steamFolders": ["marvel's spider-man 2"],
@@ -2152,7 +2226,8 @@
         "rp-carry = 1",
         "swap-mb = 2048",
         "swap-mode = 2",
-        "swap-min-mb = 16"
+        "swap-min-mb = 16",
+        {"line": "low-graphics-tip = 1", "minBuild": 622}
       ],
       "switches": {"avx": true, "nvidia": true, "wineVCRT": false, "fastSync": true, "fpsMode": 3, "display": "fit"},
       "notes": [
@@ -2176,10 +2251,10 @@
         "    Insomniac/Nixxes V8 cage pattern as Ratchet & Clank: Rift Apart, needing env.MADEIRA_ALIAS_RELEASE = 1 (and build 616's",
         "    mprotect_range / ml640 alias ownership fix).",
         "  - Version 4 (owner's iPhone18,2, build 616, logs 2026-10-27 19:53:40 and 19:55:21): the intro videos play through (2221 frames,",
-        "    47.2 FPS avg), then at 56 s thread 0024 requests the Turkish OEM code page (\"[nls-getptr] type=11 id=857\", L27107 / L26872),",
+        "    47.2 FPS avg), then at 56 s thread 0024 requests the phone's own OEM code page (\"[nls-getptr] type=11 id=857\", L27107 / L26872),",
         "    immediately throws an uncaught C++ exception (\"[exc] ml811 code=e06d7363 ... tid=0024 hit=4\", L27108 / L26873; id=1254 at",
         "    L27110 / L26880, \"ACCEPTING terminal root frame\" at L27112 / L26882) and crs-client.dll terminates the process with",
-        "    0xffff7001 (L27114 / L26884) — the exact Turkish-locale throw of Ratchet & Clank: Rift Apart (fixed by env.LC_ALL = en_US.UTF-8).",
+        "    0xffff7001 (L27114 / L26884) — the exact locale throw of Ratchet & Clank: Rift Apart (fixed by env.LC_ALL = en_US.UTF-8).",
         "    Also adds Rift Apart's env.MADEIRA_JUMBO_HALF = 1 (8 GB -> 4 GB arena probes at L16247-L16270 of 19:55:21),",
         "    env.MADEIRA_VA_PRESSURE_GAP_OK = 1 (19:53:40 had 17 [steer] and 7076 MB peak vs 0 [steer] and 6066 MB in 19:55:21), and",
         "    swap-mb = 8192.",
@@ -2203,7 +2278,10 @@
         "    eliminated the stutters and ran cleanly on the owner's device (build 619 also fixes integer RTV blending in madeira_d3d12.c).",
         "Version 7 (2026-10-28): the same lines; env.MADEIRA_ECO_NATIVE, env.FEX_TSOENABLED and env.FEX_MEMCPYSETTSOENABLED carry minBuild 619,",
         "the first build whose list policy takes them. Builds 600-614 refused the whole downloaded list v15 for them (their policy does not",
-        "know the names), so they kept their older list; with the gate they take v16 and skip only these three lines."
+        "know the names), so they kept their older list; with the gate they take v16 and skip only these three lines.",
+        "Version 8 (owner, 2026-10-28): the frame-rate limit stays 30 FPS, and low-graphics-tip = 1 (build 622) shows once,",
+        "before the first start, that the game's own graphics go to the lowest preset and AMD FSR, where the game has it, to",
+        "Balanced or Performance."
       ]
     },
     {
@@ -4122,6 +4200,56 @@
         "proc=rockstarservice.exe size=0x8000000\", L23708-L28100); nothing was drawn. These are the Launcher lines of the GTA San Andreas",
         "DE and RDR1 lists (service manager, AVX off, no crash reporter, no image copies) plus pool-split = 1 for the shrunken pool.",
         "Not tried on a device; whether Max Payne 3 itself then draws is unknown."
+      ]
+    },
+    {
+      "id": "f1-2020",
+      "title": "F1 2020",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [1080110],
+        "steamFolders": ["f1 2020"],
+        "programs": [
+          {"name": "f1_2020_dx12.exe", "steam": true}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for F1 2020.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_D3D11_SRC = 1", "minBuild": 620}
+      ],
+      "notes": [
+        "F1 2020 (Steam 1080110, F1_2020_dx12.exe, which renders through Direct3D 11 here), round 620, iPad17,4, build 614 (Send Logs 4W6WMV,",
+        "G1WB9T): right after \"Press any key\" DXMT's encode thread read through an empty buffer in its CopyStructureCount command",
+        "(\"[mach_exc] pc PE: d3d11.dll+0x8af18\") and the process ended in an \"AV EXEC of 0\" storm, both times. Build 620's DXMT skips such a",
+        "call (tools/patch-dxmt-copy-structure-count.py), but only the 32-bit d3d11.dll is compiled by the CI: a 64-bit game gets the patched",
+        "one, d3d11-src.dll (upstream's DXMT built from the same source plus BCD's Direct3D 11 patches), with env.MADEIRA_D3D11_SRC = 1.",
+        "Not tried on a device; whether the indirect draws the skipped copy feeds then look right is unknown."
+      ]
+    },
+    {
+      "id": "need-for-speed-the-run",
+      "title": "Need for Speed: The Run",
+      "version": 1,
+      "match": {
+        "programs": [
+          {"name": "need for speed the run.exe"}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for Need for Speed: The Run.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_BUFFER_RTV_EMPTY = 1", "minBuild": 620}
+      ],
+      "notes": [
+        "Need for Speed: The Run (2011, Frostbite 2, 32-bit; sold by EA only, so matched by its program name), round 620, iPhone18,2,",
+        "build 614 (Send Log FRGCNV and a Discord report of 2026-10-28, the second with \"Report an NVIDIA GPU\" on: the same stop): while",
+        "loading, the game's box \"DirectX function g_dxRenderer->getDevice()->CreateRenderTargetView(...) failed with E_INVALIDARG\", just",
+        "after DXMT's \"D3D11Resource(buffer): Unknown interface query\" for ID3D11Texture2D: the engine asks for a render target view on a",
+        "buffer, which DXMT does not have. DXVK answered S_OK and no view for that from 2018 until 2026-08 (Battlefield 3 and 4, the same",
+        "engine); env.MADEIRA_BUFFER_RTV_EMPTY = 1 (build 620) does the same. Not tried on a device."
       ]
     },
     {

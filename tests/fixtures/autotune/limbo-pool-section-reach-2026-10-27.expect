@@ -1,0 +1,15 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "pool-section-reach-clamp",
+  "tail-carve-lost-exec"
+ ],
+ "next": [
+  "env.MADEIRA_POOL_CLAMP_SECTIONS = 1"
+ ],
+ "note": "LIMBO (Steam 48000, 32-bit), build 611, iPhone18,2, Send Log BW135Z (round 620): an unnamed image's .data mprotect reaches 0x10034000 bytes past its pool copy (NOT clamped) and takes EXEC from FEX's live code buffer (av-detail p0=EXECUTE p1_in_carve=1), then a dispatcher storm. env.MADEIRA_POOL_CLAMP_SECTIONS = 1 keeps it inside the copy. Not tried on a device.",
+ "outcome": "exited-early",
+ "stage": 2,
+ "status": "trying"
+}

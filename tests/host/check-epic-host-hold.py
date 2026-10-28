@@ -90,8 +90,11 @@ check('the generated catalog lists env.BCD_EPIC_HOST_START, off by default (rege
       re.search(r'ConfigOption\(key: "env\.BCD_EPIC_HOST_START", [^\n]*kind: \.bool, defaultValue: "0"', catalog) is not None)
 lists = json.loads((R / 'recommended/recommendations.json').read_text())
 carriers = sorted(r['id'] for r in lists['rules'] if 'BCD_EPIC_HOST_START' in json.dumps(r['config']))
-check('only the BioShock Infinite (Epic) list sets it, from build 598', carriers == ['bioshock-infinite-epic']
-      and {'line': 'env.BCD_EPIC_HOST_START = 1', 'minBuild': 598} in next(r for r in lists['rules'] if r['id'] == 'bioshock-infinite-epic')['config'])
+# Round 620: Farming Simulator 22 from the Epic store (5C4SAB) showed the same "host=1" start with "[bcd-host] no report" and Epic's
+# sign-in box; its list carries the line too, matched only outside a Steam library.
+check('only the BioShock Infinite and Farming Simulator 22 (Epic) lists set it, from build 598',
+      carriers == ['bioshock-infinite-epic', 'farming-simulator-22-epic'] and all({'line': 'env.BCD_EPIC_HOST_START = 1', 'minBuild': 598} in
+      next(r for r in lists['rules'] if r['id'] == i)['config'] for i in carriers))
 rules = (R / 'build/tools/autotune_rules.py').read_text()
 check('auto-tune: the rule epic-host-start-lost adds the line after an Epic game with the EOS SDK left with exit code 1 although the start line chose the host and the host left no report, never twice',
       '"id": "epic-host-start-lost"' in rules and '"lines": ["env.BCD_EPIC_HOST_START = 1"]' in rules

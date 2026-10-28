@@ -158,9 +158,9 @@ for button in ('Button("Sync first")', 'Button("Try again")', 'Button("Choose sa
 
 # ---- 2. BCDLiveFrontEnd: what LibraryView does around the library --------------------------
 check("if let jitProblem { jitConnectionActions(jitProblem, retry: enableJIT) { library.error = nil } }" in front
-      and 'isPresented: Binding(get: { library.error != nil }' in front,
+      and ('isPresented: Binding(get: { library.error != nil }' in front or 'isPresented: Binding<Bool>(get: { library.error != nil }' in front),
       "BCD's interface shows the library's error, with the JIT connection fixes")
-check('.alert("Steam", isPresented: Binding(get: { steam.error != nil }' in front, "BCD's interface shows Steam's error")
+check(('.alert("Steam", isPresented: Binding(get: { steam.error != nil }' in front or '.alert("Steam", isPresented: Binding<Bool>(get: { steam.error != nil }' in front), "BCD's interface shows Steam's error")
 check(".fullScreenCover(isPresented: $onboarding.presented, onDismiss: BCDPresentation.didClose) { OnboardingView() }" in front
       and "onboarding.presentIfNeeded()" in front, "first-run setup opens over BCD's interface")
 check("EndedSessionSurface.install()" in front and 'EndedSessionSurface.hide(reason: "library-appeared")' in front,

@@ -1,0 +1,16 @@
+{
+ "dialogs": [
+  "Unable to initialize video driver"
+ ],
+ "end": {},
+ "matched": [
+  "d3d12-typed-uav-load-required"
+ ],
+ "next": [
+  "d3d12-typed-uav-load = 1"
+ ],
+ "note": "just volleyball Demo (Steam 5401090, Godot 4), build 611, iPad17,1, Send Log CJN86P (round 620): Godot's D3D12 driver says 'No support for Typed UAV Load Additional Formats has been found', finds no Vulkan, fails to create an OpenGL window and exits. d3d12-typed-uav-load = 1 (ml1970) reports the option. Not tried on a device.",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "trying"
+}

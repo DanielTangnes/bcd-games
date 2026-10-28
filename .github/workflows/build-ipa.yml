@@ -1692,6 +1692,17 @@ jobs:
       - name: Patch DXMT context state swap
         run: python3 tools/patch-dxmt-context-state-swap.py
 
+      # F1 2020 (round 620): CopyStructureCount with an empty destination or counter crashed the encode thread;
+      # such a call is skipped and logged ([copy-structure-count]).
+      - name: Patch DXMT CopyStructureCount without a buffer
+        run: python3 tools/patch-dxmt-copy-structure-count.py
+
+      # Need for Speed: The Run (round 620, Frostbite 2): a render target view on a buffer failed with E_INVALIDARG and the
+      # game stopped. Every failed view is logged ([rtv-fail]); env.MADEIRA_BUFFER_RTV_EMPTY = 1 answers S_OK and no view for a
+      # buffer, as DXVK did for Battlefield 3/4 (off by default). A null view in ClearRenderTargetView is ignored.
+      - name: Patch DXMT render target views on a buffer
+        run: python3 tools/patch-dxmt-buffer-rtv.py
+
       # A D3D9 R5G6B5 back buffer went straight to CAMetalLayer, which threw
       # 'invalid pixel format 40' and ended the app (Warcraft III, build 559).
       # A format the layer refuses now presents into BGRA8Unorm. Before the
@@ -2390,6 +2401,24 @@ jobs:
       - name: Check opt-in DLLs
         run: python3 tests/host/check-optin-dlls.py
 
+      # madeira-bcd (round 620): NtMapViewOfSection judges a 32-bit program's explicit base by its guest address inside
+      # its WoW64 window (DirectPlay's static data at 0x50000000: Requiem, Hotline Miami); the real block runs on the host.
+      - name: Check WoW64 explicit section base
+        run: python3 tests/host/check-wow-map-zero-bits.py
+
+      # madeira-bcd (round 620): F1 2020's CopyStructureCount with an empty buffer is skipped (the DXMT patch).
+      - name: Check DXMT CopyStructureCount
+        run: python3 tests/host/check-dxmt-copy-structure-count.py
+
+      # madeira-bcd (round 620): Frostbite 2's render target views on a buffer: logged, and env.MADEIRA_BUFFER_RTV_EMPTY = 1
+      # answers them with no view (Need for Speed: The Run; the DXMT patch, d3d11-src.dll for 64-bit games).
+      - name: Check DXMT render target views on a buffer
+        run: python3 tests/host/check-dxmt-buffer-rtv.py
+
+      # madeira-bcd (round 620, thebcd69/bcd-games#17): Add a game names why a file is not a Windows program (words only).
+      - name: Check the not-a-Windows-program words
+        run: python3 tests/host/check-not-windows-program.py
+
       # ajan10/wine: Wine's bcrypt unix side answers STATUS_INVALID_BUFFER_SIZE for an unaligned AES/3DES-CBC length instead of
       # letting nettle's assert end the app (A Plague Tale: Innocence, build 580); the guard is compiled on the host.
       - name: Check bcrypt CBC length guard
@@ -2659,6 +2688,12 @@ jobs:
       - name: Check swap-heat
         run: python3 tests/host/check-swap-heat.py
 
+      # madeira-bcd (2026-10-28, build 622): in broad mode (swap-mode = 2) swap-mb caps the disk for commits into reservations
+      # already in the file too, not only when a reservation is mapped (Spider-Man 2: 2,445 MB on the disk with swap-mb = 256).
+      # Not the committed data (build 621): games commit several times what they write.
+      - name: Check the swap-mb cap
+        run: python3 tests/host/check-swap-cap.py
+
       # madeira-bcd: the ARM64EC JIT no longer maintains the call-ret shadow stack nothing reads on iOS
       # (MADEIRA_FEX_CALLRET_ELIDE=0 keeps it).
       - name: Check fex-callret-elide
@@ -2846,7 +2881,19 @@ jobs:
           python3 tests/host/check-x64-graphics-entry.py \
             --factory app/Madeira/arm64ec-windows/dxgi-src.dll \
             --d3d12 app/Madeira/arm64ec-windows/madeira_d3d12.dll
-          # Likewise tools/build-d3d11-dll.sh (env.MADEIRA_D3D11_SRC).
+          # Likewise tools/build-d3d11-dll.sh (env.MADEIRA_D3D11_SRC). Round 620: BCD's Direct3D 11
+          # patches reach a 64-bit game only through d3d11-src.dll, and recommended lists ask for it
+          # (F1 2020), so an IPA in which no 64-bit d3d11.dll carries them is refused.
+          NEED=""
+          for m in "[copy-structure-count] skipped #" "[rtv-fail] #"; do
+            LC_ALL=C grep -aqF "$m" app/Madeira/arm64ec-windows/d3d11.dll && continue
+            [ -f app/Madeira/arm64ec-windows/d3d11-src.dll ] && LC_ALL=C grep -aqF "$m" app/Madeira/arm64ec-windows/d3d11-src.dll && continue
+            NEED="$NEED \"$m\""
+          done
+          if [ -n "$NEED" ]; then
+            echo "::error::no 64-bit d3d11.dll carries BCD's Direct3D 11 patches ($NEED): tools/build-d3d11-dll.sh did not ship d3d11-src.dll (see its step)"
+            exit 1
+          fi
           if [ -f app/Madeira/arm64ec-windows/d3d11-src.dll ]; then
             echo "::notice::d3d11-src.dll present ($(wc -c < app/Madeira/arm64ec-windows/d3d11-src.dll | tr -d ' ') bytes): env.MADEIRA_D3D11_SRC = 1 selects it"
           elif LC_ALL=C grep -aqF "madeira-bcd: SwapDeviceContextState in use" app/Madeira/arm64ec-windows/d3d11.dll; then

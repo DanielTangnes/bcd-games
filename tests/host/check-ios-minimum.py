@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # Copyright 2026 thebcd69 (BCD)
 # BCD Material: additional terms under GPL-3.0 section 7 apply; see LICENSE-BCD.md.
-"""The app runs from iOS 18 (owner, 2026-10-18: "18 ve yukarısı olarak da verebiliriz").
+"""The app runs from iOS 18 (owner, 2026-10-18: iOS 18 and later).
 
 It required iOS 26 until 2026-10-18 (testers on older iOS could not install it, and LiveContainer,
 which checks no minimum, started it into a crash). iOS 17 was tried the same day and dropped: the

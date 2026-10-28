@@ -25,7 +25,7 @@ Static contracts:
 Behaviour:
   - the Worker's tests pass under node (bcd-logs/worker/worker.test.mjs), when node is found;
   - FeedbackUploadCore.swift, compiled alone on the host: the person's words keep every character
-    but control characters (an e-mail, an address, a path, Turkish letters, emoji and a line break
+    but control characters (an e-mail, an address, a path, accented letters, emoji and a line break
     stay), the body has no other field than the six, a device name never travels as the model, the
     limits hold; and every body it builds is accepted by the real Worker (run under node) and
     stored with the same text;
@@ -265,7 +265,7 @@ func fails(_ p: F.Problem, _ make: () throws -> Data) -> Bool {
 check(F.clean("  hello\r\nworld\rtab\there\u{7}\u{1b}[0m\u{7f}\u{85}end \n") == "hello\nworld\ntab here[0mend",
       "clean: CR LF and CR are one line break, a tab a space, other control characters go, the ends are trimmed")
 let own = ["Ali's iPhone crashes: write to ali@example.com, from 192.168.1.5, in /Users/ali/Desktop/BCD",
-           "Çok güzel: ığüşöç İĞÜŞÖÇ, oyun açılışta donuyor", "emoji \u{1F600} and a family \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467} and \u{FB01}",
+           "Très bien: äöüßéèç ÄÖÜÉÈÇ, ça gèle au démarrage", "emoji \u{1F600} and a family \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467} and \u{FB01}",
            "two  spaces\tinside", "line one\n\nline three", "C:\\Users\\steamuser\\x and 76561198012345678", "東京 and العربية and ‮bidi‬"]
 for text in own {
     check(F.clean(text) == text.replacingOccurrences(of: "\t", with: " "), "clean: keeps every character of \"\(text.prefix(24))…\" (an e-mail, an address, a path, a name stay)")
@@ -297,8 +297,8 @@ check(fails(.badKind) { try F.body(kind: "crash", text: "x", build: "1", ios: "1
 check(fails(.tooLong) { try F.body(kind: "bug", text: String(repeating: "x", count: 4001), build: "1", ios: "18", model: "iPhone14,2") }, "body: 4001 characters are refused")
 let emoji = try! F.body(kind: "bug", text: String(repeating: "\u{1F600}", count: 4000), build: "1", ios: "18", model: "iPhone14,2")
 check(emoji.count <= F.maxBody, "body: 4000 emoji (16 KB) fit the 20 KB the intake takes")
-let turkish = try! F.body(kind: "bug", text: String(repeating: "ş", count: 4000), build: "1", ios: "18", model: "iPhone14,2")
-check(turkish.count <= F.maxBody, "body: 4000 Turkish letters fit")
+let accented = try! F.body(kind: "bug", text: String(repeating: "é", count: 4000), build: "1", ios: "18", model: "iPhone14,2")
+check(accented.count <= F.maxBody, "body: 4000 accented letters fit")
 let full = try! F.body(kind: "bug", text: String(repeating: "x", count: 4000), build: "1", ios: "18", model: "iPhone14,2")
 check(full.count <= F.maxBody && fields(full)["text"]!.count == 4000, "body: 4000 plain characters fit")
 let slashes = try! F.body(kind: "bug", text: "see https://example.com/a/b", build: "1", ios: "18", model: "iPhone14,2")

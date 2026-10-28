@@ -79,7 +79,7 @@ with tempfile.TemporaryDirectory() as t:
     region = patched[patched.index("/* guest-log-test:begin"):patched.index("/* guest-log-test:end */")]
     wide_writes = {
         "le_bom": b"\xff\xfe",
-        "le_info": "SDK initialized: café Türkçe 😀\r\n".encode("utf-16-le"),
+        "le_info": "SDK initialized: café Größe 😀\r\n".encode("utf-16-le"),
         "le_error": b"\xff\xfe" + "Fatal Error: code 1024\r\n".encode("utf-16-le"),
         "be_error": b"\xfe\xff" + "Error: browser timeout\n".encode("utf-16-be"),
         "be_info": "Waiting for Browser\n".encode("utf-16-be"),
@@ -208,7 +208,7 @@ int main( int argc, char **argv )
 
     lines = run({"MADEIRA_GUEST_LOG": "all"}, "wide")
     body = [re.sub(r"^\[guest-log\] #\d+ tid=0024 ", "", l) for l in lines if re.match(r"\[guest-log\] #\d+", l)]
-    assert body[:4] == ["SDK initialized: café Türkçe 😀", "Fatal Error: code 1024",
+    assert body[:4] == ["SDK initialized: café Größe 😀", "Fatal Error: code 1024",
                         "Error: browser timeout", "Waiting for Browser"], body
     assert len(body) == 7 and body[-1] == "error UTF-8 after reuse", body
     assert body[4] == "error " + "a" * 293 + " [truncated]", body[4]

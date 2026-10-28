@@ -1,0 +1,16 @@
+{
+ "dialogs": [
+  "Failed to start the game. Cannot find essential information in the registry.???Re-installing the game may fix this problem.??"
+ ],
+ "end": {},
+ "matched": [
+  "install-script-registry-missing"
+ ],
+ "next": [
+  "env.MADEIRA_DOCK_SCRIPT_REGISTRY = 1"
+ ],
+ "note": "Far Cry 3 (Steam 220240, BCD Dock), build 614, iPad17,3, Send Log 2H38A0 (round 620): FC3UpdaterSteam.exe shows 'Failed to start the game. Cannot find essential information in the registry.'; nothing is drawn. env.MADEIRA_DOCK_SCRIPT_REGISTRY = 1 writes the install script's missing registry values (likely cause, not proven). Not tried on a device.",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "trying"
+}

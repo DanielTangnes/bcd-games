@@ -50,7 +50,7 @@ APP = ROOT / 'app' / 'Madeira'
 JSON_PATH = ROOT / 'recommended' / 'recommendations.json'
 SIG_PATH = ROOT / 'recommended' / 'recommendations.json.sig'
 FIXTURE = ROOT / 'tests' / 'host' / 'fixtures' / 'recommendations' / 'GameRecommendations-a9851601.swift.txt'
-FIXTURE_SHA256 = 'f5417c37e8e54f72f2bbb18e9afca2846ab252ad763f3107acaffdc23e4875b6'   # git show a9851601:app/Madeira/GameRecommendations.swift
+FIXTURE_SHA256 = '5dbaaa4d9382e0aad3ab0dd82a5cef088df7dd8fa34742dfe079a1b4c08e08f0'   # 2026-10-28: three /// comment lines put in English (privacy); no literal changed   # git show a9851601:app/Madeira/GameRecommendations.swift
 LEDGER = Path.home() / 'madeira-local' / 'state' / 'recommendations-signed'
 HEADER = ('// SPDX-License-Identifier: GPL-3.0-only\n// Copyright 2026 thebcd69 (BCD)\n'
           '// BCD Material: additional terms under GPL-3.0 section 7 apply; see LICENSE-BCD.md.\n')
@@ -94,7 +94,7 @@ except ValueError as e:
 check('recommendations.json: format 1, a version, a date, rules ending with "standard"',
       bool(doc) and doc.get('format') == 1 and isinstance(doc.get('version'), int) and doc['version'] >= 1
       and re.fullmatch(r'\d{4}-\d{2}-\d{2}', doc.get('generated', '')) is not None and doc['rules'][-1]['id'] == 'standard')
-check('the frozen Swift literals are a9851601\'s GameRecommendations.swift, byte for byte',
+check('the frozen Swift literals are a9851601\'s GameRecommendations.swift, byte for byte (three comment lines in English since 2026-10-28)',
       hashlib.sha256(FIXTURE.read_bytes()).hexdigest() == FIXTURE_SHA256)
 check('GameRecommendations.swift holds no list any more (one source: the JSON)',
       'static let rdr2Steam' not in lists and 'config: """' not in lists and 'env.MADEIRA_' not in lists)
@@ -439,7 +439,7 @@ check(kind(editRule("rdr2-steam") { $0["switches"] = ["fpsMode": 9] }) == .forma
 check(kind(editRule("rdr2-steam") { $0["switches"] = ["resolution": "huge"] }) == .format, "a resolution that is not WxH")
 check(kind(editRule("rdr2-steam") { $0["switches"] = ["display": "zoom"] }) == .format, "a display mode that does not exist")
 check(kind(editRule("rdr2-steam") { $0["version"] = "11" }) == .format, "a version as text")
-check(kind(Data(String(decoding: builtInData, as: UTF8.self).replacingOccurrences(of: "\"version\": 11,", with: "\"version\": 11.5,").utf8)) == .format,
+check(kind(Data(String(decoding: builtInData, as: UTF8.self).replacingOccurrences(of: "\"version\": 12,", with: "\"version\": 12.5,").utf8)) == .format,
       "a version that is not whole")
 check(kind(editRule("breakneck") { $0["match"] = ["programs": [["name": #"C:\Games\breakneck.exe"#]]] }) == .format, "a program with a folder")
 check(kind(editRule("breakneck") { $0["match"] = ["steamFolders": ["Breakneck"]] }) == .format, "a Steam folder not lowercased")

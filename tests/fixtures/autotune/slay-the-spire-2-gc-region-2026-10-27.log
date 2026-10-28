@@ -1,0 +1,215 @@
+[00:29:34.889] [INFO] Checking entitlements...
+[00:29:34.890] [INFO] [build] v0.1.611 (611)
+[00:29:34.890] [INFO] [device] model=iPad17,3 idiom=pad os=iPadOS Version 27.2 (Build 24B119) ram=15389MB available=16358MB cores=10
+[00:29:34.890] [INFO] [device] address-map=[0x100dd0000,0x8000000000) 512GB increased-memory=1 extended-va=1
+[00:29:34.910] [INFO] [device] gpu="Apple M5 GPU" family=apple10 argument-buffers=tier2 mesh=1 bc=1 atomics64=1 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[00:29:58.119] [INFO] Requesting JIT with Built-in StikJIT...
+[00:30:01.966] [INFO] [bcd] library launch Slay the Spire 2: avx=0 wine-vcrt=0 nvidia=0 game-config=1 metalfx=off
+[00:30:01.974] [INFO] [dock-launch] image-retire=1
+[00:30:01.975] [INFO] [dock-launch] image-map-guard=1
+[00:30:01.984] [INFO] [dock-installers] app=2868840 scripts=0 programs=0
+[00:30:01.985] [INFO] [madeira-dock] starting the host for app 2868840; Valve's client authenticates and authorizes the launch
+[00:30:01.997] [INFO] Running full Wine sequence...
+[00:30:01.997] [INFO] [device] launch: cs-flags=0x32003005 get-task-allow=1 cs-debugged=1 debugger-attached=1 traced=1 address-map=[0x100dd0000,0x8000000000) 512GB available=16340MB low-power=0 thermal=nominal
+[00:30:02.002] [INFO] Allocating 896MB JIT pool (BRK will suspend process)...
+[00:30:02.002] [INFO] Allocating 896MB JIT pool via debugger...
+[00:30:02.002] [INFO] [jit-pool] path: debugger (attached at the pool request; it makes every region)
+[00:30:02.002] [INFO] [jit-debugger] attached=1 at the pool request
+[00:30:02.004] [ERR] ml1036: no hole fits a 896MB pool — SHRINKING to 608MB (the alternative is a pool in the guest window or on top of 0x140000000, both of which are fatal)
+[00:30:02.650] [INFO] RX pool at 0x148000000
+[00:30:02.665] [INFO] Detaching debugger...
+[phase] wine-start             t+  0.710s rev=ml526
+[madeira-env] game MADEIRA_KEYED_EVENT_PER_PROCESS=1
+[shell-dir] user folders for madeira, mobile: 0 created (Start Menu included)
+[cage] holdback reserved 0x7200000000+0x1ffff0000 rev=ml433
+ml992: os_proc_available_memory=15717 MB + phys_footprint=666 MB = 16384 MB (hw.memsize says 15389 MB)
+ml985: preferred base 0x140000000+0x70000 REFUSED status=0xc0000018 image_flags=0x4 charact=0x22 map_addr=0 info_base=0x140000000 | STAGE=fixed-map err=3 at 0x140000000+0x70000 rev=ajan5-motor
+[wow-rwx] ml1279 MADEIRA_WOW_RWX_PLAIN=(unset) -> 32-bit guest RWX memory is plain read/write in a window once Wine Mono is mapped there
+[copy-verify] ?: OK, 4 .text pages executable (copy @0x148004000)
+[copy-verify] ntdll.dll: OK, 29 .text pages executable (copy @0x148078000)
+[copy-verify] KERNEL32.dll: OK, 12 .text pages executable (copy @0x148190000)
+[copy-verify] kernelbase.dll: OK, 30 .text pages executable (copy @0x148238000)
+[nls-getptr] type=11 id=1252 peb=0x71ffff0000
+[nls-getptr] type=11 id=437 peb=0x71ffff0000
+[copy-verify] rpcrt4.dll: OK, 18 .text pages executable (copy @0x1483b8000)
+[copy-verify] advapi32.dll: OK, 9 .text pages executable (copy @0x14848c000)
+[footprint] rev=ml358 phys=676 MB (peak 676) internal=674 MB compressed=0 MB external=104 MB reusable=43 MB (cycle=1)
+[nls-getptr] type=11 id=20127 peb=0x71ffff0000
+[gdi-shared] session table 0x7026f50000 (1572864 bytes, section-backed, name=L"\\KernelObjects\\__wine_ios_gdi_shared")
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+0024:err:module:load_dll [dll-missing] ml718 UNCAPPED L"winemac.drv" status=c0000135 (subsystem dependency)
+0024:err:module:load_dll [dll-missing] rev=ml336 #1 L"winemac.drv" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] ml718 UNCAPPED L"winex11.drv" status=c0000135 (subsystem dependency)
+0024:err:module:load_dll [dll-missing] rev=ml336 #2 L"winex11.drv" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] ml718 UNCAPPED L"winewayland.drv" status=c0000135 (subsystem dependency)
+0024:err:module:load_dll [dll-missing] rev=ml336 #3 L"winewayland.drv" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[win-name] #3 hwnd=0x10020 class='' text="madeira - Wine Desktop" rev=ml853
+[win-name] #6 hwnd=0x10032 class='' text="WineAppBar" rev=ml853
+[win-name] #11 hwnd=0x1003e class='' text="Default IME" rev=ml853
+[phase] spawn:L"C:\\windows\\system32\\dockhost.exe" t+  1.083s rev=ml526
+[x64-image] L"\\??\\C:\\windows\\system32\\dockhost.exe" 0x123280000+0x99000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+[x64-image] #1 0x123280000+0x4000 prot=rwx -- pure-x64 image page, EXEC has no host meaning here (the emulator runs it at the PE VA); applying rw- (MADEIRA_X64_IMAGE_NOCOPY)
+[x64-image] #2 0x123280000+0x8000 prot=r-x -- pure-x64 image page, EXEC has no host meaning here (the emulator runs it at the PE VA); applying r-- (MADEIRA_X64_IMAGE_NOCOPY)
+[x64-image] #3 0x123288000+0x4000 prot=rwx -- pure-x64 image page, EXEC has no host meaning here (the emulator runs it at the PE VA); applying rw- (MADEIRA_X64_IMAGE_NOCOPY)
+[x64-image] #4 0x123288000+0x4000 prot=r-x -- pure-x64 image page, EXEC has no host meaning here (the emulator runs it at the PE VA); applying r-- (MADEIRA_X64_IMAGE_NOCOPY)
+[x64-image] #5 0x12328c000+0x4000 prot=rwx -- pure-x64 image page, EXEC has no host meaning here (the emulator runs it at the PE VA); applying rw- (MADEIRA_X64_IMAGE_NOCOPY)
+[keyed-event] ml2200: peb=0x10cbf8000 own keyed event 0x18 (slot 0); the session's global is 0x14
+[copy-verify] libarm64ecfex.dll: OK, 131 .text pages executable (copy @0x14996e000)
+[copy-verify] actxprxy.dll: OK, 1 .text pages executable (copy @0x149d88000)
+[copy-verify] oleaut32.dll: OK, 21 .text pages executable (copy @0x149e1c000)
+[file-wfail] ml669 #2 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[phase] spawn:L"C:\\windows\\system32\\conhost.exe" t+  1.145s rev=ml526
+[keyed-event] ml2200: peb=0x10d3e8000 own keyed event 0xc (slot 1); the session's global is 0x14
+[copy-verify] imm32.dll: OK, 4 .text pages executable (copy @0x14ae64000)
+D 38 Load module dockhost.exe (dockhost.exe-09dbbefb7c42a67b): 123280000
+D 38 Load module ntdll.dll (ntdll.dll-391ab96a83e82f14): 71FE610000
+D 38 Load module ADVAPI32.dll (advapi32.dll-e40c14e1190b1df2): 71FC190000
+D 38 Load module sechost.dll (sechost.dll-b36ef44c04b21a0b): 71FC110000
+D 38 Load module msvcrt.dll (msvcrt.dll-237acf236e8130e9): 71FC000000
+D 38 Load module rsaenh.dll (rsaenh.dll-6cd5b371ff05d55f): 71FBF40000
+[free-delay] #1 release of 0x702b5c0000+0x100000 held for 2000 ms (1 in flight)
+[file-wfail] ml669 #3 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[alloc-fail] ml814 #1 status=c000000d hint=0xffeeffeeffeeffee size=0x1 type=0x2000 protect=0x1 tid=0038 | STAGE=none err=3 at 0x73fff60000+0x90000
+[nt-fail] #1 NtAllocateVirtualMemory status=c000000d proc=dockhost.exe tid=0038 size=0x1 type=0x2000 prot=0x1 hint=0xffeeffeeffeeffee zb=0x0 hits=1 rev=ajan5-rockstar
+[xp-names] m197730 "wine-x18-exc"
+[file-wfail] ml669 #5 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:seh:ios_exc_dump_str [exc] ml812   OutputDebugStringW: ".......................l"
+[copy-verify] dbghelp.dll: OK, 22 .text pages executable (copy @0x14d6e4000)
+[file-wfail] ml669 #8 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:seh:NtGetContextThread [ec-getctx] ml715 #1 handle=0000000000000108 status=c0000022 native_pc=0000000000000000 is_ec=-1 -> returned rip=0000000000000000 rsp=0000000000000000 flags=00000000
+0050:err:module:import_dll Library libavcodec-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavfilter-11.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavformat-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavutil-60.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libswresample-6.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libswscale-9.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+[file-wfail] ml669 #9 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:module:import_dll Library libavcodec-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavfilter-11.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavformat-62.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libavutil-60.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libswresample-6.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:module:import_dll Library libswscale-9.dll (which is needed by L"C:\\Program Files (x86)\\Steam\\video64.dll") not found
+0050:err:seh:NtGetContextThread [ec-getctx] ml715 #2 handle=00000000000002BC status=c0000022 native_pc=0000000000000000 is_ec=-1 -> returned rip=0000000000000000 rsp=0000000000000000 flags=00000000
+[file-wfail] ml669 #12 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[footprint] rev=ml358 phys=1049 MB (peak 1049) internal=1046 MB compressed=0 MB external=181 MB reusable=43 MB (cycle=2)
+[footprint] rev=ml358 phys=1097 MB (peak 1097) internal=1094 MB compressed=0 MB external=180 MB reusable=42 MB (cycle=3)
+[file-wfail] ml669 #57 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[file-wfail] ml669 #58 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[footprint] rev=ml358 phys=1100 MB (peak 1100) internal=1098 MB compressed=0 MB external=180 MB reusable=42 MB (cycle=4)
+[phase] spawn:L"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Slay the Spire 2\\SlayTheSpire2.exe" t+  8.512s rev=ml526
+[session-log] Steam game SlayTheSpire2.exe: logs/SlayTheSpire2.exe-2026-10-27_00-30-10.txt
+[Wine child thread] calling wine_ios_child_main...
+ml985: map_image_view size=0x35735000 base=0x140000000 info_base=0x140000000 map_addr=0 flags=0x4 charact=0x22 limits=0x10000..0x73fffeffff
+ml985: preferred base 0x140000000+0x35735000 REFUSED status=0xc0000018 image_flags=0x4 charact=0x22 map_addr=0 info_base=0x140000000 | STAGE=fixed-map err=3 at 0x140000000+0x35738000 rev=ajan5-motor
+[keyed-event] ml2200: peb=0x10d3a4000 own keyed event 0xc (slot 2); the session's global is 0x14
+[nls-getptr] type=11 id=1252 peb=0x10d3a4000
+[nls-getptr] type=11 id=437 peb=0x10d3a4000
+[nls-getptr] type=11 id=20127 peb=0x10d3a4000
+[nls-getptr] type=11 id=1252 peb=0x10d3a4000
+[nls-getptr] type=11 id=437 peb=0x10d3a4000
+[copy-verify] dwmapi.dll: OK, 1 .text pages executable (copy @0x1506f0000)
+[file-wfail] ml669 #59 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[footprint] rev=ml358 phys=2040 MB (peak 2040) internal=2037 MB compressed=0 MB external=216 MB reusable=42 MB (cycle=5)
+[x64-image] L"\\??\\C:\\Program Files (x86)\\Steam\\steamapps\\common\\Slay the Spire 2\\fmodstudio.dll" 0x71f2560000+0x189000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+[x64-image] L"\\??\\C:\\Program Files (x86)\\Steam\\steamapps\\common\\Slay the Spire 2\\libsentry.windows.release.x86_64.dll" 0x71f2410000+0x148000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+[x64-image] L"\\??\\C:\\Program Files (x86)\\Steam\\steamapps\\common\\Slay the Spire 2\\libspine_godot.windows.template_release.x86_64.dll" 0x71f1fd0000+0x168000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+[guest-log] #6 tid=00ac ERROR: hostfxr_get_runtime_delegate failed with code: -2147450743
+0050:err:module:load_dll [dll-missing] rev=ml336 #50 L"steamservice.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[file-wfail] ml669 #60 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[00:30:11.997] [INFO] [dock-report] launch-game-running=1
+00ac:err:module:load_dll [dll-missing] rev=ml336 #1 L"wintab32.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[footprint] rev=ml358 phys=2350 MB (peak 2350) internal=2347 MB compressed=0 MB external=219 MB reusable=42 MB (cycle=6)
+[win-name] #33 hwnd=0x10068 class='' text="Default IME" rev=ml853
+D AC Load module dinput8.dll (dinput8.dll-fa63f814948e9838): 71F14B0000
+[madeira-d3d12] command queue: type 0
+[madeira-d3d12] command queue: type 0
+[madeira-d3d12] command queue: type 3
+[nls-getptr] type=11 id=10000 peb=0x10d3a4000
+[launch-view] dismissed reason=game-window logs=0
+[free-delay] #2 release of 0x707c7b0000+0x110000 held for 2000 ms (1 in flight)
+[free-delay] #3 release of 0x707d890000+0x110000 held for 2000 ms (2 in flight)
+[free-delay] #4 release of 0x707d9a0000+0x110000 held for 2000 ms (3 in flight)
+[free-delay] #5 release of 0x707dab0000+0x110000 held for 2000 ms (4 in flight)
+[free-delay] #6 release of 0x707dbc0000+0x110000 held for 2000 ms (5 in flight)
+[free-delay] #7 release of 0x707eca0000+0x110000 held for 2000 ms (6 in flight)
+[free-delay] #8 release of 0x707edb0000+0x110000 held for 2000 ms (7 in flight)
+[footprint] rev=ml1060 fast phys=2618 MB compressed=0 MB
+D AC Load module mmdevapi.dll (mmdevapi.dll-57db4935cb1d4a81): 71F1390000
+[footprint] rev=ml1060 fast phys=2819 MB compressed=0 MB
+[footprint] rev=ml1060 fast phys=2841 MB compressed=0 MB
+[x64-image] L"\\??\\C:\\Program Files (x86)\\Steam\\steamapps\\common\\Slay the Spire 2\\data_sts2_windows_x86_64\\hostfxr.dll" 0x71f0fb0000+0x5c000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+D AC Load module hostfxr.dll (hostfxr.dll-76f6549c1aa24a24): 71F0FB0000
+[x64-image] L"\\??\\C:\\Program Files (x86)\\Steam\\steamapps\\common\\Slay the Spire 2\\data_sts2_windows_x86_64\\hostpolicy.dll" 0x71f0f40000+0x61000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+D AC Load module hostpolicy.dll (hostpolicy.dll-4a19d0ecf8401975): 71F0F40000
+[x64-image] L"\\??\\C:\\Program Files (x86)\\Steam\\steamapps\\common\\Slay the Spire 2\\data_sts2_windows_x86_64\\coreclr.dll" 0x71f0a90000+0x4ad000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+D AC Load module coreclr.dll (coreclr.dll-3f0632cf37c51dcf): 71F0A90000
+[jumbo] kernel-pick reserve failed (0xc0000017) for size=0x3fa214e000 — top window is full
+[jumbo#1] +0ms tid=16f1cf000 wtid=00ac peb=0x10d3a4000 nrip=0x71f0b8c0bd grip=0x0 size=0x3fa214e000 (260641 MB) hint=0x0 -> 0x0 st=0xc0000017 | granted=0 MB ok=0 fail=1
+[alloc-fail] ml814 #2 status=c0000017 hint=0x0 size=0x3fa214e000 type=0x2000 protect=0x4 tid=00ac | STAGE=anon-mmap err=12 at 0x0+0x3fa2160000
+[nt-fail] #2 NtAllocateVirtualMemory status=c0000017 proc=slaythespire2.exe tid=00ac size=0x3fa214e000 type=0x2000 prot=0x4 hint=0x0 zb=0x0 hits=1 rev=ajan5-rockstar
+00ac:err:seh:ios_exc_dump_str [exc] ml812   OutputDebugStringW: ".........................E"
+00ac:err:seh:ios_exc_dump_str [exc] ml812   OutputDebugStringW: "......................E..E"
+[guest-log] #14 tid=00ac ERROR: hostfxr_get_runtime_delegate failed with code: -2147450743
+D AC Load module rsaenh.dll (rsaenh.dll-6cd5b371ff05d55f): 71F0910000
+[av-detail] ml613 #1 p0=EXECUTE p1=0x0 hostpc=0x0 hinsn=0x00000000 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[fault_rip] cnt=1 rip=0x0 pc=0x0 addr=0x0 kr=1(INVALID_ADDRESS) entryprot=-1 nowprot=-1 region=0x0+0x0  <== UNMAPPED AT ENTRY (wild pointer) rev=ml555
+[mach_exc] UNHANDLED #1 pc=0x0 addr=0x0 x18=0x71fff00000 type=1 lr=0x16cff8354 sp=0x71f4d00000 x16=0x71f4cff6f0 x17=0x14e276884
+[guest-code] rev=ml333 pool_rip=0x0 (PE 0x0) -- NO pool copy for this address (identity translate)
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0x71fff00000 TEB=0x71fff00000 TEB[0x58]=0x70323a34e0 *(gs_cached+0x58)=0x70323a34e0
+[av-detail] ml613 #2 p0=EXECUTE p1=0x0 hostpc=0x0 hinsn=0x00000000 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[fault_rip] cnt=2 rip=0x0 pc=0x0 addr=0x0 kr=1(INVALID_ADDRESS) entryprot=-1 nowprot=-1 region=0x0+0x0  <== UNMAPPED AT ENTRY (wild pointer) rev=ml555
+[mach_exc] UNHANDLED #2 pc=0x0 addr=0x0 x18=0x71fff00000 type=1 lr=0x16cff8354 sp=0x71f4d00000 x16=0x71f4cff6f0 x17=0x14e276884
+[guest-code] rev=ml333 pool_rip=0x0 (PE 0x0) -- NO pool copy for this address (identity translate)
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0x71fff00000 TEB=0x71fff00000 TEB[0x58]=0x70323a34e0 *(gs_cached+0x58)=0x70323a34e0
+00ac:err:seh:NtRaiseException Unhandled exception code f0b4973c flags 71 addr 0x7c338f0108
+00ac:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0xf0b4973c) syscalls=0 unix_calls=18915
+[unwind] term ml661 begin rip=14e28a20c rsp=71f4cff000 window=[71f4cff000..71f54ff000) max=32
+[unwind] term ml661 #00 pc=14e28a20c rsp=71f4cff000  <no module — STOP>
+[unwind] term ml661 end
+[Wine ntdll/server] process_exit_wrapper(-256600260): closing child fd_socket=450
+[store-noalias] #1 rev=ml348 addr=0x785a4d insn=0x00785a4d pc=0x14e346000 NO pool/anon alias | region 0x100dd0000+0x26c8000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[Wine ntdll/server] process_exit_wrapper(-256600260)
+[Wine child thread] child exited with code -256600260
+[00:30:16.998] [INFO] [dock-game-end] slaythespire2.exe ended with status 0xf0b4973c; the session goes on for now (grace)
+[file-wfail] ml669 #71 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:module:load_dll [dll-missing] rev=ml336 #51 L"C:\\Program Files (x86)\\Steam\\bin\\steamservice.dll" status=c000007b -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0050:err:module:load_dll [dll-missing] rev=ml336 #52 L"C:\\Program Files (x86)\\Steam\\bin\\steamservice.dll" status=c000007b -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0050:err:module:load_dll [dll-missing] rev=ml336 #53 L"steamservice.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0050:err:module:load_dll [dll-missing] rev=ml336 #54 L"steamservice.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[file-wfail] ml669 #72 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[store-noalias] #2 rev=ml348 addr=0x785a4d insn=0x00785a4d pc=0x14e346000 NO pool/anon alias | region 0x100dd0000+0x26c8000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16fc31040 NATIVE (unresolved: OffsetToBlockTail implausible) sp-cand=[ ]
+[thread-stacks] port=0x16003 "wine-x18-exc" pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 run=3 susp=0 cpu=1 x8=0x0 x18=0x0 sp=0x16fc31040
+[00:30:23.498] [INFO] [dock-report] launch-game-ended=1
+0038:err:process:NtTerminateProcess NtTerminateProcess(handle=0x0, exit_code=0x0) syscalls=0 unix_calls=19335
+[unwind] term ml661 begin rip=149fc11d4 rsp=702967fdb8 window=[702967fdb8..7029e7fdb8) max=32
+[unwind] term ml661 #00 pc=149fc11d4 rsp=702967fdb8  <no module — STOP>
+[unwind] term ml661 end
+0038:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0x0) syscalls=0 unix_calls=19343
+[unwind] term ml661 begin rip=1498b216c rsp=702967fbd0 window=[702967fbd0..7029e7fbd0) max=32
+[unwind] term ml661 #00 pc=1498b216c rsp=702967fbd0  <no module — STOP>
+[unwind] term ml661 end
+[Wine ntdll/server] process_exit_wrapper(0): closing child fd_socket=103
+[Wine ntdll/server] process_exit_wrapper(0): closing child fd_socket=134
+[Wine ntdll/server] process_exit_wrapper(0)
+[Wine ntdll/server] process_exit_wrapper(0)
+[00:30:24.000] [INFO] [dock-report] probe-result=0
+[00:30:27.000] [INFO] [dock-game-end] slaythespire2.exe ended with status 0xf0b4973c after 6 s, the host finished and nothing of the game runs: ending the session
+[WineProc] stopping wineserver...
+[footprint] rev=ml358 phys=2602 MB (peak 2795) internal=2571 MB compressed=0 MB external=221 MB reusable=42 MB (cycle=13)
+[00:30:27.500] [INFO] [session] length=25s play=0s frames=0 stalls=0/0s peak=2977MB limit=16383MB thermal=nominal lpm=0 res=1112x832 cap=60 game=Slay the Spire 2
+[00:30:27.505] [INFO] [exit-report] status=0xf0b4973c
+[frontend] returned to library
+[hwinput] keyboard focus: elsewhere (poll)
+[00:30:29.102] [INFO] Detaching debugger...
+[footprint] rev=ml358 phys=2615 MB (peak 2795) internal=2583 MB compressed=0 MB external=222 MB reusable=42 MB (cycle=14)
+[footprint] rev=ml358 phys=2614 MB (peak 2795) internal=2583 MB compressed=0 MB external=222 MB reusable=41 MB (cycle=15)
+[freeze] alive t+30s beats=1 gaps=0 iter=119 gen=1 threads=37 resident=2846MB dbg=DEBUGGED rev=ml525
+[footprint] rev=ml358 phys=2613 MB (peak 2795) internal=2582 MB compressed=0 MB external=222 MB reusable=41 MB (cycle=16)
+[footprint] rev=ml358 phys=2613 MB (peak 2795) internal=2582 MB compressed=0 MB external=222 MB reusable=41 MB (cycle=17)
+[footprint] rev=ml358 phys=2614 MB (peak 2795) internal=2582 MB compressed=0 MB external=222 MB reusable=41 MB (cycle=18)

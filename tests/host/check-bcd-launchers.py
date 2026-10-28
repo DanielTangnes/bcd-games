@@ -152,7 +152,7 @@ check('sessionConfig: Self.commonSessionConfig + ["env.LC_ALL = en_US.UTF-8", "e
       '                                                   "env.MADEIRA_X64_IMAGE_NOCOPY = 1", "pool-split = 1"]' in files["BCDLaunchers.swift"]
       and files["BCDLaunchers.swift"].count('"env.LC_ALL = en_US.UTF-8"') == 1
       and files["BCDLaunchers.swift"].count('"env.MADEIRA_APC_BUSY_QUEUE = 1"') == 1,
-      "the EA app (only) also gets an English locale (its installer died on a Turkish locale, C7-2F79, build 593) and keeps a finished "
+      "the EA app (only) also gets an English locale (its installer died on a non-English locale, C7-2F79, build 593) and keeps a finished "
       "answer for a busy thread (its MSI's first custom action lost one: JunoInitializeSession 1603)")
 # ajan32/ea-cef (2026-10-24): the EA app's Chromium lines belong to the installed launcher's session only, never to its installer's.
 launchers = files["BCDLaunchers.swift"]

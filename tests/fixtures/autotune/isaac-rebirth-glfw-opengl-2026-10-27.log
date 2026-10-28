@@ -1,0 +1,238 @@
+[08:56:14.592] [INFO] Checking entitlements...
+[08:56:14.593] [INFO] [build] v0.1.614 (614)
+[08:56:14.594] [INFO] [device] model=iPhone15,4 idiom=phone os=iOS Version 27.0.1 (Build 24A446) ram=5687MB available=4076MB cores=6
+[08:56:14.594] [INFO] [device] address-map=[0x100b04000,0x8000000000) 512GB increased-memory=1 extended-va=0
+[08:56:14.616] [INFO] [device] gpu="Apple A16 GPU" family=apple8 argument-buffers=tier2 mesh=1 bc=0 atomics64=0 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[08:56:17.815] [INFO] [bcd] library launch The Binding of Isaac Rebirth: avx=0 wine-vcrt=0 nvidia=0 game-config=1 metalfx=off
+[08:56:17.815] [INFO] Requesting JIT with Built-in StikJIT...
+[08:56:25.322] [INFO] [dock-launch] image-retire=1
+[08:56:25.322] [INFO] [dock-launch] image-map-guard=1
+[08:56:25.331] [INFO] [dock-installers] app=250900 scripts=0 programs=0
+[08:56:25.332] [INFO] [madeira-dock] starting the host for app 250900; Valve's client authenticates and authorizes the launch
+[08:56:25.348] [INFO] Running full Wine sequence...
+[08:56:25.348] [INFO] [device] launch: cs-flags=0x32003005 get-task-allow=1 cs-debugged=1 debugger-attached=1 traced=1 address-map=[0x100b04000,0x8000000000) 512GB available=4060MB low-power=0 thermal=fair
+[08:56:26.736] [INFO] Allocating 1024MB JIT pool (BRK will suspend process)...
+[08:56:26.736] [INFO] Allocating 1024MB JIT pool via debugger...
+[08:56:26.736] [INFO] [jit-pool] path: debugger (attached at the pool request; it makes every region)
+[08:56:26.737] [INFO] [jit-debugger] attached=1 at the pool request
+[08:56:26.739] [ERR] ml1036: no hole fits a 1024MB pool — SHRINKING to 624MB (the alternative is a pool in the guest window or on top of 0x140000000, both of which are fatal)
+[08:56:27.823] [INFO] RX pool at 0x148000000
+[08:56:27.844] [INFO] Detaching debugger...
+[phase] wine-start             t+  1.155s rev=ml526
+[shell-dir] user folders for madeira, mobile: 0 created (Start Menu included)
+[cage] holdback reserved 0x7200000000+0x1ffff0000 rev=ml433
+ml992: os_proc_available_memory=3349 MB + phys_footprint=746 MB = 4096 MB (hw.memsize says 5687 MB)
+ml985: preferred base 0x140000000+0x70000 REFUSED status=0xc0000018 image_flags=0x4 charact=0x22 map_addr=0 info_base=0x140000000 | STAGE=fixed-map err=3 at 0x140000000+0x70000 rev=ajan5-motor
+[wow-rwx] ml1279 MADEIRA_WOW_RWX_PLAIN=(unset) -> 32-bit guest RWX memory is plain read/write in a window once Wine Mono is mapped there
+[copy-verify] ?: OK, 4 .text pages executable (copy @0x148004000)
+[copy-verify] ntdll.dll: OK, 29 .text pages executable (copy @0x148078000)
+[copy-verify] KERNEL32.dll: OK, 12 .text pages executable (copy @0x148190000)
+[copy-verify] kernelbase.dll: OK, 30 .text pages executable (copy @0x148238000)
+[nls-getptr] type=11 id=1252 peb=0x71ffff0000
+[nls-getptr] type=11 id=437 peb=0x71ffff0000
+[footprint] rev=ml358 phys=750 MB (peak 750) internal=749 MB compressed=0 MB external=72 MB reusable=7 MB (cycle=1)
+[copy-verify] rpcrt4.dll: OK, 18 .text pages executable (copy @0x1483b8000)
+[copy-verify] advapi32.dll: OK, 9 .text pages executable (copy @0x14848c000)
+[nls-getptr] type=11 id=20127 peb=0x71ffff0000
+[gdi-shared] session table 0x71a7f60000 (1572864 bytes, section-backed, name=L"\\KernelObjects\\__wine_ios_gdi_shared")
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=1252 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+0024:err:module:load_dll [dll-missing] ml718 UNCAPPED L"winemac.drv" status=c0000135 (subsystem dependency)
+0024:err:module:load_dll [dll-missing] rev=ml336 #1 L"winemac.drv" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] ml718 UNCAPPED L"winex11.drv" status=c0000135 (subsystem dependency)
+0024:err:module:load_dll [dll-missing] rev=ml336 #2 L"winex11.drv" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] ml718 UNCAPPED L"winewayland.drv" status=c0000135 (subsystem dependency)
+0024:err:module:load_dll [dll-missing] rev=ml336 #3 L"winewayland.drv" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[win-name] #3 hwnd=0x10020 class='' text="madeira - Wine Desktop" rev=ml853
+[win-name] #6 hwnd=0x10032 class='' text="WineAppBar" rev=ml853
+[win-name] #11 hwnd=0x1003e class='' text="Default IME" rev=ml853
+[phase] spawn:L"C:\\windows\\system32\\dockhost.exe" t+  2.099s rev=ml526
+[copy-verify] ntdll.dll: OK, 30 .text pages executable (copy @0x1498d4000)
+[copy-verify] actxprxy.dll: OK, 1 .text pages executable (copy @0x149a0c000)
+[copy-verify] oleaut32.dll: OK, 21 .text pages executable (copy @0x149aa0000)
+[file-wfail] ml669 #2 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[phase] spawn:L"C:\\windows\\system32\\conhost.exe" t+  2.198s rev=ml526
+[copy-verify] win32u.dll: OK, 9 .text pages executable (copy @0x14ae70000)
+D 38 Load module dockhost.exe (dockhost.exe-09dbbefb7c42a67b): 119E20000
+D 38 Load module ntdll.dll (ntdll.dll-391ab96a83e82f14): 71FE610000
+D 38 Load module ADVAPI32.dll (advapi32.dll-e40c14e1190b1df2): 71FC190000
+D 38 Load module sechost.dll (sechost.dll-b36ef44c04b21a0b): 71FC110000
+D 38 Load module msvcrt.dll (msvcrt.dll-237acf236e8130e9): 71FC000000
+D 38 Load module rsaenh.dll (rsaenh.dll-6cd5b371ff05d55f): 71FBF40000
+[free-delay] #1 release of 0x71ac680000+0x100000 held for 2000 ms (1 in flight)
+[file-wfail] ml669 #4 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[xp-names] m2271013 "wine-x18-exc"
+[file-wfail] ml669 #5 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[alloc-fail] ml814 #1 status=c000000d hint=0xffeeffeeffeeffee size=0x1 type=0x2000 protect=0x1 tid=0038 | STAGE=none err=3 at 0x7027000000+0xc000
+[nt-fail] #1 NtAllocateVirtualMemory status=c000000d proc=dockhost.exe tid=0038 size=0x1 type=0x2000 prot=0x1 hint=0xffeeffeeffeeffee zb=0x0 hits=1 rev=ajan5-rockstar
+[file-wfail] ml669 #6 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[copy-verify] dxgi.dll: OK, 50 .text pages executable (copy @0x14ee8d000)
+[swap] ml1077 backed 0x71b1300000+0x1010000 (file off 0 MB): 16 MB in 1 extents, peak 16 MB, 0 refused
+[swap] ml1077 backed 0x71b2310000+0x1010000 (file off 16 MB): 32 MB in 2 extents, peak 32 MB, 0 refused
+[free-delay] #2 release of 0x71b3320000+0x400000 held for 2000 ms (2 in flight)
+[free-delay] #3 release of 0x71b3720000+0x800000 held for 2000 ms (3 in flight)
+[free-delay] #4 release of 0x71b3f20000+0xfd0000 held for 2000 ms (4 in flight)
+[file-wfail] ml669 #9 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[file-wfail] ml669 #11 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:seh:NtGetContextThread [ec-getctx] ml715 #1 handle=00000000000001F8 status=c0000022 native_pc=0000000000000000 is_ec=-1 -> returned rip=0000000000000000 rsp=0000000000000000 flags=00000000
+[footprint] rev=ml358 phys=1082 MB (peak 1082) internal=1081 MB compressed=0 MB external=150 MB reusable=7 MB (cycle=2)
+[swap] ml1077 stats: 0 MB file-backed now (peak 32), 0 extents, file used 32 of 4096 MB, backs 2 releases 2 unbacks 0 refused 0 | coverage classic: disk 0 MB of 4096 cap, reservations 0, holes 0, disk-full refusals 0 | ml1258 churn: 0 sizes, 0 blocks left anonymous
+[swap] ml1150 pool: 0 MB in use (peak 0), 0 takes, 2 guarded, 0 MB lost to a full free list
+0050:err:seh:NtGetContextThread [ec-getctx] ml715 #2 handle=00000000000002BC status=c0000022 native_pc=0000000000000000 is_ec=-1 -> returned rip=0000000000000000 rsp=0000000000000000 flags=00000000
+[footprint] rev=ml358 phys=1188 MB (peak 1188) internal=1130 MB compressed=56 MB external=153 MB reusable=7 MB (cycle=3)
+[file-wfail] ml669 #73 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[file-wfail] ml669 #74 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[footprint] rev=ml358 phys=1224 MB (peak 1224) internal=1152 MB compressed=70 MB external=153 MB reusable=7 MB (cycle=4)
+[footprint] rev=ml358 phys=1224 MB (peak 1224) internal=1152 MB compressed=70 MB external=153 MB reusable=7 MB (cycle=5)
+[phase] spawn:L"C:\\Program Files (x86)\\Steam\\steamapps\\common\\The Binding of Isaac Rebirth\\isaac-ng.exe" t+ 11.830s rev=ml526
+[wow-window] session armed: a 32-bit process is expected
+[Wine child thread] calling wine_ios_child_main...
+[wow-window] B=0x7100000000 REJECTED: the 4GB range is not free (OCCUPIED 0x70e7000000+0x20000000 prot=3/3 shared=0 (and the range continues past this region))
+[wow-window] B=0x7200000000 REJECTED: the 4GB range is not free (OCCUPIED 0x7200000000+0x8000000 prot=0/7 shared=0 (and the range continues past this region))
+[wow-window] B=0x7a00000000: window body after failed reservations (FREE: all 0x100000000 bytes from 0x7a00000000 are free, next region 0x7c00000000 (+0x100000000 past the end) <-- iOS REFUSED A FREE RANGE)
+[wow-window] B=0x7a00000000 REJECTED: 4GB+guard unavailable and the page at 0x7b00000000 is not an inaccessible neighbour (FREE: all 0x4000 bytes from 0x7b00000000 are free, next region 0x7c00000000 (+0xffffc000 past the end) <-- iOS REFUSED A FREE RANGE)
+[wow-window] B=0x7900000000: reserved 4GB + own guard page (+0x4000)
+[wow-window] reserved B=0x7900000000..0x7a00000000 (slot 0) guard=owned
+[wow-window] slot 0 B=0x7900000000 bound to peb=0x7900310000
+00a8:err:module:load_dll [dll-missing] rev=ml336 #1 L"\\??\\C:\\windows\\system32\\wow64cpu.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+00a8:err:wow:load_cpu_dll CPU backend wow64cpu.dll not available, falling back to the platform default xtajit.dll
+[file-wfail] ml669 #75 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[footprint] rev=ml358 phys=1275 MB (peak 1275) internal=1149 MB compressed=123 MB external=158 MB reusable=7 MB (cycle=6)
+D A8 Load module EOSSDK-Win32-Shipping.dll (eossdk-win32-shipping.dll-d286abd0420293cf): 7979D90000
+[unixlib] opengl32 (GL-absent stub table) (module 0x797ac60000) -> wow64 table (0x1038a4618)
+[copy-verify] ?: OK, 4 .text pages executable (copy @0x1524b8000)
+[free-delay] #5 release of 0x7901f90000+0x100000 held for 2000 ms (1 in flight)
+[free-delay] #6 release of 0x7902090000+0x200000 held for 2000 ms (2 in flight)
+[free-delay] #7 release of 0x7902290000+0x400000 held for 2000 ms (3 in flight)
+[alloc-fail] ml814 #2 status=c0000018 hint=0x7910000000 size=0x2d000 type=0x2000 protect=0x4 tid=00a8 | STAGE=none err=3 at 0x7027000000+0x100000
+[nt-fail] #2 NtAllocateVirtualMemory status=c0000018 proc=isaac-ng.exe tid=00a8 size=0x2d000 type=0x2000 prot=0x4 hint=0x7910000000 zb=0xffffffff hits=1 rev=ajan5-rockstar
+[free-delay] #8 release of 0x7902690000+0x800000 held for 2000 ms (4 in flight)
+[swap] ml1077 backed 0x79050c0000+0x13e0000 (file off 32 MB): 19 MB in 1 extents, peak 32 MB, 0 refused
+0050:err:module:load_dll [dll-missing] rev=ml336 #46 L"steamservice.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[file-wfail] ml669 #78 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[swap] ml1077 backed 0x71bc6d0000+0xf10000 (file off 16 MB): 15 MB in 1 extents, peak 32 MB, 0 refused
+[va-scan] FAILED window=0x7027000000..0x7100000000 size=0x40000 align=0x10000 top-down tries=7 skips=7 | seen=0x7027000000..0x7100000000 views=0 maxgap=0x40000 tailgap=0x40000 stop=no-views-in-range | firstfail=0x70fffc0000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[08:56:39.848] [INFO] [dock-report] launch-game-running=1
+[win-name] #33 hwnd=0x1005e class='' text="Default IME" rev=ml853
+[win-name] #34 hwnd=0x1005c class='' text="GLFW message window" rev=ml853
+[win-name] #36 hwnd=0x20062 class='' text="Binding of Isaac: Repentance+ v1.9.7.17" rev=ml853
+[win-name] #37 hwnd=0x20062 class='' text="Binding of Isaac: Repentance+ v1.9.7.17" rev=ml853
+[win-name] #39 hwnd=0x30062 class='' text="Binding of Isaac: Repentance+ v1.9.7.17" rev=ml853
+[win-name] #40 hwnd=0x30062 class='' text="Binding of Isaac: Repentance+ v1.9.7.17" rev=ml853
+[exc-disp]   OutputDebugStringA: "[ERROR] - GLFW Error 65542: WGL: The driver does not appear to support OpenGL
+[exc-disp]   OutputDebugStringA: "[ASSERT] - Failed to create OpenGL window / context
+[store-noalias] #1 rev=ml348 addr=0x79000002b4 insn=0xb8bfc307 pc=0x16d74b740 NO pool/anon alias | region 0x7900000000+0x110000 prot=0 max=7 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #1 p0=READ p1=0x79000002b4 hostpc=0x16d74b740 hinsn=0xb8bfc307 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=idx=3 base=0x16cff8000 size=0x1000000 state=live p1_in_carve=0 regs=0 rev=ml613
+[fault_rip] cnt=1 rip=0x0 pc=0x16d74b740 addr=0x79000002b4 kr=2(PROTECTION_FAILURE) entryprot=0 nowprot=0 region=0x7900000000+0x110000 rev=ml555
+[mach_exc] UNHANDLED #1 pc=0x16d74b740 addr=0x79000002b4 x18=0x7900300000 type=1 lr=0x16d536598 sp=0x12757f350 x16=0x7c482e9980 x17=0x7ad8251c
+[guest-code] rev=ml333 pool_rip=0x7ad8251c (PE 0x7ad8251c) -- NO pool copy for this address (identity translate)
+[wow-null32] rev=ajan7-arkham #1 the 32-bit guest used the NULL page: guest address 0x2b4, host pc 0x16d74b740; EAX=0x40062 ECX=0x40062 EDX=0x7ad7d088 EBX=0xa5af600 ESI=0x0 EDI=0xc798e0 EBP=0x152f8d8 ESP=0x152f8c8 (63 modules in the PEB32 list)
+[wow-null32]   registers that point into a module: EDX=0x7ad7d088(win32u.dll+0xd088) EDI=0xc798e0(isaac-ng.exe+0x8798e0)
+[wow-null32]   guest stack from ESP (offset:dword, module+RVA when code or data of a module): +00:1 +04:c798e0(isaac-ng.exe+0x8798e0) +08:0 +0c:40062 +10:152f948 +14:a18f67(isaac-ng.exe+0x618f67) +18:63560de9 +1c:1 +20:1f221e4 +24:a5af6f2 +28:0 +2c:2 +30:1f22204 +34:c379e8(isaac-ng.exe+0x8379e8) +38:2 +3c:1f221e0
+[wow-null32]   TEB32=0x302000 PEB32=0x311000 TlsBitmapBits=0x01ffffffffffffff TlsExpansionSlots=0x0; 12 cell(s) hold a value: [19]=0x3e4ee8 [20]=0x1e41028 [22]=0x7bc1dbc4(steam_api.dll+0x3dbc4) [26]=0x1f42f80 [28]=0x775b7a84(tier0_s.dll+0x97a84) [32]=0x774feb24(vstdlib_s.dll+0x8eb24) [34]=0x789e9f28(steamclient.dll+0x1329f28) [35]=0x30f00c8 [47]=0x3190000 [51]=0x2e90490 [52]=0x772baed8(gameoverlayrenderer.dl+0x14aed8) [55]=0xc7de90(isaac-ng.exe+0x87de90)
+[wow-null32]   45 allocated index(es) whose cell is NULL in this thread: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 21 23 24 25 27 29 30 31 33 36 37 38 39 40 41 42 43 44 45 46 48 49 50 53 54 56
+[fault-host] 16d74b640: 8b344278 b8bfc31b d503201f 7100037a 91003118 b8384a64 540002c1 52800014
+[fault-host] 16d74b660: 51001108 b8284a74 320083f4 51001108 b8284a74 5293f094 72a01434 51001108
+[fault-host] 16d74b680: b8284a74 10000040 940004a4 10ffcf20 f9000380 f90f639f 91004118 b8784a6a
+[fault-host] 16d74b6a0: 11002108 6b0700fa 52800007 14000027 52800034 72a000d4 5286d295 72a018f5
+[fault-host] 16d74b6c0: 8b354278 b8bfc31b d503201f 6b14037a 54000300 529e0b14 72a01734 51001108
+[fault-host] 16d74b6e0: b8284a74 528001d4 72a00034 51001108 b8284a74 5293f554 72a01434 51001108
+[mach_exc] insn_stream PC-12..PC+8: b8784a6a 110ad154 8b344278 [b8bfc307] d503201f 91003118 b8784a74
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0x0 TEB=0x7900300000 TEB[0x58]=0x0 *(gs_cached+0x58)=0x0
+[store-noalias] #2 rev=ml348 addr=0x79000002b4 insn=0xb8bfc307 pc=0x16d74b740 NO pool/anon alias | region 0x7900000000+0x110000 prot=0 max=7 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #2 p0=READ p1=0x79000002b4 hostpc=0x16d74b740 hinsn=0xb8bfc307 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=idx=3 base=0x16cff8000 size=0x1000000 state=live p1_in_carve=0 regs=0 rev=ml613
+[fault_rip] cnt=2 rip=0x0 pc=0x16d74b740 addr=0x79000002b4 kr=2(PROTECTION_FAILURE) entryprot=0 nowprot=0 region=0x7900000000+0x110000 rev=ml555
+[mach_exc] UNHANDLED #2 pc=0x16d74b740 addr=0x79000002b4 x18=0x7900300000 type=1 lr=0x16d536598 sp=0x12757f350 x16=0x7c482e9980 x17=0x7ad8251c
+[guest-code] rev=ml333 pool_rip=0x7ad8251c (PE 0x7ad8251c) -- NO pool copy for this address (identity translate)
+[fault-host] 16d74b6a0: 11002108 6b0700fa 52800007 14000027 52800034 72a000d4 5286d295 72a018f5
+[fault-host] 16d74b6c0: 8b354278 b8bfc31b d503201f 6b14037a 54000300 529e0b14 72a01734 51001108
+[fault-host] 16d74b6e0: b8284a74 528001d4 72a00034 51001108 b8284a74 5293f554 72a01434 51001108
+[fault-host] 16d74b700: b8284a74 10000040 9400048e 10ffcb20 f9000380 f90f639f 91004118 b8784a6a
+[fault-host] 16d74b720: 11002108 6b0700fa 52800007 14000007 91002118 b8784a6a 110ad154 8b344278
+[fault-host] 16d74b740: b8bfc307 d503201f 91003118 b8784a74 00000000 00000000 00000000 00000000
+[mach_exc] insn_stream PC-12..PC+8: b8784a6a 110ad154 8b344278 [b8bfc307] d503201f 91003118 b8784a74
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0x0 TEB=0x7900300000 TEB[0x58]=0x0 *(gs_cached+0x58)=0x0
+00a8:err:seh:bus_handler BUS->AV: unreadable target addr=0x79000002b4 pc=0x16d74b740 rw=0 rev=ml420
+[exc-disp]   OutputDebugStringA: "[INFO] - Caught exception, writing minidump...
+[store-noalias] #3 rev=ml348 addr=0x79003cff70 insn=0x38401426 pc=0x1a1be015c NO pool/anon alias | region 0x79003c4000+0xc000 prot=0 max=7 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #3 p0=READ p1=0x79003cff70 hostpc=0x1a1be015c hinsn=0x38401426 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[fault_rip] cnt=3 rip=0x0 pc=0x1a1be015c addr=0x79003cff70 kr=2(PROTECTION_FAILURE) entryprot=0 nowprot=0 region=0x79003c4000+0xc000 rev=ml555
+[mach_exc] UNHANDLED #3 pc=0x1a1be015c addr=0x79003cff70 x18=0x0 type=1 lr=0x102073f4c sp=0x12577fbd0 x16=0x1a1bdffa0 x17=0x1fe57b2e0
+[guest-code] rev=ml333 pool_rip=0x3d0000 (PE 0x3d0000) -- NO pool copy for this address (identity translate)
+[mach_exc] insn_stream PC-12..PC+8: 54ffffa2 b1002042 540000a0 [38401426] 38001466 f1000442 54ffffa1
+[mach_exc] sym pc=/usr/lib/system/libsystem_platform.dylib`_platform_memmove+0x1bc lr=/private/var/containers/Bundle/Application/<uuid>/Madeira.app/Madeira`NtReadVirtualMemory+0xf4
+[x86_seg] State.gs_cached=0x0 TEB=0x7900300000 TEB[0x58]=0x0 *(gs_cached+0x58)=0x0
+[store-noalias] #4 rev=ml348 addr=0x79003cff70 insn=0x38401426 pc=0x1a1be015c NO pool/anon alias | region 0x79003c4000+0xc000 prot=0 max=7 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #4 p0=READ p1=0x79003cff70 hostpc=0x1a1be015c hinsn=0x38401426 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=none regs=0 rev=ml613
+[fault_rip] cnt=4 rip=0x0 pc=0x1a1be015c addr=0x79003cff70 kr=2(PROTECTION_FAILURE) entryprot=0 nowprot=0 region=0x79003c4000+0xc000 rev=ml555
+[mach_exc] UNHANDLED #4 pc=0x1a1be015c addr=0x79003cff70 x18=0x0 type=1 lr=0x102073f4c sp=0x12577fbd0 x16=0x1a1bdffa0 x17=0x1fe57b2e0
+[guest-code] rev=ml333 pool_rip=0x3d0000 (PE 0x3d0000) -- NO pool copy for this address (identity translate)
+[mach_exc] insn_stream PC-12..PC+8: 54ffffa2 b1002042 540000a0 [38401426] 38001466 f1000442 54ffffa1
+[mach_exc] sym pc=/usr/lib/system/libsystem_platform.dylib`_platform_memmove+0x1bc lr=/private/var/containers/Bundle/Application/<uuid>/Madeira.app/Madeira`NtReadVirtualMemory+0xf4
+[syscall-fault] a protection fault (SIGBUS) at 0x79003cff70 inside a system call with a __TRY: the call fails (pc=0x1a1be015c lr=0x102073f4c) instead of the process ending rev=ajan11
+[phase] spawn:L"C:\\Program Files (x86)\\Steam\\steamapps\\common\\The Binding of Isaac Rebirth\\crash_uploader.exe" t+ 13.839s rev=ml526
+[Wine child thread] calling wine_ios_child_main...
+[wow-window] reserved B=0x7200000000..0x7300000000 (slot 1) guard=borrowed
+[wow-window] slot 1 B=0x7200000000 bound to peb=0x7200310000
+wine: Unhandled page fault on read access to 000002B4 at address 00A19FB9 (thread 00a8), starting debugger...
+[nls-getptr] type=11 id=1252 peb=0x7200310000
+[nls-getptr] type=11 id=437 peb=0x7200310000
+00b8:err:module:load_dll [dll-missing] rev=ml336 #1 L"\\??\\C:\\windows\\system32\\wow64cpu.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+00b8:err:wow:load_cpu_dll CPU backend wow64cpu.dll not available, falling back to the platform default xtajit.dll
+[nls-getptr] type=11 id=20127 peb=0x7200310000
+00a8:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0xc0000005) syscalls=0 unix_calls=8575
+[Wine ntdll/server] process_exit_wrapper(-1073741819): closing child fd_socket=440
+[wow-window] slot 0 B=0x7900000000 released (owner peb=0x7900310000 exited); torn down when the next 32-bit process starts
+[Wine ntdll/server] process_exit_wrapper(-1073741819)
+[Wine child thread] child exited with code -1073741819
+[nls-getptr] type=11 id=1252 peb=0x7200310000
+[nls-getptr] type=11 id=437 peb=0x7200310000
+[nls-getptr] type=11 id=20127 peb=0x7200310000
+D B8 Load module dnsapi.dll (dnsapi.dll-2ed353fb7eb43eaf): 727AF70000
+D B8 Load module nsi.dll (nsi.dll-4a95f0fb6ce50342): 727AF50000
+D B8 Load module netutils.dll (netutils.dll-7754775731070f84): 727AF30000
+D B8 Load module iphlpapi.dll (iphlpapi.dll-af232f72e6c93929): 727B080000
+D B8 Load module dnsapi.dll (dnsapi.dll-2ed353fb7eb43eaf): 727B050000
+D B8 Load module nsi.dll (nsi.dll-4a95f0fb6ce50342): 727B030000
+[08:56:40.849] [INFO] [dock-game-end] isaac-ng.exe ended with status 0xc0000005; the session goes on for now (grace)
+[wow-stack-free] #1 the dead thread 00b0's 32-bit stack (guest 0x6780000) is in window 0x7900000000 (gone), the thread freeing its TEB is in window 0x7200000000: the old address 0x7206780000 is not a live view -> released at the old address (as before) rev=ajan11
+[wow-window] TEB block 0x79002f0000 dropped, not pooled: it belongs to a guest window that is no longer live
+00b8:err:process:NtTerminateProcess NtTerminateProcess(handle=0x0, exit_code=0x0) syscalls=0 unix_calls=8695
+00b8:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0x0) syscalls=0 unix_calls=8696
+[Wine ntdll/server] process_exit_wrapper(0): closing child fd_socket=564
+[wow-window] slot 1 B=0x7200000000 released (owner peb=0x7200310000 exited); torn down when the next 32-bit process starts
+[Wine ntdll/server] process_exit_wrapper(0)
+[file-wfail] ml669 #90 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+0050:err:module:load_dll [dll-missing] rev=ml336 #47 L"C:\\Program Files (x86)\\Steam\\bin\\steamservice.dll" status=c000007b -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0050:err:module:load_dll [dll-missing] rev=ml336 #48 L"C:\\Program Files (x86)\\Steam\\bin\\steamservice.dll" status=c000007b -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0050:err:module:load_dll [dll-missing] rev=ml336 #49 L"steamservice.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0050:err:module:load_dll [dll-missing] rev=ml336 #50 L"steamservice.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[file-wfail] ml669 #91 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+[wow-stack-free] #2 the dead thread 00bc's 32-bit stack (guest 0x1640000) is in window 0x7200000000 (gone), the thread freeing its TEB is in window 0x0: the old address 0x1640000 is not a live view -> released at the old address (as before) rev=ajan11
+[wow-window] TEB block 0x72002f0000 dropped, not pooled: it belongs to a guest window that is no longer live
+[va-scan] FAILED window=0x7027000000..0x7100000000 size=0x40000 align=0x10000 top-down tries=7 skips=7 | seen=0x7027000000..0x7100000000 views=0 maxgap=0x40000 tailgap=0x40000 stop=no-views-in-range | firstfail=0x70fffc0000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[wow-window] #1 band below the 32-bit windows full: 0x40000 bytes placed above them in 0x7a00004000..0x8000000000
+[08:56:47.355] [INFO] [dock-report] launch-game-ended=1
+[Wine ntdll/server] process_exit_wrapper(0): closing child fd_socket=104
+[Wine ntdll/server] process_exit_wrapper(0): closing child fd_socket=135
+[Wine ntdll/server] process_exit_wrapper(0)
+[Wine ntdll/server] process_exit_wrapper(0)
+[08:56:47.855] [INFO] [dock-report] probe-result=0
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16fb29040 NATIVE (unresolved: OffsetToBlockTail implausible) sp-cand=[ ]
+[thread-stacks] port=0xf7cf "wine-x18-exc" pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 run=3 susp=0 cpu=0 x8=0x0 x18=0x0 sp=0x16fb29040
+[08:56:50.860] [INFO] [dock-game-end] isaac-ng.exe ended with status 0xc0000005 after 2 s, the host finished and nothing of the game runs: ending the session
+[WineProc] stopping wineserver...
+[08:56:51.356] [INFO] [session] length=26s play=0s frames=0 stalls=0/0s peak=1421MB limit=4095MB thermal=fair lpm=0 res=1424x656 cap=60 game=The Binding of Isaac: Rebirth
+[08:56:51.365] [INFO] [exit-report] status=0xc0000005
+[frontend] returned to library
+[footprint] rev=ml358 phys=1293 MB (peak 1417) internal=964 MB compressed=327 MB external=179 MB reusable=6 MB (cycle=13)
+[08:56:53.116] [INFO] Detaching debugger...
+[footprint] rev=ml358 phys=1214 MB (peak 1417) internal=896 MB compressed=315 MB external=179 MB reusable=9 MB (cycle=14)
+[footprint] rev=ml358 phys=1184 MB (peak 1417) internal=874 MB compressed=307 MB external=179 MB reusable=12 MB (cycle=15)
+[freeze] alive t+30s beats=1 gaps=0 iter=119 gen=1 threads=23 resident=1065MB dbg=DEBUGGED rev=ml525
+[footprint] rev=ml358 phys=1179 MB (peak 1417) internal=869 MB compressed=307 MB external=179 MB reusable=15 MB (cycle=16)
+[footprint] rev=ml358 phys=1183 MB (peak 1417) internal=874 MB compressed=307 MB external=205 MB reusable=15 MB (cycle=17)
+[footprint] rev=ml358 phys=1185 MB (peak 1417) internal=876 MB compressed=307 MB external=205 MB reusable=15 MB (cycle=18)

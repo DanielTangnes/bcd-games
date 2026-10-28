@@ -665,7 +665,7 @@ enum GameRecommendations {
     /// Version 4 (owner's phone, build 553, logs RiftApart.exe 2026-10-16 10:43:45
     /// and 10:45:10, R6025 again): v3 left out env.LC_ALL, which the 23:21:48 run
     /// also had. Without it Wine takes the phone's language (tr-TR) as the user
-    /// locale; the game's main thread loads the Turkish OEM code page (857) and
+    /// locale; the game's main thread loads the phone's own OEM code page (857) and
     /// throws an unhandled C++ exception on the next line, in both runs as on
     /// 550 22:49:00. LC_ALL = en_US.UTF-8 gives Wine an English locale for this game.
     /// Version 5 (owner's phone, build 555, log RiftApart.exe 2026-10-16 12:32:19: the
@@ -724,8 +724,8 @@ enum GameRecommendations {
         """,
         avx: true, nvidia: true, wineVCRT: false, fastSync: true, fpsMode: 3, display: "fit")
 
-    /// Crysis Remastered (Steam): build 528, 2026-10-13 22:08, the owner: "mükemmel
-    /// çalıştı". It runs with the standard list and every switch off (AVX, NVIDIA,
+    /// Crysis Remastered (Steam): build 528, 2026-10-13 22:08, the owner: it ran
+    /// perfectly. It runs with the standard list and every switch off (AVX, NVIDIA,
     /// Wine's C++ runtime, MetalFX) at 1408x648 Fit, 5.2 GB at most; its own list so
     /// that it keeps these when the standard one changes.
     static let crysisRemastered = GameRecommendation(
@@ -741,7 +741,7 @@ enum GameRecommendations {
     /// (2026-10-14 23:54) it ran with the standard list and every switch off, and
     /// stopped at its first AVX instruction (c000001d, FEX "DISABLEAVX expected"); the
     /// game needs AVX, on Windows too. Version 1: the standard line with AVX on, the
-    /// other switches off, at Fit (owner, 2026-10-15: "çalışacaktır").
+    /// other switches off, at Fit (owner, 2026-10-15: it will run).
     static let crysis2Remastered = GameRecommendation(
         id: "crysis-2-remastered", title: "Crysis 2 Remastered", version: 1,
         config: """

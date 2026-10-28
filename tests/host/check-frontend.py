@@ -112,6 +112,11 @@ enum ControlAction: Codable, Equatable, Hashable { case none }   // LibraryEntry
 enum GamepadInput { static let keyboardMouseAvailable = true }   // LibraryEntry's per-game DirectInput choice
 enum LibraryError: LocalizedError { case message(String) }
 enum BCDGraphicsDefaults { @discardableResult static func applyD3D9X64(for entry: LibraryEntry) -> String? { nil } }   // round 602: the game folder's graphics default (its own host check: check-d3d9-x64-default.py)
+enum BCDMenuChord: String { case backStart, holdStart, holdGuide }   // round 604 (BCDSessionFeel.swift): the in-game menu's controller chord
+enum BCDChordSetting { static var mode: BCDMenuChord = .backStart }
+struct BCDChordTracker { mutating func update(buttons: UInt16, now: Double, mode: BCDMenuChord) -> Bool { false }; mutating func reset() {} }
+enum BCDGameSetup { static func prepare(_ entry: LibraryEntry) {} }   // round 604 (BCDGameSetup/BCDGameSetupLaunch.swift): its own checks
+struct BCDHUDSetup: Codable, Equatable {}   // round 603 (BCDHUDCore.swift): LibraryEntry.hud; its own checks (check-bcd-hud)
 func env(_ name: String) -> String? { getenv(name).map { String(cString: $0) } }
 '''
 swift += block(lib, 'struct LibraryEntry: Codable, Identifiable') + '\n'
@@ -302,6 +307,19 @@ expect(svc.commandPreview.hasSuffix(".bat\"\n(the batch runs services.exe first,
        "command line, services batch: what the batch starts too (\(svc.commandPreview))")
 var pctBat = svcBat; pctBat.arguments = "100%"
 expect(pctBat.servicesScript?.hasSuffix("call \"C:\\Games\\Tool\\run game.bat\" 100%%%%\r\n") == true, "services + .bat: '%' doubled twice on the CALL line")
+// Round 620 (94E642): cmd.exe decodes a batch file in the console code page, so a non-ASCII folder or program comes from
+// two environment variables (Unicode in the session environment); an ASCII one is written into the batch as before.
+var cjk = LibraryEntry(title: "DNF", relativePath: "DNF60A4/1\u{70B9}\u{51FB}.bat", bits: 0); cjk.startServices = true
+let cjkScript = cjk.servicesScript ?? ""
+expect(cjkScript.contains("cd /d \"%BCD_SERVICES_DIR%\"\r\n") && cjkScript.hasSuffix("call \"%BCD_SERVICES_TARGET%\"\r\n")
+       && cjkScript.allSatisfy({ $0.isASCII }), "services + non-ASCII .bat: an all-ASCII batch that names the two variables (\(cjkScript))")
+expect(cjk.servicesScriptEnvironment == ["BCD_SERVICES_DIR": "C:\\DNF60A4", "BCD_SERVICES_TARGET": "C:\\DNF60A4\\1\u{70B9}\u{51FB}.bat"],
+       "services + non-ASCII: the folder and the program in the environment (\(String(describing: cjk.servicesScriptEnvironment)))")
+expect(svc.servicesScriptEnvironment == nil && svcBat.servicesScriptEnvironment == nil && game.servicesScriptEnvironment == nil,
+       "an ASCII folder and program, or no services batch: no variables, the batch as before")
+var cjkPct = cjk; cjkPct.workingDirectory = nil; cjkPct.relativePath = "DNF60A4/100%\u{70B9}.bat"
+expect(cjkPct.servicesScriptEnvironment == nil && (cjkPct.servicesScript ?? "").contains("100%%%%"),
+       "a non-ASCII name with '%' keeps the written batch (a variable would expand again on CALL)")
 var desktopSvc = LibraryEntry.desktopEntry; desktopSvc.startServices = true; desktopSvc.launchMode = "desktop"
 expect(desktopSvc.servicesScript == nil && desktopSvc.launchArguments.hasSuffix(" C:\\windows\\system32\\services.exe"),
        "the Desktop entry ignores the game launch options")

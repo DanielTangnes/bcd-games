@@ -588,6 +588,31 @@ static void detach_window_thread( struct window *win )
     /* destroyed when the desktop ref count reaches zero */
     release_object( win->desktop );
     win->thread = NULL;
+#ifdef WINE_IOS
+    /* Desktop and message top windows are created directly on the server on iOS
+     * (req->force = 1 in get_desktop_window / create_window fallback) without a
+     * client-side create_window_handle() call in the calling process, so the
+     * caller's win32u client_objects[] slot for win->handle is NULL.
+     * alloc_user_handle() stamped shared_session->user_entries[index] with the
+     * caller's pid/tid; if left set, get_user_handle_ptr() in that process sees
+     * entry.pid == GetCurrentProcessId() and returns client_objects[index] (NULL)
+     * instead of WND_OTHER_PROCESS, causing get_win_ptr(top_window) to return NULL
+     * instead of WND_DESKTOP and breaking list_window_parents(), GetAncestor(),
+     * IsChild(), IsDialogMessageW(), and child-control mouse activation. */
+    if (shared_session && win->handle)
+    {
+        int index = ((win->handle & 0xffff) - FIRST_USER_HANDLE) >> 1;
+        if (index >= 0 && index < MAX_USER_HANDLES)
+        {
+            volatile struct user_entry *entry = shared_session->user_entries + index;
+            if (entry->type == NTUSER_OBJ_WINDOW)
+            {
+                entry->tid = 0;
+                entry->pid = 0;
+            }
+        }
+    }
+#endif
 }
 
 /* get the process owning the top window of a given desktop */

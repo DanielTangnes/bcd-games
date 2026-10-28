@@ -91,6 +91,10 @@ check('Unrailed 2\'s list (Steam 2211170) carries the line from build 579 only',
       not any(isinstance(c, str) and 'DOTNET' in c for c in u[0]['config']))
 others = [r['id'] for r in recs['rules'] if r['id'] != 'unrailed-2-back-on-track' and
           any('DOTNET_GCRegionRange' in (c if isinstance(c, str) else c['line']) for c in r['config'])]
-check('no other list sets it (a game that starts keeps its own 256 GB reservation)', not others)
+# Round 620: Barotrauma (V0V96V) and Slay the Spire 2 (2K0RGS, 6YPKSD, HV84ES, ZNRMDX) failed the same 256 GB reserve on build 611/614;
+# their lists carry the line from build 579 as Unrailed's does. Any other game keeps its own reservation.
+check('only Barotrauma\'s and Slay the Spire 2\'s lists set it besides (a game that starts keeps its own 256 GB reservation)',
+      sorted(others) == ['barotrauma', 'slay-the-spire-2'] and all({'line': 'env.DOTNET_GCRegionRange = %s' % VALUE, 'minBuild': 579} in
+      next(r for r in recs['rules'] if r['id'] == i)['config'] for i in others))
 print('PASS: .NET GC region range' if ok else 'FAILED: .NET GC region range')
 sys.exit(0 if ok else 1)

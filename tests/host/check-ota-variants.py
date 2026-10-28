@@ -132,12 +132,12 @@ with tempfile.TemporaryDirectory(prefix="madeira-ota-contracts-") as directory:
     assert len(combined) == 2
     message = ota.email_message(data, "sender@example.test", "owner@example.test")
     mail_html = message.get_body(preferencelist=("html",)).get_content()
-    # The install buttons only: the .ipa links are off (owner, 2026-10-17, "şimdilik").
+    # The install buttons only: the .ipa links are off (owner, 2026-10-17: for now).
     assert ota.MAIL_IPA_LINKS is False
     assert Links(mail_html).urls == [row["page_url"] for row in data["variants"]]
-    assert "BCD Kurulum" in mail_html and "BCD 2 Kurulum" in mail_html and "Madeira Kurulum" not in mail_html
-    assert ".ipa indir" not in mail_html
-    assert "BCD ve BCD 2" in message["Subject"] and "Madeira" not in message["Subject"]
+    assert "Install BCD<" in mail_html and "Install BCD 2<" in mail_html and "Install Madeira" not in mail_html
+    assert "Download the" not in mail_html and ".ipa</a>" not in mail_html
+    assert "BCD and BCD 2" in message["Subject"] and "Madeira" not in message["Subject"]
     plain = message.get_body(preferencelist=("plain",)).get_content()
     assert all(row["page_url"] in plain and row["ipa_url"] not in plain for row in data["variants"])
     assert 'quoted="b"' not in mail_html and html.escape('quoted="b"') in mail_html

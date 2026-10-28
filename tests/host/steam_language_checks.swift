@@ -110,8 +110,8 @@ check("device languages map to Steam API language names",
       && SteamLanguage.steamName(Locale(identifier: "zh-Hans-CN")) == "schinese" && SteamLanguage.steamName(Locale(identifier: "pt_BR")) == "brazilian"
       && SteamLanguage.steamName(Locale(identifier: "pt_PT")) == "portuguese" && SteamLanguage.steamName(Locale(identifier: "es_MX")) == "latam"
       && SteamLanguage.steamName(Locale(identifier: "es_ES")) == "spanish" && SteamLanguage.steamName(Locale(identifier: "ko_KR")) == "koreana"
-      && SteamLanguage.steamName(Locale(identifier: "tr_TR")) == "turkish" && SteamLanguage.steamName(Locale(identifier: "xx_XX")) == nil)
+      && SteamLanguage.steamName(Locale(identifier: "pl_PL")) == "polish" && SteamLanguage.steamName(Locale(identifier: "xx_XX")) == nil)
 check("every language code has a name of its own", SteamLanguage.all.count == 30 && Set(SteamLanguage.all.map(\.code)).count == 30
-      && SteamLanguage.name("turkish") == "Türkçe" && SteamLanguage.name("unknown") == "Unknown")
+      && SteamLanguage.name("polish") == "Polski" && SteamLanguage.name("unknown") == "Unknown")
 
 exit(failures == 0 ? 0 : 1)
