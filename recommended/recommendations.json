@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "version": 17,
+  "version": 18,
   "generated": "2026-10-28",
   "rules": [
     {
@@ -4205,7 +4205,7 @@
     {
       "id": "f1-2020",
       "title": "F1 2020",
-      "version": 1,
+      "version": 2,
       "match": {
         "steamAppIDs": [1080110],
         "steamFolders": ["f1 2020"],
@@ -4217,15 +4217,23 @@
         "# BCD's recommended settings for F1 2020.",
         "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
         "env.MADEIRA_EC_HOOK_TRACE = 0",
-        {"line": "env.MADEIRA_D3D11_SRC = 1", "minBuild": 620}
+        {"line": "env.MADEIRA_D3D11_SRC = 1", "minBuild": 620},
+        {"line": "env.MADEIRA_PAUSE_IN_BACKGROUND = 1", "minBuild": 623}
       ],
+      "switches": {"avx": false, "nvidia": false, "wineVCRT": true},
       "notes": [
         "F1 2020 (Steam 1080110, F1_2020_dx12.exe, which renders through Direct3D 11 here), round 620, iPad17,4, build 614 (Send Logs 4W6WMV,",
         "G1WB9T): right after \"Press any key\" DXMT's encode thread read through an empty buffer in its CopyStructureCount command",
         "(\"[mach_exc] pc PE: d3d11.dll+0x8af18\") and the process ended in an \"AV EXEC of 0\" storm, both times. Build 620's DXMT skips such a",
         "call (tools/patch-dxmt-copy-structure-count.py), but only the 32-bit d3d11.dll is compiled by the CI: a 64-bit game gets the patched",
         "one, d3d11-src.dll (upstream's DXMT built from the same source plus BCD's Direct3D 11 patches), with env.MADEIRA_D3D11_SRC = 1.",
-        "Not tried on a device; whether the indirect draws the skipped copy feeds then look right is unknown."
+        "Not tried on a device; whether the indirect draws the skipped copy feeds then look right is unknown.",
+        "Version 2 (owner, 2026-10-28): it runs on 0.1.622 (Discord, iPad17,4 on iPadOS 27.2, Send Logs KV4KKE and TX41T6): 1112x832 at",
+        "57.8 fps average with a 6,693 MB peak, and the screen's own 2752x2064 with every game setting on Ultra at 40.7 fps and 9,039 MB, so",
+        "no swap line (the owner: at a lower resolution it needs none). Both runs had AVX off, NVIDIA off and Wine's C++ runtime on: the",
+        "switches now say so. The session before KV4KKE hung when the player left BCD (auto-tune: gpu-work-refused-in-background, iOS",
+        "refused the game's GPU work from the background); env.MADEIRA_PAUSE_IN_BACKGROUND = 1 halts the game's commits and presents while",
+        "BCD is not active. A downloaded list may set it from build 623 (allowedEnvNames); until then auto-tune adds it after such a hang."
       ]
     },
     {
