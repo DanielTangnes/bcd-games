@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "version": 15,
+  "version": 16,
   "generated": "2026-10-28",
   "rules": [
     {
@@ -1077,7 +1077,7 @@
     {
       "id": "megabonk",
       "title": "Megabonk",
-      "version": 1,
+      "version": 2,
       "match": {
         "steamAppIDs": [3405340],
         "steamFolders": ["megabonk"],
@@ -1089,14 +1089,20 @@
         "# BCD's recommended settings for Megabonk.",
         "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
         "env.MADEIRA_EC_HOOK_TRACE = 0",
-        {"line": "env.MADEIRA_WINTYPES = 1", "minBuild": 575}
+        {"line": "env.MADEIRA_WINTYPES = 1", "minBuild": 575},
+        "env.MADEIRA_WGI_HOST_PADS = 1",
+        {"line": "env.MADEIRA_REAL_SUSPEND = 1", "minBuild": 620}
       ],
       "switches": {"avx": false, "nvidia": false, "wineVCRT": false, "display": "fit"},
       "notes": [
         "Megabonk (Steam 3405340), Unity IL2CPP, build 574, iPhone18,1 (Send Log J7VAJV, 2026-10-20): GameAssembly.dll",
         "imports api-ms-win-core-winrt-robuffer-l1-1-0.dll, which Wine's apiset maps to wintypes.dll; the 64-bit set",
         "ships none and the game ended at once with c0000135. Build 575 ships Wine's wintypes.dll as",
-        "wintypes-optin.dll, linked for a game with env.MADEIRA_WINTYPES = 1 (that build and later only)."
+        "wintypes-optin.dll, linked for a game with env.MADEIRA_WINTYPES = 1 (that build and later only).",
+        "Version 2 (2026-10-28, round 620; thebcd69/bcd-games#18 and #25, the reporter's device, build 614): entering a match crashed on a",
+        "tagged NULL the IL2CPP GC repair does not cover (the repair had fired 13 times in that session); env.MADEIRA_REAL_SUSPEND = 1 fixed",
+        "it (the GC's liveness pass runs while it believes the world is stopped). The game reads controllers through Rewired's",
+        "Windows.Gaming.Input path; env.MADEIRA_WGI_HOST_PADS = 1 made the pad work. Both tested by the reporter, not by us."
       ]
     },
     {
@@ -1389,7 +1395,7 @@
     {
       "id": "final-fantasy-resonance-demo",
       "title": "FINAL FANTASY RESONANCE DEMO",
-      "version": 2,
+      "version": 3,
       "match": {
         "steamAppIDs": [4474710],
         "steamFolders": ["final fantasy resonance demo"],
@@ -1402,7 +1408,8 @@
         "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
         "env.MADEIRA_EC_HOOK_TRACE = 0",
         {"line": "env.MADEIRA_VCRT_ARM64_KEY = 1", "minBuild": 576},
-        {"line": "env.MADEIRA_X64_IMAGE_NOCOPY = 1", "minBuild": 576}
+        {"line": "env.MADEIRA_X64_IMAGE_NOCOPY = 1", "minBuild": 576},
+        {"line": "exe-window-mb = 496", "minBuild": 575}
       ],
       "switches": {"avx": false, "nvidia": false, "wineVCRT": false, "display": "fit"},
       "notes": [
@@ -1415,7 +1422,11 @@
         "executable section .edata\", c0000017 three seconds in. The pool was 560 MB (a pair of 288 and 272 MB) with 107 MiB",
         "already used, so no copy of that size fits whatever the split. The line runs the pure x64 exe from its loaded image,",
         "which makes no copy (as GTA V Enhanced, Red Dead Redemption 2 and Horizon Forbidden West do). What follows the load is",
-        "unknown. Not tried on a device yet."
+        "unknown. Not tried on a device yet.",
+        "Version 3 (2026-10-28, round 620): exe-window-mb = 496. Build 614, iPhone19,4 (Send Logs J4DADQ, TQ3VF6): with both lines the",
+        "start-up program passes and starts FFRS-Win64-Shipping.exe, a 474.1 MiB image with its relocations stripped (charact 0x23) that",
+        "must load at 0x140000000, where BCD keeps 128 MB: \"failed to create main module ... status c0000018\" (J4DADQ L3669). 496 MB",
+        "(the image plus 16 MB, as auto-tune's exe-window-fixed-base computes) holds it; the JIT pool may get smaller. Not tried on a device."
       ]
     },
     {
@@ -2108,7 +2119,7 @@
     {
       "id": "marvels-spider-man-2",
       "title": "Marvel's Spider-Man 2",
-      "version": 6,
+      "version": 7,
       "match": {
         "steamAppIDs": [2651280],
         "steamFolders": ["marvel's spider-man 2"],
@@ -2127,10 +2138,10 @@
         "env.MADEIRA_SRV_FGETPATH = 1",
         "env.MADEIRA_LEAN_DIAG = 1",
         "env.MADEIRA_FREE_DELAY_MS = 0",
-        "env.MADEIRA_ECO_NATIVE = 1",
-        "env.FEX_TSOENABLED = 0",
+        {"line": "env.MADEIRA_ECO_NATIVE = 1", "minBuild": 619},
+        {"line": "env.FEX_TSOENABLED = 0", "minBuild": 619},
         "env.FEX_VECTORTSOENABLED = 0",
-        "env.FEX_MEMCPYSETTSOENABLED = 0",
+        {"line": "env.FEX_MEMCPYSETTSOENABLED = 0", "minBuild": 619},
         "env.WINEDEBUG = err+all,err-virtual,fixme-all",
         "mip0-full = 1",
         "quiet-log = 1",
@@ -2189,7 +2200,10 @@
         "    attachment load/store traffic) and list-end closed 245 render passes. Turning off FEX TSO (env.FEX_TSOENABLED = 0,",
         "    env.FEX_VECTORTSOENABLED = 0, env.FEX_MEMCPYSETTSOENABLED = 0), moving runtime helpers to E-cores (env.MADEIRA_ECO_NATIVE = 1),",
         "    adding fence-chain = 6 and rp-carry = 1, and tuning the swap tier for 12 GB RAM (swap-mb = 2048, swap-mode = 2, swap-min-mb = 16)",
-        "    eliminated the stutters and ran cleanly on the owner's device (build 619 also fixes integer RTV blending in madeira_d3d12.c)."
+        "    eliminated the stutters and ran cleanly on the owner's device (build 619 also fixes integer RTV blending in madeira_d3d12.c).",
+        "Version 7 (2026-10-28): the same lines; env.MADEIRA_ECO_NATIVE, env.FEX_TSOENABLED and env.FEX_MEMCPYSETTSOENABLED carry minBuild 619,",
+        "the first build whose list policy takes them. Builds 600-614 refused the whole downloaded list v15 for them (their policy does not",
+        "know the names), so they kept their older list; with the gate they take v16 and skip only these three lines."
       ]
     },
     {
@@ -3786,6 +3800,328 @@
         "keeps 0x7ffe0283 in rcx while it reads KUSER through another register, and the TLS pointer it computed was off by the relocation) are the two changes",
         "that report also depended on, which BCD has as switches. Not proven on a device in BCD. The rule and its lines carry minBuild 602 (the switches are read from that build).",
         "A copy outside Steam started through Elliot.exe (the log above) is not matched by this rule; auto-tune's exe-window-fixed-base proposes the window there."
+      ]
+    },
+    {
+      "id": "forza-horizon-4",
+      "title": "Forza Horizon 4",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [1293830],
+        "steamFolders": ["forzahorizon4"],
+        "programs": [
+          {"name": "forzahorizon4.exe"}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for Forza Horizon 4.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_X64_IMAGE_NOCOPY = 1", "minBuild": 576},
+        {"line": "env.MADEIRA_OPTIN_DLLS = dxva2,gamingtcui", "minBuild": 620}
+      ],
+      "notes": [
+        "Forza Horizon 4 (Steam 1293830), round 620, iPad17,1, build 614 (Send Logs 7P53QT, T0ZAMM, YFK3A6, TNE8NW, 5TZDYZ, SJT15P): the first start",
+        "filled the JIT pool with image copies (\"[jit-pool] EXHAUSTED\"); with env.MADEIRA_X64_IMAGE_NOCOPY = 1 (auto-tune's line, T0ZAMM) the loader",
+        "reaches the imports and ends with c0000135: ForzaHorizon4.exe imports api-ms-win-gaming-tcui-l1-1-0.dll (Wine's gamingtcui.dll, which the",
+        "64-bit set lacked) and its libcef.dll imports dxva2.dll (YFK3A6 L8946-L9828). Build 620 ships gamingtcui-optin.dll; the line links both.",
+        "What follows the imports is unknown (not tried on a device)."
+      ]
+    },
+    {
+      "id": "tiny-tinas-wonderlands",
+      "title": "Tiny Tina's Wonderlands",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [1286680],
+        "steamFolders": ["tiny tina's wonderlands"],
+        "programs": [
+          {"name": "wonderlands.exe"}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for Tiny Tina's Wonderlands.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_X64_IMAGE_NOCOPY = 1", "minBuild": 576},
+        {"line": "env.MADEIRA_OPTIN_DLLS = sensapi", "minBuild": 591},
+        {"line": "d3d12-pipeline-library = 1", "minBuild": 576}
+      ],
+      "notes": [
+        "Tiny Tina's Wonderlands (Steam 1286680, UE4), round 620, iPhone19,7, build 614 (Send Log YV7VB5 = GMP0KB): the session ran with",
+        "auto-tune's env.MADEIRA_X64_IMAGE_NOCOPY = 1 and env.MADEIRA_OPTIN_DLLS = sensapi (auto-tune adds sensapi only after \"Library SensApi.dll",
+        "... not found\"; Borderlands 3's Vivox library imports it too); the D3D12 device is made, then \"[madeira-d3d12] unimplemented:",
+        "ID3D12Device10::CreatePipelineLibrary\" (L15071) and the game exits 3 (L15085), as Returnal did. d3d12-pipeline-library = 1 answers",
+        "with a library that keeps nothing. Not tried on a device."
+      ]
+    },
+    {
+      "id": "far-cry-3",
+      "title": "Far Cry 3",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [220240],
+        "steamFolders": ["far cry 3"],
+        "programs": [
+          {"name": "fc3updatersteam.exe", "steam": true}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for Far Cry 3.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_DOCK_SCRIPT_REGISTRY = 1", "minBuild": 591}
+      ],
+      "notes": [
+        "Far Cry 3 (Steam 220240, BCD Dock), round 620, iPad17,3, build 614 (Send Logs 2H38A0 = 65GSHJ, 7VRX47 = WMGAZ8, X9ZXFB):",
+        "FC3UpdaterSteam.exe shows \"Failed to start the game. Cannot find essential information in the registry.\" (2H38A0 L11374) and nothing",
+        "is drawn. Likely the Fallout: New Vegas case: Steam's install script writes the install key on Windows and the Dock does not.",
+        "env.MADEIRA_DOCK_SCRIPT_REGISTRY = 1 (build 591) writes the script's missing registry values; a value is written only where the key is",
+        "absent. Not proven: the next log's [dock-script-registry] line says whether the script has such values."
+      ]
+    },
+    {
+      "id": "barotrauma",
+      "title": "Barotrauma",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [602960],
+        "steamFolders": ["barotrauma"],
+        "programs": [
+          {"name": "barotrauma.exe"}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for Barotrauma.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.DOTNET_GCRegionRange = 400000000", "minBuild": 579}
+      ],
+      "notes": [
+        "Barotrauma (Steam 602960, .NET), round 620, iPhone14,3, build 614 (Send Log V0V96V): \"[mmap-place] ml1027 NO GAP FITS",
+        "size=0x3fd3ad0000 ... largest gap 32768 MB\", \"GC heap initialization failed with error 0x8007000E\" (L10457), host exit 0x80008089.",
+        "The .NET GC reserves 256 GB of address space; env.DOTNET_GCRegionRange = 400000000 (16 GB) is the Unrailed! 2 line. Not tried on a device."
+      ]
+    },
+    {
+      "id": "slay-the-spire-2",
+      "title": "Slay the Spire 2",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [2868840],
+        "steamFolders": ["slay the spire 2"],
+        "programs": [
+          {"name": "slaythespire2.exe"}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for Slay the Spire 2.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.DOTNET_GCRegionRange = 400000000", "minBuild": 579}
+      ],
+      "notes": [
+        "Slay the Spire 2 (Steam 2868840, Godot 4 + .NET), round 620, iPad17,3, builds 611/614 (Send Logs 2K0RGS, 6YPKSD, HV84ES, ZNRMDX): the",
+        ".NET GC's 256 GB reserve fails (\"[jumbo] kernel-pick reserve failed (0xc0000017) for size=0x3fa214e000\", 2K0RGS L14782), Godot's host",
+        "prints hostfxr_get_runtime_delegate failed -2147450743 (L14848) and calls a NULL plugin entry. Earlier sessions that ran with the 16 GB",
+        "range got past this. The next stops seen for this game are covered by auto-tune (slay-spire-2-anon-ldaddal-word). Not proven to play."
+      ]
+    },
+    {
+      "id": "resident-evil-3",
+      "title": "Resident Evil 3",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [952060],
+        "programs": [
+          {"name": "re3.exe", "beside": "re_chunk_000.pak"}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for Resident Evil 3.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_WG_64BIT = 1", "minBuild": 580},
+        {"line": "env.MADEIRA_OPTIN_DLLS = mfasfsrcsnk,wmvdecod,wmadmod", "minBuild": 580}
+      ],
+      "notes": [
+        "Resident Evil 3 (2020, RE Engine; re3.exe beside re_chunk_000.pak, so another program named re3.exe is not matched), round 620,",
+        "iPad16,8, build 614 (Send Logs 6NGSPH = PPNR8J): 35 s of play at 57 FPS, then at the first movie \"couldn't load in-process dll",
+        "mfasfsrcsnk.dll\" (6NGSPH L13968) and a call through the NULL media source (0xC0000005). The Resident Evil 2 and 7 lines: Wine's ASF",
+        "source and the WMV/WMA decoders on BCD's 64-bit media path. Not tried on a device."
+      ]
+    },
+    {
+      "id": "marvel-cosmic-invasion",
+      "title": "MARVEL Cosmic Invasion",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [2753970],
+        "steamFolders": ["marvel cosmic invasion"],
+        "programs": [
+          {"name": "game.exe", "steam": true, "beside": "ParisEngine.dll"}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for MARVEL Cosmic Invasion.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        "env.MADEIRA_WGI_HOST_PADS = 1"
+      ],
+      "notes": [
+        "MARVEL Cosmic Invasion (Steam 2753970, FNA + SDL2): the game reads controllers only through Windows.Gaming.Input (RoGetActivationFactory",
+        "of Windows.Gaming.Input.Gamepad, RawGameController ...; no xinput1_* loaded), so the controller never reached it. With",
+        "env.MADEIRA_WGI_HOST_PADS = 1 the pad is published as a WGI gamepad and works (thebcd69/bcd-games#25, iPad16,1, build 614, tested by",
+        "the reporter). Round 620 log 6SDMXP (iPad17,1): the game itself runs. Through BCD Dock with Steam Input the pad may still be ignored (#25)."
+      ]
+    },
+    {
+      "id": "haste",
+      "title": "Haste",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [1796470],
+        "steamFolders": ["haste"],
+        "programs": [
+          {"name": "haste.exe"}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for Haste.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        "env.MADEIRA_WGI_HOST_PADS = 1",
+        {"line": "dxmt = d3d11.mipClampBC=1", "minBuild": 577}
+      ],
+      "notes": [
+        "Haste (Steam 1796470, Unity): the controller works only with env.MADEIRA_WGI_HOST_PADS = 1, and dxmt = d3d11.mipClampBC=1 keeps texture",
+        "memory down on smaller devices (thebcd69/bcd-games#19, the reporter's working launch options). Round 620 log MDZQ61 (iPhone17,2, build",
+        "611): the app was ended by iOS after GPU-side memory rose 2.6 GB in 4 s to the 6143 MB limit; mipClampBC=1 drops the top level of",
+        "BC textures (three quarters of their bytes, as for No Rest for the Wicked). Not proven on that device."
+      ]
+    },
+    {
+      "id": "big-walk",
+      "title": "Big Walk",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [1478500],
+        "steamFolders": ["big walk"],
+        "programs": [
+          {"name": "big walk.exe"}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for Big Walk.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_REAL_SUSPEND = 1", "minBuild": 620}
+      ],
+      "notes": [
+        "Big Walk (Steam 1478500, Unity 6 IL2CPP): crashed every run on an object whose klass pointer had bit 0 set; Unity's liveness",
+        "calculation sets that bit while it believes the world is stopped, and BCD's SuspendThread does not stop the thread by default",
+        "(wineserver mach_ios.c, ml730). env.MADEIRA_REAL_SUSPEND = 1 fixed it on the reporter's device (thebcd69/bcd-games#18, build 614).",
+        "Build 620 lets a downloaded list set the line."
+      ]
+    },
+    {
+      "id": "ball-x-pit",
+      "title": "BALL x PIT",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [2062430]
+      },
+      "config": [
+        "# BCD's recommended settings for BALL x PIT.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_REAL_SUSPEND = 1", "minBuild": 620}
+      ],
+      "notes": [
+        "BALL x PIT (Steam 2062430, Unity IL2CPP): opened, ran about one second (75 frames) and died on a tagged pointer the IL2CPP GC repair",
+        "had already fixed twice in the same session; the same family as Big Walk, and env.MADEIRA_REAL_SUSPEND = 1 is the reporter's fix",
+        "(thebcd69/bcd-games#18, build 614). Matched by App ID only (no log of ours names its program)."
+      ]
+    },
+    {
+      "id": "just-volleyball-demo",
+      "title": "just volleyball Demo",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [5401090],
+        "steamFolders": ["just volleyball demo"],
+        "programs": [
+          {"name": "volleyballdemo.exe"}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for just volleyball Demo.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        "d3d12-typed-uav-load = 1"
+      ],
+      "notes": [
+        "just volleyball Demo (Steam 5401090, Godot 4), round 620, iPad17,1, build 611 (Send Log CJN86P): \"No support for Typed UAV Load",
+        "Additional Formats has been found\" (L11884), Godot's D3D12 driver refuses the device, Vulkan is absent and the OpenGL fallback fails;",
+        "no frame. d3d12-typed-uav-load = 1 (ml1970, as in the GTA V Enhanced lists) reports the option. What Godot needs next is unknown."
+      ]
+    },
+    {
+      "id": "farming-simulator-22-epic",
+      "title": "Farming Simulator 22 (Epic)",
+      "version": 1,
+      "match": {
+        "programs": [
+          {"name": "farmingsimulator2022.exe", "steam": false}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for Farming Simulator 22 (Epic).",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.BCD_EPIC_HOST_START = 1", "minBuild": 598}
+      ],
+      "notes": [
+        "Farming Simulator 22 from the Epic store, round 620, iPhone18,2, build 611 (Send Log 5C4SAB): the game's D3D12 device works, then a box",
+        "says the player must be signed in to the Epic Games Launcher (L9034) and the game exits 0. BCD chose BCD Host for the start (\"[epic-launch]",
+        "start ... host=1\", L44) but the game got only Epic's public arguments and \"[bcd-host] no report\" followed (L11158), as for BioShock",
+        "Infinite. env.BCD_EPIC_HOST_START = 1 (build 598) holds the host's values so it starts the game with the sign-in arguments. The line is",
+        "read only for an Epic start; never yet seen on a device (no log has \"[epic-launch] host start held\")."
+      ]
+    },
+    {
+      "id": "max-payne-3",
+      "title": "Max Payne 3",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [204100],
+        "steamFolders": ["max payne 3"],
+        "programs": [
+          {"name": "playmaxpayne3.exe", "steam": true},
+          {"name": "maxpayne3.exe", "steam": true}
+        ]
+      },
+      "config": [
+        "# BCD's recommended settings for Max Payne 3.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_DOCK_GAME_SCM = 1", "minBuild": 576},
+        {"line": "env.MADEIRA_FEX_AVX = 0", "minBuild": 576},
+        {"line": "env.MADEIRA_SPAWN_BLOCK = RockstarErrorHandler", "minBuild": 576},
+        {"line": "env.MADEIRA_X64_IMAGE_NOCOPY = 1", "minBuild": 576},
+        {"line": "pool-split = 1", "minBuild": 576}
+      ],
+      "notes": [
+        "Max Payne 3 (Steam 204100, BCD Dock), round 620, iPhone19,4, build 611 (Send Logs FXY57T, YXFHTE; feedback 8WZ6MW / H0TR86;",
+        "earlier WGQ1BT, build 592): PlayMaxPayne3.exe starts Rockstar's own Launcher, as GTA IV, San Andreas DE and RDR1 do, but the game had",
+        "no list, so auto-tune found the Launcher's lines one start at a time (NOCOPY tried and reverted, then DOCK_GAME_SCM). Its install",
+        "script runs Social Club's old SDK setup as well as the Launcher's (\"program=240240 file=Social-Club-Setup.exe\"); the SDK step",
+        "was done, the Launcher's one was recorded as failed once (FXY57T L53/L57, \"Unable to install prereqs for rockstar launcher\").",
+        "In YXFHTE the pool shrank to 560 MB (L85), Launcher.exe started RockstarErrorHandler.exe (L10641) and a second",
+        "RockstarService.exe, whose 128/64/32 MB code buffers were refused (\"NtAllocateVirtualMemoryEx status=c0000017",
+        "proc=rockstarservice.exe size=0x8000000\", L23708-L28100); nothing was drawn. These are the Launcher lines of the GTA San Andreas",
+        "DE and RDR1 lists (service manager, AVX off, no crash reporter, no image copies) plus pool-split = 1 for the shrunken pool.",
+        "Not tried on a device; whether Max Payne 3 itself then draws is unknown."
       ]
     },
     {
