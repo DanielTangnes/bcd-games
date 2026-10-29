@@ -99,6 +99,9 @@ ENGINE_BOUND |= {"BCDPerfTraceLive.swift", "BCDReadinessLive.swift", "BCDHelpLiv
 # The game folder's graphics defaults (BCDGraphicsScan.swift is pure Foundation and builds here; BCDGraphicsDefaults.swift names LibraryEntry,
 # MadeiraConfig and LogStore, so it stays out).
 ENGINE_BOUND |= {"BCDGraphicsDefaults.swift"}
+# The display watch (BCD, 2026-10-29, iPhone Duo): it names the Resolution choices, the touch overlay's window, the layout store and the
+# game surface, so it stays out; the preview photographs its screens at fixed sizes.
+ENGINE_BOUND |= {"BCDDisplayLive.swift"}
 SCREENS += ["ingame-menu", "starting", "overlay"]
 
 
