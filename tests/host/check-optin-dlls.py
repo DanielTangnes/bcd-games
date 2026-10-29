@@ -171,6 +171,31 @@ for n, (spelled, fixture) in NEW3.items():
     check('fixture %s has the import failure line the rule reads' % fixture,
           any('err:module:import_dll Library ' + spelled in l and 'not found' in l for l in fx))
     check('its fixture proves the rule', '"%s-dll-optin"' % n in (root / 'tests/fixtures/autotune' / (fixture + '.expect')).read_text())
+# qwave (round 623): Bloons TD 6 (Epic copy, 4EJFKD, build 622) loads Plugins\x86_64\discord_partner_sdk.dll (the Discord Social SDK), which
+# imports qwave.dll (Windows' quality-of-service API); the 64-bit set lacks it, and Unity IL2CPP ends the process with "Unable to load DLL
+# 'discord_partner_sdk'". Mycopunk (Unity Mono; BP35FG, NEQQN0) has the same import failure but only logs the exception, so the DLL is
+# opt-in and the auto-tune rule needs Unity's fatal text as well as the import line.
+check('OPTIN_WANT also lists qwave', 'qwave' in names)
+check('qwave is not in the list shipped under its own name and no qwave.dll ships in the 64-bit set',
+      not re.search(r'\bqwave\b', want) and not (shipdir / 'qwave.dll').exists() and not (shipdir / 'QWAVE.dll').exists())
+if (wine / 'dlls/qwave/Makefile.in').exists():
+    mk = (wine / 'dlls/qwave/Makefile.in').read_text()
+    check('Wine builds qwave.dll from dlls/qwave and it imports nothing beyond the kernel (no IMPORTS line)',
+          re.search(r'^MODULE\s*=\s*qwave\.dll$', mk, re.M) and not re.search(r'^IMPORTS\s*=', mk, re.M))
+rq = by_id.get('qwave-dll-optin')
+check('auto-tune has qwave-dll-optin: one line, no retry of the unchanged start, not again once linked',
+      rq and rq['lines'] == ['env.MADEIRA_OPTIN_DLLS = qwave'] and rq.get('noRetry') is True and rq['priority'] == 10 and
+      rq['none'] == [{'has': ['MADEIRA_OPTIN_DLLS: qwave.dll -> qwave-optin.dll']}])
+check('qwave-dll-optin needs Unity\'s fatal text and the import failure, as the tester\'s log spelled it (qwave.dll) and in capitals',
+      rq and rq['all'] == [{'has': ['UnhandledExceptionHandler caught: Unable to load DLL']}] and
+      any(sg['has'][0] == 'err:module:import_dll Library qwave.dll' for sg in rq['any']) and
+      any(sg['has'][0] == 'err:module:import_dll Library QWAVE.DLL' for sg in rq['any']))
+fxq = (root / 'tests/fixtures/autotune/bloons-td-6-qwave-2026-10-28.log').read_text(errors='replace').split('\n')
+check('the Bloons TD 6 fixture has the import failure and Unity\'s fatal text',
+      any('err:module:import_dll Library qwave.dll' in l and 'not found' in l for l in fxq) and
+      any('UnhandledExceptionHandler caught: Unable to load DLL' in l for l in fxq))
+check('its fixture proves the rule', '"qwave-dll-optin"' in (root / 'tests/fixtures/autotune/bloons-td-6-qwave-2026-10-28.expect').read_text())
+check('RecommendationsPolicy lets a downloaded list name qwave', '"gamingtcui", "qwave"].contains($0)' in policy and 'tdh, gamingtcui, qwave' in policy)
 wf = (root / '.github/workflows/build-ipa.yml').read_text()
 check('CI runs this check', 'python3 tests/host/check-optin-dlls.py' in wf)
 print('PASS: opt-in DLLs' if ok else 'FAILED: opt-in DLLs')

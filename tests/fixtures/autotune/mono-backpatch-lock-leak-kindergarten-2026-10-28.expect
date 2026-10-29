@@ -1,0 +1,18 @@
+{
+ "dialogs": [],
+ "end": {
+  "killed": true,
+  "seconds": 55,
+  "userSaid": "froze"
+ },
+ "matched": [
+  "mono-backpatch-lock-leak"
+ ],
+ "next": [
+  "env.MADEIRA_MONO_BP_UNLOCKED_MISS = 1"
+ ],
+ "note": "Send Log 9DEZ8A (build 622, iPhone18,2, Dock): Kindergarten (Unity Mono) draws 250 frames, then the main thread waits for the CodeInvalidationMutex it owns (STUCK write-wait, owner == waiter, L16943); the access violation in MonoBackpatcherWrite (libarm64ecfex.dll+0x16440, L16240-L16243) comes first. The tester saw a black screen.",
+ "outcome": "hung",
+ "stage": 3,
+ "status": "trying"
+}

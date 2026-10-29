@@ -1,0 +1,14 @@
+{
+ "dialogs": [
+  "Unable to initialize Video driver"
+ ],
+ "end": {},
+ "matched": [
+  "opengl-only-no-context"
+ ],
+ "next": [],
+ "note": "An Arcade Full of Cats (Godot 3, OpenGL only), build 622, iPhone17,2 (W9AXC0): Unable to initialize Video driver",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "known"
+}

@@ -1,0 +1,15 @@
+{
+ "dialogs": [
+  "Error",
+  "VIDEO ERROR: Could not initialize video."
+ ],
+ "end": {},
+ "matched": [
+  "wow64-low-rip-native-dispatch"
+ ],
+ "next": [],
+ "note": "MDK 2 HD (6DFEBH, build 614, iPhone): a 32-bit branch to 0; FEX refuses the block, the host fault pc=0x0 is dispatched natively and the program ends. Fixed in build 623 (wow-low-rip).",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "known"
+}

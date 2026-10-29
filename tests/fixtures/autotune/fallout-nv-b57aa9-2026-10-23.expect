@@ -1,0 +1,14 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "fallout-nv-older-nvidia-card"
+ ],
+ "next": [
+  "gpu-card = nvidia-7900gs"
+ ],
+ "note": "Fallout: New Vegas (6RMMDY, build 592): the save crashes at 00B57AA9 on the basic render path; build 623's GeForce 7900 GS card (nv4_disp.dll) is the fix upstream proved.",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "trying"
+}

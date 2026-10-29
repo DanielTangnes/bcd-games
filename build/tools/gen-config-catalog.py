@@ -832,6 +832,21 @@ OVERLAY = {
                         "pass, A13 with a one-time notice (no geometry shaders or tessellation). 0: start them "
                         "anyway; Direct3D then crashes or draws garbage on such a GPU.",
                 "sources": ["app/Madeira/DeviceCapability.swift"]},
+    # madeira-bcd (2026-10-28): the in-place External SSD folder picker fix (ExternalGamesPicker.swift).
+    "external-picker-fix": {"category": "App & front end", "title": "In-place fix for the External SSD folder picker",
+                "kind": "choice", "default": "auto",
+                "note": "Default auto. When BCD is signed so that its bundle id differs from the certificate's App ID "
+                        "(some single-App-ID profiles and paid-certificate signers), the iOS folder picker's "
+                        "Open button does nothing: the system keys the folder's access on BCD's bundle id and refuses "
+                        "it. auto substitutes the real App ID for the picker only (never the whole app, so JIT and the "
+                        "memory host are untouched) while the External SSD picker is open, reading in place with no "
+                        "copy. Installs that already work (SideStore, AltStore, Feather) are not changed. "
+                        "ignore-entitlement additionally sets the picker's ignore-application-entitlement flag, a "
+                        "fallback to try if auto is not enough. off keeps the old behaviour. Read when the picker opens.",
+                "choices": [("auto", "On (fix the picker's identity)"),
+                            ("ignore-entitlement", "On, plus ignore-entitlement fallback"),
+                            ("off", "Off (no fix)")],
+                "sources": ["app/Madeira/ExternalGamesPicker.swift"]},
     # madeira-bcd (owner, 2026-10-28, build 622): app/Madeira/GameRecommendationsApply.swift (BCDGraphicsTip), shown by
     # BCDLiveStore.begin; the heavy games' recommended lists set it (minBuild 622).
     "low-graphics-tip": {"category": "Windows, display & input", "title": "Graphics tip before the first start",
@@ -1314,8 +1329,10 @@ OVERLAY = {
                         "program that imports it (Dying Light's renderer, rd3d11_x64_rwdi.dll: \"Cannot initialize renderer\"). msi, mspatcha, odbccp32, sxs and "
                         "rstrtmgr are what the EA app's 64-bit background service imports (msi.dll and RstrtMgr.dll, msi.dll the other three); "
                         "without them the service never starts and the MSI rolls back with 1627. gamingtcui is what Forza Horizon 4's program imports as "
-                        "api-ms-win-gaming-tcui-l1-1-0.dll (c0000135 at once; build 620). An earlier session's links are removed when a name is gone. "
-                        "Set it in the game's own file; read at session start. Auto-tune adds dxva2, xpsprint, oledlg, fwpuclnt, sensapi, gamingtcui, "
+                        "api-ms-win-gaming-tcui-l1-1-0.dll (c0000135 at once; build 620). qwave is Windows' quality-of-service library, which the Discord Social SDK "
+                        "plugin of a Unity game imports (Bloons TD 6: the game ended with \"Unable to load DLL 'discord_partner_sdk'\", build 623). "
+                        "An earlier session's links are removed when a name is gone. "
+                        "Set it in the game's own file; read at session start. Auto-tune adds dxva2, xpsprint, oledlg, fwpuclnt, sensapi, gamingtcui, qwave, "
                         "setupapi and (with env.MADEIRA_WG_64BIT = 1) mfasfsrcsnk,wmvdecod,wmadmod after their failures."},
     "env.MADEIRA_WINTYPES": {"category": "Wine libraries", "title": "Give the game Wine's wintypes.dll",
                 "kind": "bool", "default": "0",
@@ -1508,6 +1525,18 @@ OVERLAY = {
                         "would end in STATUS_NO_MEMORY. BCD then unmaps the first refused range, which Wine's own tables call "
                         "free, and maps it again without overwriting; if that fails the reservation is put back and the request "
                         "fails as before. 0: no last resort. Read when a program starts."},
+    # madeira-bcd (round 623): the placement goes on past the kernel's fixed regions (virtual_ios.c ios_reserved_skip).
+    "env.MADEIRA_RESERVED_SKIP": {"category": "Memory & JIT pool", "title": "Go on past the system's fixed regions in a window placement",
+                "kind": "bool", "default": "1", "sources": ["build/ntdll-unix/virtual_ios.c"],
+                "note": "Default on, and only on the path that already fails: a 32-bit program on a device with a smaller address "
+                        "map (iOS 18 without the extended address space) asked for memory inside its 4 GB window and the system "
+                        "refused the placement on all 33 candidates, which lie within 2 MB of each other (ENOMEM; Hotline Miami 2 "
+                        "after its 13th load of d3dcompiler_43.dll, Metro: Last Light's 369 MB reservation). The refusals all have the "
+                        "same cause: a region of the window the system keeps and no placement replaces (protection and maximum "
+                        "protection none, what an image the program mapped and dropped leaves behind). When every other way to "
+                        "place the request has failed, BCD asks the system where that region ends and tries again beyond it, up "
+                        "to 64 times; a request that is placed today is placed as before. 0: no further attempts. Read when a "
+                        "program starts."},
     # madeira-bcd (round 579): QueryDisplayConfig lists the virtual monitor's path (build/win32u-unix/sysparams_ios.c).
     "env.MADEIRA_VDCFG_PATH": {"category": "Windows, display & input", "title": "QueryDisplayConfig lists the monitor's path",
                 "kind": "bool", "default": "0", "sources": ["build/win32u-unix/sysparams_ios.c"],
@@ -1549,6 +1578,16 @@ OVERLAY = {
                         "call counted per thread instead of with an atomic, and the alias lookup starting at the thread's "
                         "own last hit; 31 instructions instead of 44. [xp-api] x64->EC rates lag by under 64 calls per "
                         "thread. 0: ExitFunctionEC as before. Read when a program starts."},
+    # ajan61 (round 623): read by the ARM64EC emulator (FEXCore Core.cpp, tools/patch-fex-ios-mono-bp-unlocked-miss.py); auto-tune's rule
+    # mono-backpatch-lock-leak adds it after a session whose thread waited for a lock it owned.
+    "env.MADEIRA_MONO_BP_UNLOCKED_MISS": {"category": "x86 emulation (FEX)", "title": "Mono write helper: store an alias miss without the lock",
+                "kind": "bool", "default": "0", "sources": ["tools/patch-fex-ios-mono-bp-unlocked-miss.py"],
+                "note": "Off by default. A program whose Mono runtime patches its own code (Unity games) can fault inside BCD's write helper "
+                        "for Mono; the helper holds the emulator's code-invalidation lock for that store, and the fault leaves the lock held, "
+                        "so the thread later waits for itself and the game freezes (Kindergarten, Mycopunk, Skate Story: '[fexlock] STUCK "
+                        "write-wait' where the waiting thread is the lock's owner). 1: when the helper finds no writable alias for the address "
+                        "it lets go of the lock before the store, so the fault no longer leaves anything behind. A write through an alias is "
+                        "unchanged. Read when the first such write runs. Auto-tune tries it after that freeze."},
     # ajan6-arkham (2026-10-21): FEX's own switch, read by the emulator (FEX WOW64 Module.cpp, ml950), not by BCD's code, so the overlay
     # carries the whole entry. Auto-tune's rule x87-int64-roundtrip adds "0"; WineProcessBridge.m already treats the name as a
     # per-launch key (a game's own line wins over bcd.cfg's).
@@ -1739,6 +1778,7 @@ OVERLAY = {
              "note": "The graphics card the game is told it has: name, maker and model, the same in Direct3D 9, 10, 11 and 12 (DXGI) and in Windows (EnumDisplayDevices, the registry, D3DKMT). Usually set per game in Game details > Direct3D. Empty: BCD's own Apple GPU, or the GeForce RTX 3060 of \"Show the game an NVIDIA card\". A card here wins over that switch. Nothing runs faster. Video memory is vram-mb.",
              "choices": [("", "As BCD does by default"), ("nvidia", "NVIDIA GeForce RTX 3060"), ("amd", "AMD Radeon RX 6700 XT"),
                          ("amd-rx580", "AMD Radeon RX 580"), ("intel", "Intel UHD Graphics 630"), ("intel-arc", "Intel Arc A770"),
+                         ("nvidia-7900gs", "NVIDIA GeForce 7900 GS (older Direct3D 9 games)"),
                          ("apple", "Apple GPU (this phone's own)")]},
 }
 

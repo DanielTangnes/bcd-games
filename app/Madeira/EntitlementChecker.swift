@@ -183,7 +183,9 @@ enum DeviceDiagnostics {
         let entitlements = EntitlementStatus.check()
         log.log("[device] \(addressMap()) increased-memory=\(entitlements.increasedMemory ? 1 : 0)"
             + " extended-va=\(entitlements.extendedVA ? 1 : 0)")
-        log.log("[device] signing: \(signing()) \(profile())")
+        // appid-match=0 means the signature's App ID differs from CFBundleIdentifier, which breaks the
+        // in-place External SSD folder picker (ExternalGamesPicker.swift); no App ID value is logged.
+        log.log("[device] signing: \(signing()) \(profile()) \(BCDExternalPickerFix.shared.diagnosticSuffix)")
         if !SigningStatus.current.debuggable {
             log.log("[device] this copy is signed without get-task-allow: no debugger can attach to it, so JIT cannot be "
                 + "enabled. Reinstall BCD with a development certificate.", level: .error)

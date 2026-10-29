@@ -381,6 +381,34 @@ enum SteamDirectStart {
             standard])
     }
 
+    /// madeira-bcd (round 623): the log lines that say what a Dock start's .bat or .cmd launch entry will run. Valve's client starts the
+    /// entry's program as it is, and when that is a script the log shows only "cmd.exe /s/c" and an exit code: Messiah's "Launch Messiah.bat"
+    /// ends with exit code 255 at once without starting a program (MZYTWC, build 622; ANV0TK, 2D4QK1 and 53W6G9, build 614) and nothing in
+    /// the log says why (Wine's cmd exits 255 from a pipe whose left program cannot be started, or from a failed choice). `key` is the
+    /// config.launch key the start asks for. Returns no line for an entry that is not a .bat or .cmd inside the install folder. Text only: the
+    /// first 40 lines of the file (the first 16 KiB), at most 160 characters each, control characters taken out; a file with a zero byte is
+    /// not text and is only named.
+    static func batchPreview(options: [SteamLaunchOption]?, key: UInt32, installFolder root: URL) -> [String] {
+        guard let option = options?.first(where: { $0.index == key }), let path = relativePath(option.executable), !path.isEmpty,
+              ["bat", "cmd"].contains(URL(fileURLWithPath: path).pathExtension.lowercased()),
+              let program = onDisk(path, in: root, directory: false) else { return [] }
+        func clean(_ text: String, limit: Int) -> String {
+            let kept = String(String.UnicodeScalarView(text.unicodeScalars.map { $0.value == 9 ? " " : $0 }.filter { $0.value >= 0x20 && $0.value != 0x7f }))
+            return String(kept.prefix(limit))
+        }
+        let arguments = clean(option.arguments, limit: 80)
+        let head = "[bat-start] launch option \(key): \(clean(program, limit: 160))" + (arguments.isEmpty ? "" : " arguments=\"\(arguments)\"")
+        guard let handle = FileHandle(forReadingAtPath: root.appendingPathComponent(program).path) else { return [head + " (could not be opened)"] }
+        defer { try? handle.close() }
+        let data = handle.readData(ofLength: 16384)
+        if data.contains(0) { return [head + " (not a text file, \(data.count) bytes read)"] }
+        var lines = String(decoding: data, as: UTF8.self).replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: CharacterSet(charactersIn: "\n\r"))
+        while let last = lines.last, last.trimmingCharacters(in: .whitespaces).isEmpty { lines.removeLast() }
+        let shown = lines.prefix(40)
+        return [head + " (\(lines.count) line\(lines.count == 1 ? "" : "s")\(lines.count > shown.count ? ", the first \(shown.count) follow" : " follow"))"]
+            + shown.enumerated().map { "[bat-start] \($0.offset + 1): " + clean($0.element, limit: 160) }
+    }
+
     /// The install folder's Windows programs for the Program picker: every .exe, .bat
     /// or .cmd up to six folders deep (linked folders are not followed), at most 400, sorted.
     static func programs(in root: URL) -> [String] {

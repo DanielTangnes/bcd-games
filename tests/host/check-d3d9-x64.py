@@ -107,8 +107,11 @@ if build_name and check_name:
 key = re.search(r'echo "key=(i386-farm-[^"]*)" >> "\$GITHUB_OUTPUT"', wf)
 check("the i386 farm's cache key is unchanged: wine revision, dxmt revision, and the hash of build.sh, patch-dxmt-*.py and patch-wine-*.py",
       key is not None and key.group(1) == "i386-farm-$(git -C wine rev-parse HEAD)-$(git -C dxmt rev-parse HEAD)-${{ hashFiles('build/wine-i386/build.sh', 'tools/patch-dxmt-*.py', 'tools/patch-wine-*.py') }}")
+# Build 623's d3d9.customDriver (tools/patch-dxmt-d3d9-custom-driver.py, Fallout 3 / New Vegas) is a separate change that must reach
+# the i386 farm (both games are 32-bit); it is checked by tests/host/check-dxmt-d3d9-custom-driver.py.
+_d3d9_patches = sorted(p.name for p in (root / "tools").glob("patch-dxmt-d3d9*")) + sorted(p.name for p in (root / "tools").glob("patch-wine-d3d9*"))
 check("no tools/patch-dxmt-*.py or tools/patch-wine-*.py file belongs to this change (the key hashes them: the i386 farm would be rebuilt)",
-      not (root / "tools/patch-dxmt-d3d9-x64.py").exists() and not list((root / "tools").glob("patch-dxmt-d3d9*")) and not list((root / "tools").glob("patch-wine-d3d9*")))
+      not (root / "tools/patch-dxmt-d3d9-x64.py").exists() and _d3d9_patches == ["patch-dxmt-d3d9-custom-driver.py"])
 i386 = (root / "build/wine-i386/build.sh").read_text()
 check("the i386 build still installs the shim as d3d9.dll and the emulated frontend as d3d9-emulated.dll, from its own build-pe-i386 tree",
       '"$STRIP" -o "$DEST/d3d9.dll" build-pe-i386/src/d3d9shim/d3d9shim.dll' in i386

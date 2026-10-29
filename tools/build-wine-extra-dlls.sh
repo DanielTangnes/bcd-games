@@ -167,7 +167,11 @@ fi
 # gamingtcui (2026-10-28, round 620, Forza Horizon 4, testers' logs YFK3A6/TNE8NW/5TZDYZ/SJT15P, build 614): ForzaHorizon4.exe
 # imports api-ms-win-gaming-tcui-l1-1-0.dll, which Wine's API set schema maps to gamingtcui.dll; only the 32-bit set has it, so
 # the 64-bit loader ended with c0000135 ("[dll-missing] #1 L"gamingtcui.dll""). Wine's gamingtcui imports nothing beyond the kernel.
-OPTIN_WANT="dxva2 evr xpsprint sfc sfc_os tbs twinapi.appcore mfasfsrcsnk wmvdecod wmadmod oledlg fwpuclnt sensapi ddraw msi mspatcha odbccp32 sxs rstrtmgr glu32 tdh gamingtcui"
+# qwave (2026-10-28, round 623, Bloons TD 6, tester's log 4EJFKD, build 622): the Unity game's Plugins\x86_64\discord_partner_sdk.dll (the
+# Discord Social SDK) imports qwave.dll, Windows' quality-of-service API; the 64-bit set lacks it, the plugin cannot load, and the IL2CPP
+# game ends with "UnhandledExceptionHandler caught: Unable to load DLL 'discord_partner_sdk'" 16 s into the start. A Mono Unity game
+# (Mycopunk, BP35FG/NEQQN0) logs the same import failure and goes on, so it is opt-in. Wine's qwave imports nothing beyond the kernel.
+OPTIN_WANT="dxva2 evr xpsprint sfc sfc_os tbs twinapi.appcore mfasfsrcsnk wmvdecod wmadmod oledlg fwpuclnt sensapi ddraw msi mspatcha odbccp32 sxs rstrtmgr glu32 tdh gamingtcui qwave"
 OPT=""
 if [ "${MADEIRA_OPTIN_BUILD:-1}" != 0 ]; then
     for d in $OPTIN_WANT; do

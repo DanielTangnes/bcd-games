@@ -1646,6 +1646,10 @@ enum SteamInstallRegistry {
         var skipped: [String] = []
         /// The first few key names the "Registry" section holds, as written (for the log when nothing came of them).
         var keys: [String] = []
+        /// Round 623: up to six of the entries counted as "language" in `skipped`, as `key | type | name | the names under it` (printable ASCII,
+        /// bounded), so the log shows the shape of what was left out. Far Cry 3's script left 34 entries out this way and its updater still
+        /// found "essential information" missing (KNYQ40); how those entries are laid out is not known.
+        var languageShapes: [String] = []
     }
 
     /// The registry values of one script, in its order, the first of a repeated value only.
@@ -1727,7 +1731,14 @@ enum SteamInstallRegistry {
         var seen = Set<String>()
         let chosen = language.lowercased()
         for raw in raws {
-            guard let text = raw.text ?? raw.languages[chosen] ?? raw.languages["english"] else { result.skipped.append("language"); continue }
+            guard let text = raw.text ?? raw.languages[chosen] ?? raw.languages["english"] else {
+                result.skipped.append("language")
+                if result.languageShapes.count < 6 {
+                    let shape = [raw.key, raw.type, raw.name, raw.languages.keys.sorted().prefix(8).joined(separator: ",")].joined(separator: " | ")
+                    result.languageShapes.append(String(String.UnicodeScalarView(shape.unicodeScalars.filter { $0.value >= 32 && $0.value < 127 && $0 != "\"" }).prefix(150)))
+                }
+                continue
+            }
             guard let (hive, key) = SteamInstallScripts.hive(raw.key), validKey(key) else { result.skipped.append("path"); continue }
             guard validText(raw.name, limit: 255) else { result.skipped.append("name"); continue }
             let payload: SteamInstallRegistryValue.Payload
@@ -1805,6 +1816,37 @@ enum SteamInstallRegistry {
         case .string(let text): return name + "\"" + quoted(text) + "\""
         case .dword(let number): return name + String(format: "dword:%08x", number)
         }
+    }
+
+    /// Round 623: what the .reg text already holds of each value, read before `addMissing` changes it. One entry for each value that is in at
+    /// least one of its views: how many views there are and hold it, whether every one holds exactly the text the script wants, and the first
+    /// differing stored text (as the .reg file spells it, bounded). Far Cry 3's updater said "Cannot find essential information in the registry"
+    /// with every value of the script present (KNYQ40: values=8 written=0 present=12), and a stored text is never overwritten, so a stale or
+    /// different one has to be visible in the log.
+    static func stored(_ values: [SteamInstallRegistryValue], in text: String)
+        -> [(value: SteamInstallRegistryValue, views: Int, found: Int, same: Bool, stored: String, wanted: String)] {
+        let lines = text.components(separatedBy: "\n")
+        let lower = lines.map { $0.lowercased() }   // once: a Wine registry file has tens of thousands of lines
+        var out: [(value: SteamInstallRegistryValue, views: Int, found: Int, same: Bool, stored: String, wanted: String)] = []
+        for value in values {
+            let prefix = ("\"" + quoted(value.name) + "\"=")
+            let wanted = String(line(value).dropFirst(prefix.count))
+            let keys = views(value)
+            var found = 0, same = true, shown = ""
+            for key in keys {
+                let header = ("[" + SteamInstallScripts.escape(key) + "]").lowercased()
+                guard let start = lower.firstIndex(where: { $0.hasPrefix(header) }) else { continue }
+                var end = start + 1
+                while end < lines.count, !lines[end].hasPrefix("[") { end += 1 }
+                guard let at = (start + 1..<end).first(where: { lower[$0].hasPrefix(prefix.lowercased()) }) else { continue }
+                found += 1
+                let rest = String(lines[at].dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+                if rest != wanted { same = false }
+                if shown.isEmpty || (rest != wanted && shown == wanted) { shown = rest }
+            }
+            if found > 0 { out.append((value, keys.count, found, same, String(shown.prefix(100)), String(wanted.prefix(100)))) }
+        }
+        return out
     }
 
     /// The .reg text with each value added where the key lacks one of that name (any case): into the key's section, or
@@ -1891,6 +1933,7 @@ enum DockScriptRegistry {
         var values: [SteamInstallRegistryValue] = []
         var skipped: [String] = []
         var keys: [String] = []
+        var languageShapes: [String] = []
         var scripts = 0
         for file in SteamInstallScripts.scripts(folder: folder, depth: 1, containing: "registry") {
             guard let contents = try? Data(contentsOf: file) else { continue }
@@ -1898,6 +1941,7 @@ enum DockScriptRegistry {
             guard !parsed.values.isEmpty || !parsed.skipped.isEmpty else { continue }
             scripts += 1
             skipped += parsed.skipped
+            for shape in parsed.languageShapes where languageShapes.count < 6 && !languageShapes.contains(shape) { languageShapes.append(shape) }
             for key in parsed.keys where keys.count < 3 && !keys.contains(key) { keys.append(key) }
             for value in parsed.values where !values.contains(where: {
                 $0.hive == value.hive && $0.key.lowercased() == value.key.lowercased() && $0.name.lowercased() == value.name.lowercased()
@@ -1907,11 +1951,13 @@ enum DockScriptRegistry {
             .map { "\($0.key)(\($0.value.count))" }.joined(separator: ",")
         // The key names as the script has them, when nothing came of them: the next log shows what shape to read.
         let keysText = keys.isEmpty ? "" : " keys=" + keys.map { String($0.filter { $0.isASCII && !$0.isNewline && $0 != "\"" }.prefix(60)) }.joined(separator: ";")
+        for shape in languageShapes { LogStore.shared.log("[dock-script-registry] app=\(app) left out for language: \(shape)") }
         guard !values.isEmpty else {
             LogStore.shared.log("[dock-script-registry] app=\(app) scripts=\(scripts) values=0 skipped=\(skippedText)\(keysText)")
             return "none"
         }
         var written = 0, present = 0, missingFile = false
+        var presentNotes: [String] = []
         for (hive, file) in [(SteamInstallRun.Hive.machine, "system.reg"), (.user, "user.reg")] {
             let selected = values.filter { $0.hive == hive }
             guard !selected.isEmpty else { continue }
@@ -1921,6 +1967,12 @@ enum DockScriptRegistry {
             guard text.hasPrefix("WINE REGISTRY Version 2") else {
                 LogStore.shared.log("[dock-script-registry] app=\(app) \(file) is not a Wine registry file: left as it is", level: .error)
                 continue
+            }
+            // Round 623: what is there already, before anything is added (log lines only).
+            for note in SteamInstallRegistry.stored(selected, in: text) {
+                let shown = (hive == .machine ? "HKLM" : "HKCU") + "\\" + note.value.key
+                presentNotes.append("[dock-script-registry] app=\(app) present \(shown) \"\(note.value.name)\": \(note.found) of \(note.views) view(s), " +
+                                    (note.same ? "same as the script" : "differs: stored \(note.stored), the script has \(note.wanted)"))
             }
             let result = SteamInstallRegistry.addMissing(selected, in: text, now: Int(now.timeIntervalSince1970))
             present += result.present
@@ -1943,6 +1995,8 @@ enum DockScriptRegistry {
                 written += 1
             }
         }
+        for line in presentNotes.prefix(12) { LogStore.shared.log(line) }
+        if presentNotes.count > 12 { LogStore.shared.log("[dock-script-registry] app=\(app) present: \(presentNotes.count - 12) more value(s) not listed") }
         LogStore.shared.log("[dock-script-registry] app=\(app) scripts=\(scripts) values=\(values.count) written=\(written) present=\(present) " +
                             "skipped=\(skippedText) language=\(language)\(missingFile ? " (the prefix has no registry file yet)" : "")")
         return missingFile && written == 0 ? "no-registry" : written > 0 ? "written" : "present"

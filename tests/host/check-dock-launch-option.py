@@ -173,6 +173,38 @@ func before(_ options: [SteamLaunchOption]?, _ root: URL) -> (UInt32, String) {
         let longText = D.dockOptions([opt(1, "Launcher.exe", args: String(repeating: "a", count: 200), text: big)], installFolder: install)
         require(longText.count == 1 && longText[0].description.count <= 80 && longText[0].arguments.count <= 80, "description and arguments are bounded for the screen")
 
+        // Round 623: a launch entry that is a script shows its first lines in the log (Messiah, MZYTWC). Text only: dockLaunch above is unchanged.
+        let scripts = install.deletingLastPathComponent().appendingPathComponent("madeira-bat-" + UUID().uuidString)
+        defer { try? fm.removeItem(at: scripts) }
+        try write(scripts.appendingPathComponent("Launch Game.bat"), "@echo off\r\nif exist \"%~dp0Game.exe\" start \"\" \"%~dp0Game.exe\"\r\n\r\nexit /b 0\r\n\r\n")
+        try write(scripts.appendingPathComponent("Sub/Run.CMD"), (1...60).map { "echo line \($0)" }.joined(separator: "\n"))
+        try write(scripts.appendingPathComponent("tool.bat"), "echo a\u{1}b\tc " + String(repeating: "z", count: 300))
+        try fm.createDirectory(at: scripts, withIntermediateDirectories: true)
+        try Data([0x4d, 0x5a, 0x00, 0x01, 0x02]).write(to: scripts.appendingPathComponent("binary.bat"))
+        try write(scripts.appendingPathComponent("game.exe"))
+        try write(scripts.appendingPathComponent("empty.bat"), "")
+        let batOptions = [opt(0, "launch game.BAT", type: "default", text: "Launch"), opt(1, "game.exe"), opt(2, "sub/run.cmd", args: "-x  -y"), opt(3, "tool.bat"),
+                          opt(4, "binary.bat"), opt(5, "missing.bat"), opt(6, "../outside.bat"), opt(7, "empty.bat"), opt(nil, "Launch Game.bat")]
+        let first = D.batchPreview(options: batOptions, key: 0, installFolder: scripts)
+        require(first.count == 5 && first[0] == "[bat-start] launch option 0: Launch Game.bat (4 lines follow)"
+                && first[1] == "[bat-start] 1: @echo off" && first[2] == "[bat-start] 2: if exist \"%~dp0Game.exe\" start \"\" \"%~dp0Game.exe\""
+                && first[3] == "[bat-start] 3: " && first[4] == "[bat-start] 4: exit /b 0" && !first.joined().contains("\r"),
+                "a .bat entry: its spelling on disk, CRLF read as lines, trailing blank lines dropped: \(first)")
+        require(D.batchPreview(options: batOptions, key: 1, installFolder: scripts).isEmpty, "an .exe entry logs nothing")
+        let sub = D.batchPreview(options: batOptions, key: 2, installFolder: scripts)
+        require(sub.count == 41 && sub[0] == "[bat-start] launch option 2: Sub/Run.CMD arguments=\"-x  -y\" (60 lines, the first 40 follow)" && sub[40] == "[bat-start] 40: echo line 40",
+                "a .cmd entry below a folder, found without regard to case: the first 40 of 60 lines and its arguments: \(sub.first ?? "") ... \(sub.last ?? "")")
+        let odd = D.batchPreview(options: batOptions, key: 3, installFolder: scripts)
+        require(odd.count == 2 && odd[1] == "[bat-start] 1: echo ab c " + String(repeating: "z", count: 160 - "echo ab c ".count), "control characters out, a tab is a space, a line is cut at 160: \(odd.map { $0.count })")
+        require(D.batchPreview(options: batOptions, key: 4, installFolder: scripts) == ["[bat-start] launch option 4: binary.bat (not a text file, 5 bytes read)"], "a file with a zero byte is only named")
+        require(D.batchPreview(options: batOptions, key: 5, installFolder: scripts).isEmpty, "a program that is not on disk logs nothing")
+        require(D.batchPreview(options: batOptions, key: 6, installFolder: scripts).isEmpty, "a path that leaves the install folder logs nothing")
+        require(D.batchPreview(options: batOptions, key: 7, installFolder: scripts) == ["[bat-start] launch option 7: empty.bat (0 lines follow)"], "an empty script is named with zero lines")
+        require(D.batchPreview(options: batOptions, key: 99, installFolder: scripts).isEmpty && D.batchPreview(options: nil, key: 0, installFolder: scripts).isEmpty,
+                "a key that is not in the list, and no launch configuration: nothing")
+        let beforeBat = D.dockLaunch(chosen: nil, options: batOptions, installFolder: scripts)
+        require(beforeBat.lines.count == 1 && beforeBat.lines[0].hasPrefix("[madeira-dock] launch option "), "dockLaunch still returns its one line for a .bat entry: \(beforeBat)")
+
         // The default path was not touched: choose() is what it was.
         require(D.choose(sets[3].1!, installFolder: install)?.launchIndex == 3, "choose still picks the 64-bit default entry")
         if failures > 0 { print("FAILURES: \(failures)"); exit(1) }
@@ -205,6 +237,9 @@ check('startDock hands Valve\'s client SteamDirectStart.dockLaunch(chosen: profi
       'SteamDirectStart.dockLaunch(chosen: profile?.steamLaunchOption, options: options, installFolder: installFolder)' in start
       and 'let launchOption = dockLaunch.index' in start and 'for line in dockLaunch.lines { LogStore.shared.log(line) }' in start
       and 'MadeiraDock.configure(game, launchOption: launchOption)' in start)
+check('startDock logs the .bat preview right after the launch option lines, with the key it hands on (round 623)',
+      'for line in SteamDirectStart.batchPreview(options: options, key: launchOption, installFolder: installFolder) { LogStore.shared.log(line) }' in start
+      and start.index('for line in dockLaunch.lines') < start.index('SteamDirectStart.batchPreview(') < start.index('await SteamOwnedLibrary.shared.prepareDock()'))
 check('the old inline choice and its log line are gone from startDock',
       'SteamDirectStart.choose(' not in start and 'launch option \\(launchOption)' not in start)
 check('the choice is read before the app\'s Steam connection closes, as the old lines were',

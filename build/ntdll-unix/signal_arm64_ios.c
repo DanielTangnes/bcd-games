@@ -1835,6 +1835,8 @@ done:
  * against fake ones. Only the anonymous-alias branch of the Q-pair emulation uses them. */
 #include "ios_store_split.h"
 extern uintptr_t ios_jit_anon_alias_lookup(uintptr_t fault_addr);
+/* build 623 (Slay the Spire 2): the scalar general-purpose stores that cross the end of an alias get the same page-by-page split. */
+#include "ios_gpr_store_straddle.h"
 
 /* A part is aliased when the alias run that holds its first byte also holds its last; otherwise the guest address
  * itself is offered as a direct part, and ios_store_split_direct_write decides whether it is writable. */
@@ -4544,6 +4546,45 @@ static void *ios_mach_exception_thread( void *arg )
                     uint32_t insn; ios_fault_read_insn( (uint64_t)(uintptr_t)fault_pc, &insn );  /* ml982 */
                     int emulated = 0;
                     int anon_cas_handoff = 0;   /* madeira-bcd (build 591): MADEIRA_ANON_CAS_FLUSH, see below */
+                    /* build 623 (Slay the Spire 2, 1WF6J7 / D1A9QX / KRFN07): a scalar store (STRB/STRH/STR, STUR, STR post-/pre-index,
+                     * STR register offset, STLUR) whose bytes cross the end of an anonymous alias into the next 16 KB page was written
+                     * whole at this alias's RW address by the branches below: the high bytes landed in whatever follows that RW view
+                     * and the next page lost them (the CLR's JIT wrote the displacement of `mov rcx,[rbp-0x430]` that way, the next
+                     * chunk kept 00 00 and FEX translated `mov rcx,[rbp+0xfbd0]`; ios_gpr_store_straddle.h). Only a store that
+                     * crosses a 16 KB boundary AND whose alias run does not hold all of it is taken here, one part per page like the
+                     * Q-pair and SIMD branches (ml629, ml1276, ml1283); every other store, and one whose parts cannot be placed,
+                     * goes to the branches below exactly as before. The JIT pool itself (in_jit) is contiguous and not touched. */
+                    if (!in_jit)
+                    {
+                        ios_gpr_store gs;
+                        int gparts = 0;
+                        if (ios_gpr_store_decode( insn, &gs ) && ios_gpr_store_crosses( (uintptr_t)fault_addr, gs.bytes ))
+                        {
+                            const int gwhole = ios_jit_anon_alias_lookup( (uintptr_t)fault_addr + gs.bytes - 1 ) == rw_addr + gs.bytes - 1;
+                            static int gpr_split_n, gpr_split_fail_n;
+                            if (!gwhole &&
+                                ios_gpr_store_straddle( insn, (uintptr_t)fault_addr, IOS_STORE_SRC(gs.rt), 0,
+                                                        ios_store_split_resolve_anon, ios_store_split_direct_write, NULL, &gs, &gparts ))
+                            {
+                                if (gs.wb)
+                                {
+                                    const uint64_t nb = ios_gpr_store_new_base( &gs, (uint64_t)fault_addr );
+                                    if (gs.rn == 31) state.__sp = nb;
+                                    else             state.__x[gs.rn] = nb;
+                                }
+                                emulated = 1;
+                                if (gpr_split_n < 8)
+                                    dprintf(STDERR_FILENO,
+                                        "[gpr-split] build623 #%d insn=0x%08x bytes=%u addr=0x%llx parts=%d%s\n",
+                                        ++gpr_split_n, insn, gs.bytes, (unsigned long long)fault_addr, gparts,
+                                        gs.wb ? " (writeback)" : "");
+                            }
+                            else if (!gwhole && gpr_split_fail_n < 4)
+                                dprintf(STDERR_FILENO,
+                                    "[gpr-split] build623 #%d insn=0x%08x bytes=%u addr=0x%llx REFUSED: a part cannot be placed (the old path runs)\n",
+                                    ++gpr_split_fail_n, insn, gs.bytes, (unsigned long long)fault_addr);
+                        }
+                    }
                     /* STP (SIMD&FP, signed offset, 128-bit Q): 10 101 1 1 0 0 0 imm7 Rt2 Rn Rt
                      *   pattern bits 31-22: 10 1011 1000  → top10 = 0x2B8 (= bits 31..22)
                      *   So mask 0xFFC00000 = top10. Match 0x2B8 << 22 = 0xAE000000? Hmm.
@@ -4583,7 +4624,11 @@ static void *ios_mach_exception_thread( void *arg )
                      *
                      * STP Q is not architecturally one atomic 32-byte transaction, so two
                      * 16-byte copies are correct. Rn==31 is SP, never __x[31]. */
-                    if (have_neon && (insn & 0xFE400000) == 0xAC000000)
+                    if (emulated)
+                    {
+                        /* build 623: stored page by page above */
+                    }
+                    else if (have_neon && (insn & 0xFE400000) == 0xAC000000)
                     {
                         const int mode = (insn >> 23) & 0x3; /* 0 stnp, 1 post, 2 offset, 3 pre */
                         const int rt   = insn & 0x1f;
@@ -12392,6 +12437,41 @@ static void segv_handler( int signal, siginfo_t *siginfo, void *sigcontext )
                      di.dli_fbase );
         ios_dump_fault_region( siginfo->si_addr );
     }
+    /* madeira-bcd (build 623; upstream Madeira 726686e, by ft7t8drgwf-wq): a 32-bit program's call or jump to an address
+     * below 64 KB. FEX refuses to compile such a block (CompileBlock: REFUSING low/invalid RIP) and returns 0, and its
+     * dispatcher branches there, so the fault arrives here with pc = 0 and lr just past the dispatcher's CompileBlock call.
+     * Wow64PrepareForException then asks FEX's BTCpuResetToConsistentState, which raises a guest exception only for a pc
+     * inside the JIT; for pc 0 it declined, the exception was dispatched as a native one, the unwind stalled and the
+     * program ended (c0000005). 36 BCD logs end this way (MDK 2 HD 6DFEBH and D868S1, Atari 50, Sleeping Dogs, Resident
+     * Evil 6, Half-Life 2...). Windows and Wine swallow an exception in a window procedure called back from the kernel;
+     * to get there the guest has to see it. With pc at the dispatcher's call, FEX takes the guest state from its frame
+     * (rip = the refused address) and raises the access violation to the 32-bit program, whose own handlers then run.
+     * Only this already-fatal case is touched: a WoW64 thread, pc below 64 KB equal to the fault address, lr in the JIT
+     * pool. MADEIRA_WOW_LOW_RIP_GUEST=0 dispatches it natively as before. */
+    {
+        extern void *ios_jit_rx_base_global;
+        extern size_t ios_jit_pool_size_global;
+        static int low_rip_guest = -1;
+        uintptr_t lp_pc = (uintptr_t)PC_sig(context), lp_lr = (uintptr_t)LR_sig(context);
+        uintptr_t lp_rx = (uintptr_t)ios_jit_rx_base_global;
+        size_t lp_sz = ios_jit_pool_size_global;
+
+        if (low_rip_guest < 0)
+        {
+            const char *e = getenv( "MADEIRA_WOW_LOW_RIP_GUEST" );
+            low_rip_guest = !(e && e[0] == '0' && !e[1]);
+        }
+        if (low_rip_guest && lp_pc < 0x10000 && (uintptr_t)siginfo->si_addr == lp_pc &&
+            NtCurrentTeb()->WowTebOffset && lp_lr >= 4 &&
+            ((lp_rx && lp_lr >= lp_rx && lp_lr < lp_rx + lp_sz) || ios_jit_low_contains( lp_lr )))
+        {
+            static int low_rip_logged;
+            if (low_rip_logged++ < 16)
+                ERR( "[wow-low-rip] guest branch to %p: pc set to the dispatcher's call %p so the "
+                     "32-bit program gets the access violation\n", (void *)lp_pc, (void *)(lp_lr - 4) );
+            PC_sig(context) = lp_lr - 4;
+        }
+    }
 #endif
     setup_exception( context, &rec );
 }
@@ -17171,6 +17251,65 @@ void ios_dump_all_thread_stacks(void)
                                         fprintf(stderr, "[spin]   guest bytes @0x%llx: %s\n",
                                                 (unsigned long long)exact, hex);
                                     }
+                                    /* spin-ctx:begin */
+                                    {   /* Round 623 (ajan61; Forza Horizon 4, Send Logs D9NHGJ / RVXHV6 / 58VNDB, build 622). The 32 bytes
+                                         * above name a loop - `movzx eax, [rbp+0x2b0]; test al, al; je -11` - and the registers show it sits
+                                         * right after a call, but not the test that sends the thread into the loop (the JIT code shows
+                                         * `cmp r13d, 0; jne` skipping the store that would end it), who passes what in the caller's
+                                         * frames, or which function this is. Only on this failure path (a spin streak, once per thread):
+                                         * 256 guest code bytes from rip-192 and 128 guest stack words from RSP. In the ARM64EC register
+                                         * allocation RSP is x23, RBP x29, RAX x8, RCX x0, RDX x1, RBX x27, RSI x25, RDI x26, R8 x2,
+                                         * R9 x3, R12..R15 x19..x22; a WoW64 thread's allocation differs, so the registers are named by
+                                         * their host numbers. Plain mach reads like the dump above: a bad pointer cannot fault this
+                                         * thread, and a failed read prints that it failed. */
+                                        uint8_t cw[256];
+                                        uint64_t sw[128], cbase = exact - 192;
+                                        mach_vm_size_t cg = 0, sg = 0;
+                                        int cz, wz;
+
+                                        if (exact >= 192 &&
+                                            mach_vm_read_overwrite(mach_task_self(), (mach_vm_address_t)cbase,
+                                                sizeof(cw), (mach_vm_address_t)cw, &cg) == KERN_SUCCESS &&
+                                            cg == sizeof(cw))
+                                        {
+                                            for (cz = 0; cz < 256; cz += 32)
+                                            {
+                                                char hx[100]; int bz;
+                                                for (bz = 0; bz < 32; bz++)
+                                                    snprintf(hx + bz * 3, 4, "%02x ", cw[cz + bz]);
+                                                fprintf(stderr, "[spin]   guest code @0x%llx: %s\n",
+                                                        (unsigned long long)(cbase + cz), hx);
+                                            }
+                                        }
+                                        else
+                                            fprintf(stderr, "[spin]   guest code @0x%llx: UNREADABLE (256 bytes from rip-192)\n",
+                                                    (unsigned long long)cbase);
+                                        fprintf(stderr, "[spin]   guest regs (host numbers): x23=0x%llx x29=0x%llx x8=0x%llx x0=0x%llx x1=0x%llx "
+                                                        "x27=0x%llx x25=0x%llx x26=0x%llx x2=0x%llx x3=0x%llx x19=0x%llx x20=0x%llx "
+                                                        "x21=0x%llx x22=0x%llx\n",
+                                                (unsigned long long)st.__x[23], (unsigned long long)st.__fp,
+                                                (unsigned long long)st.__x[8],  (unsigned long long)st.__x[0],
+                                                (unsigned long long)st.__x[1],  (unsigned long long)st.__x[27],
+                                                (unsigned long long)st.__x[25], (unsigned long long)st.__x[26],
+                                                (unsigned long long)st.__x[2],  (unsigned long long)st.__x[3],
+                                                (unsigned long long)st.__x[19], (unsigned long long)st.__x[20],
+                                                (unsigned long long)st.__x[21], (unsigned long long)st.__x[22]);
+                                        if (st.__x[23] > 0x10000 && !(st.__x[23] & 7) &&
+                                            mach_vm_read_overwrite(mach_task_self(), (mach_vm_address_t)st.__x[23],
+                                                sizeof(sw), (mach_vm_address_t)sw, &sg) == KERN_SUCCESS &&
+                                            sg == sizeof(sw))
+                                        {
+                                            for (wz = 0; wz < 128; wz += 4)
+                                                fprintf(stderr, "[spin]   guest stack x23+0x%03x: %016llx %016llx %016llx %016llx\n",
+                                                        wz * 8,
+                                                        (unsigned long long)sw[wz],     (unsigned long long)sw[wz + 1],
+                                                        (unsigned long long)sw[wz + 2], (unsigned long long)sw[wz + 3]);
+                                        }
+                                        else
+                                            fprintf(stderr, "[spin]   guest stack x23=0x%llx: not readable (1024 bytes)\n",
+                                                    (unsigned long long)st.__x[23]);
+                                    }
+                                    /* spin-ctx:end */
                                 }
                             }
                             fprintf(stderr, "[spin]   x28=0x%llx BlockBegin=%s0x%llx State.rip=%s0x%llx\n",

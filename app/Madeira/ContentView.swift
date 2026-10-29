@@ -1796,6 +1796,7 @@ struct ContentView: View {
                 }
                 if !extra.isEmpty { logStore.log("DXMT config: \(extra.joined(separator: ";")) via the game's settings") }
             }
+            BCDGPUCardsLive.syncGamePrefs(appID: profile?.steamAppID, program: profile?.relativePath)   // build 623: Fallout 3 / New Vegas keep the card's name in their prefs
             BCDGPUCardsLive.apply(to: &dxmtOptions)   // madeira-bcd (2026-10-25, round 603): the game's "Look like this GPU" choice (gpu-card); nothing without one
             // Unset otherwise, so a previous session's options in this app process do not apply.
             if !dxmtOptions.isEmpty { setenv("DXMT_CONFIG", dxmtOptions.joined(separator: ";"), 1) } else { unsetenv("DXMT_CONFIG") }
@@ -2332,6 +2333,8 @@ struct ContentView: View {
             let dockLaunch = SteamDirectStart.dockLaunch(chosen: profile?.steamLaunchOption, options: options, installFolder: installFolder)
             let launchOption = dockLaunch.index
             for line in dockLaunch.lines { LogStore.shared.log(line) }
+            // madeira-bcd (round 623): a launch entry that is a .bat or .cmd shows its first lines in the log (SteamDirectStart.batchPreview).
+            for line in SteamDirectStart.batchPreview(options: options, key: launchOption, installFolder: installFolder) { LogStore.shared.log(line) }
             await SteamOwnedLibrary.shared.prepareDock()
             do {
                 // The launch state may have changed while the connection closed.

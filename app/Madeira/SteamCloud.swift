@@ -235,9 +235,14 @@ struct SteamCloudAudit: Equatable, Sendable {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? handle.close() }
         var hasher = Insecure.SHA1()
-        while true {
-            guard let chunk = try? handle.read(upToCount: 1 << 20), !chunk.isEmpty else { break }
-            hasher.update(data: chunk)
+        // madeira-bcd (build 623; upstream Madeira #472 by Jelly-RayTian): a read error is no checksum. The loop used to
+        // stop at a failed read as at the end of the file and return the digest of the part read so far.
+        do {
+            while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty {
+                hasher.update(data: chunk)
+            }
+        } catch {
+            return nil  // A partial digest is not a checksum of this save.
         }
         return Data(hasher.finalize())
     }
@@ -658,6 +663,9 @@ struct SteamCloudPlan: Equatable, Sendable {
             case .same:
                 plan.settled[entry.key] = hex(entry.cloudSHA)
             case .differ:
+                // madeira-bcd (build 623; upstream #472): without a complete local checksum neither side can be chosen
+                // automatically (an unreadable save with an unchanged cloud copy was planned as an upload).
+                guard !entry.localSHA.isEmpty else { plan.conflicts.append(entry); continue }
                 // A save that was missing here and is back is a new file, not a
                 // change of the synced one: never copied over the cloud's unasked.
                 let cloud = hex(entry.cloudSHA), local = hex(entry.localSHA)

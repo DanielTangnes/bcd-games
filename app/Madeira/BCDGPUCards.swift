@@ -30,6 +30,9 @@ struct BCDGPUCard: Identifiable, Equatable {
     var device: UInt16
     /// The adapter name a game reads (DXGI's Description, Direct3D 9's, Windows' DeviceString and driver description).
     var name: String
+    /// Direct3D 9's driver file name (d3d9.customDriver, build 623), nil = DXMT's own. Fallout 3 and New Vegas pick their
+    /// render path from the description and the driver together.
+    var driver: String? = nil
 
     var vendorHex: String { String(format: "%04x", vendor) }
     var deviceHex: String { String(format: "%04x", device) }
@@ -56,6 +59,11 @@ enum BCDGPUCards {
         .init(id: "amd-rx580", title: "AMD Radeon RX 580", vendor: amd, device: 0x67DF, name: "AMD Radeon RX 580 Series"),
         .init(id: "intel", title: "Intel UHD Graphics 630", vendor: intel, device: 0x3E92, name: "Intel(R) UHD Graphics 630"),
         .init(id: "intel-arc", title: "Intel Arc A770", vendor: intel, device: 0x56A0, name: "Intel(R) Arc(TM) A770 Graphics"),
+        // Build 623 (upstream Madeira adec653 + willfaust/dxmt f25e5568d): an older NVIDIA card with NVIDIA's
+        // driver file, as the d3d9.dll wrapper Fallout: New Vegas players install reports. With DXMT's own name and driver New
+        // Vegas takes its basic render path and crashes loading a save at 00B57AA9 (BCD's fallout-new-vegas notes: four logs,
+        // the same address); with this identity it loads (upstream, iPhone, 2026-10-26).
+        .init(id: "nvidia-7900gs", title: "NVIDIA GeForce 7900 GS (older Direct3D 9 games)", vendor: nvidia, device: 0x0292, name: "NVIDIA GeForce 7900 GS", driver: "nv4_disp.dll"),
         // The phone's own GPU under its real name (the Metal device's, "Apple A17 Pro GPU"), chosen on purpose: it names it the same in
         // every place a game can ask (the default says "BCD Display" in Windows' registry), and turns the older NVIDIA switch off for this
         // game. DXGI's and Direct3D 9's own default is already the Metal device's name, so no DXMT option is needed.
@@ -86,6 +94,8 @@ enum BCDGPUCards {
             out.append("\(api).customVendorId=\(card.vendorHex)")
             out.append("\(api).customDeviceId=\(card.deviceHex)")
         }
+        // The driver file counts like the ids (a game reads it with them), so it stays when the names have to go.
+        if let driver = card.driver { out.append("d3d9.customDriver=\(driver)") }
         if names {
             // A name has spaces: DXMT's parser keeps what is inside double quotes whole.
             for api in ["dxgi", "d3d9"] { out.append("\(api).customDeviceDesc=\"\(card.name)\"") }
@@ -113,6 +123,51 @@ enum BCDGPUCards {
             dropped = !card.isApple
         }
         return (out, replaced, dropped)
+    }
+
+    // MARK: A game's own record of the card
+
+    /// Games that keep the card's name in their prefs (sD3DDevice) and open their launcher when the card they see differs:
+    /// a second program, which ends the session (upstream Madeira adec653). App ID -> the file under Documents/My Games.
+    static let prefsFiles: [Int: String] = [
+        22380: "FalloutNV/FalloutPrefs.ini",                                    // Fallout: New Vegas
+        22300: "Fallout3/FalloutPrefs.ini", 22370: "Fallout3/FalloutPrefs.ini", // Fallout 3, Game of the Year
+    ]
+    /// The same files by the program a library entry starts, for a copy that is not a Steam entry (build 623: the
+    /// auto-tune rule fallout-nv-older-nvidia-card gives the card to any copy of New Vegas).
+    static let prefsFilesByProgram: [String: String] = [
+        "falloutnv.exe": "FalloutNV/FalloutPrefs.ini", "falloutnvlauncher.exe": "FalloutNV/FalloutPrefs.ini",
+        "fallout3.exe": "Fallout3/FalloutPrefs.ini", "falloutlauncher.exe": "Fallout3/FalloutPrefs.ini",
+    ]
+
+    /// The prefs file of the game a launch starts: by its Steam App ID, else by its program's file name.
+    static func prefsFile(appID: Int?, program: String?) -> String? {
+        if let appID, let file = prefsFiles[appID] { return file }
+        guard let name = program?.split(whereSeparator: { $0 == "/" || $0 == "\\" }).last?.lowercased() else { return nil }
+        return prefsFilesByProgram[name]
+    }
+
+    /// `text` with sD3DDevice naming the card the game will see, or nil when nothing changes. With a card chosen
+    /// (`cardName`) its name goes in; with none, the phone's own name (`metalName`, what DXMT reports then) goes back only
+    /// over a name one of BCD's cards wrote, never over a name the game or the player chose.
+    static func prefsText(_ text: String, cardName: String?, metalName: String?) -> String? {
+        var lines = text.components(separatedBy: "\n")
+        var changed = false
+        let ours = Set(cards.filter { !$0.isApple }.map(\.name))
+        for (i, raw) in lines.enumerated() {
+            let cr = raw.hasSuffix("\r")
+            let line = cr ? String(raw.dropLast()) : raw
+            guard line.lowercased().hasPrefix("sd3ddevice=") else { continue }
+            let key = line.prefix { $0 != "=" }
+            let current = line.dropFirst(key.count + 1).trimmingCharacters(in: CharacterSet(charactersIn: "\" \t"))
+            let wanted: String?
+            if let cardName { wanted = current == cardName ? nil : cardName }
+            else { wanted = ours.contains(current) ? metalName : nil }
+            guard let wanted, !wanted.isEmpty, wanted != current else { continue }
+            lines[i] = "\(key)=\"\(wanted)\"" + (cr ? "\r" : "")
+            changed = true
+        }
+        return changed ? lines.joined(separator: "\n") : nil
     }
 
     // MARK: Windows' side

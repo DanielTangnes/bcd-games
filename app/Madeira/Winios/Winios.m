@@ -1052,6 +1052,13 @@ void winios_post_touch_up(int x, int y) {
 
 /* Key press bridge. vk = Windows virtual-key code, down = 1 for press,
  * 0 for release. Queued like mouse events; drained in pProcessEvents. */
+/* madeira-bcd (2026-10-28): a key that types text (space, digits, letters, the numeric keypad, punctuation) is logged as "char",
+ * never its code. The first keys of a session can be a name or a password typed into a sign-in window, and logs are sent with
+ * Send Log; the keys a log needs to show (Esc, Enter, Tab, arrows, F-keys, modifiers) keep their codes. */
+static int winios_vk_types_text(int vk) {
+    return vk == 0x20 || (vk >= 0x30 && vk <= 0x5A) || (vk >= 0x60 && vk <= 0x6F) || (vk >= 0xBA && vk <= 0xE2);
+}
+
 void winios_post_key(int vk, int down) {
     /* madeira-bcd (2026-10-18): the first 60 keys, then a count every 1000. A
      * line per key, flushed, was one write per key-down and key-up (and per
@@ -1059,7 +1066,9 @@ void winios_post_key(int vk, int down) {
     static _Atomic unsigned int keys;
     unsigned int n = atomic_fetch_add_explicit(&keys, 1, memory_order_relaxed) + 1;
     if (n <= 60) {
-        fprintf(stderr, "[winios] post_key vk=0x%x down=%d\n", vk, down); fflush(stderr);
+        if (winios_vk_types_text(vk)) fprintf(stderr, "[winios] post_key vk=char down=%d\n", down);
+        else fprintf(stderr, "[winios] post_key vk=0x%x down=%d\n", vk, down);
+        fflush(stderr);
     } else if (n % 1000 == 0) {
         fprintf(stderr, "[winios] post_key: %u keys posted (one line each for the first 60)\n", n); fflush(stderr);
     }
@@ -1117,7 +1126,12 @@ static BOOL winios_drain_input(void) {
             if (e.type == WINIOS_EV_KEY) drained_keys++; else drained_mouse++;
             total = drained_mouse + drained_keys;
             if (total <= 40) {
-                fprintf(stderr, "[winios] drain type=%u x=%d y=%d flags=0x%x\n", e.type, e.x, e.y, e.flags); fflush(stderr);
+                /* madeira-bcd: a text key's code stays out of the log (the same keys as winios_vk_types_text) */
+                if (e.type == WINIOS_EV_KEY && (e.x == 0x20 || (e.x >= 0x30 && e.x <= 0x5A) || (e.x >= 0x60 && e.x <= 0x6F) || (e.x >= 0xBA && e.x <= 0xE2)))
+                    fprintf(stderr, "[winios] drain type=%u x=char y=%d flags=0x%x\n", e.type, e.y, e.flags);
+                else
+                    fprintf(stderr, "[winios] drain type=%u x=%d y=%d flags=0x%x\n", e.type, e.x, e.y, e.flags);
+                fflush(stderr);
             } else if (total % 5000 == 0) {
                 fprintf(stderr, "[winios] drain: %u events (mouse %u, keys %u; one line each for the first 40)\n",
                         total, drained_mouse, drained_keys); fflush(stderr);

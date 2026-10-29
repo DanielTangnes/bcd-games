@@ -84,6 +84,39 @@ require(BCDGPUCards.environment(BCDGPUCards.card("apple")!, nativeName: "").set.
 require(BCDGPUCards.environment(amd, nativeName: "Apple A17 Pro GPU").set["MADEIRA_GPU_NAME"] == "AMD Radeon RX 6700 XT",
         "another maker's card ignores the Metal name")
 
+// Build 623: the GeForce 7900 GS names NVIDIA's driver file for Direct3D 9 (Fallout 3 / New Vegas), kept when names must go.
+let gs = BCDGPUCards.card("nvidia-7900gs")!
+require(gs.vendor == 0x10DE && gs.device == 0x0292 && gs.name == "NVIDIA GeForce 7900 GS" && gs.driver == "nv4_disp.dll" && gs.isNVIDIA,
+        "the 7900 GS card is 10DE:0292 with nv4_disp.dll")
+require(BCDGPUCards.dxmtOptions(gs).contains("d3d9.customDriver=nv4_disp.dll")
+        && BCDGPUCards.dxmtOptions(gs, names: false).contains("d3d9.customDriver=nv4_disp.dll"),
+        "its options name the driver, with or without the names")
+require(cards.filter { $0.id != "nvidia-7900gs" }.allSatisfy { $0.driver == nil && !BCDGPUCards.dxmtOptions($0).contains { $0.hasPrefix("d3d9.customDriver") } },
+        "no other card changes the driver name")
+require(BCDGPUCards.isIdentityOption("d3d9.customDriver=x"), "a game's own customDriver line is an adapter option a card replaces")
+require(BCDGPUCards.prefsFiles[22380] == "FalloutNV/FalloutPrefs.ini" && BCDGPUCards.prefsFiles[22300] == "Fallout3/FalloutPrefs.ini"
+        && BCDGPUCards.prefsFiles[22370] == "Fallout3/FalloutPrefs.ini" && BCDGPUCards.prefsFiles.count == 3,
+        "the prefs files: New Vegas and Fallout 3 (both App IDs)")
+require(BCDGPUCards.prefsFile(appID: 22380, program: "steamapps/common/Fallout New Vegas") == "FalloutNV/FalloutPrefs.ini"
+        && BCDGPUCards.prefsFile(appID: nil, program: "Games/Fallout New Vegas/FalloutNV.exe") == "FalloutNV/FalloutPrefs.ini"
+        && BCDGPUCards.prefsFile(appID: nil, program: "Games\\FNV\\FALLOUTNVLAUNCHER.EXE") == "FalloutNV/FalloutPrefs.ini"
+        && BCDGPUCards.prefsFile(appID: nil, program: "Games/Fallout 3/Fallout3.exe") == "Fallout3/FalloutPrefs.ini"
+        && BCDGPUCards.prefsFile(appID: nil, program: "Games/Fallout 3/FalloutLauncher.exe") == "Fallout3/FalloutPrefs.ini"
+        && BCDGPUCards.prefsFile(appID: 377160, program: "steamapps/common/Fallout 4") == nil
+        && BCDGPUCards.prefsFile(appID: nil, program: "Games/Fallout 4/Fallout4Launcher.exe") == nil
+        && BCDGPUCards.prefsFile(appID: nil, program: nil) == nil && BCDGPUCards.prefsFilesByProgram.count == 4,
+        "the prefs file by App ID, else by the program's name (a copy that is not a Steam entry); no other game")
+let prefs = "[Display]\r\nsD3DDevice=\"Apple A19 Pro GPU\"\r\niSize W=1280\r\n"
+let toGS = BCDGPUCards.prefsText(prefs, cardName: "NVIDIA GeForce 7900 GS", metalName: "Apple A19 Pro GPU")
+require(toGS == "[Display]\r\nsD3DDevice=\"NVIDIA GeForce 7900 GS\"\r\niSize W=1280\r\n", "a chosen card's name goes into sD3DDevice, CRLF kept")
+require(BCDGPUCards.prefsText(toGS!, cardName: "NVIDIA GeForce 7900 GS", metalName: "Apple A19 Pro GPU") == nil, "already right: nothing written")
+require(BCDGPUCards.prefsText(toGS!, cardName: nil, metalName: "Apple A19 Pro GPU") == prefs, "no card: the phone's own name back over a name BCD wrote")
+require(BCDGPUCards.prefsText("sD3DDevice=\"Radeon X1900\"\n", cardName: nil, metalName: "Apple A19 Pro GPU") == nil,
+        "no card: a name BCD did not write is left alone")
+require(BCDGPUCards.prefsText("[General]\nsLanguage=ENGLISH\n", cardName: "NVIDIA GeForce 7900 GS", metalName: nil) == nil, "no sD3DDevice line: nothing")
+require(BCDGPUCards.prefsText("SD3DDEVICE=NVIDIA GeForce RTX 3060\n", cardName: "NVIDIA GeForce 7900 GS", metalName: nil) == "SD3DDEVICE=\"NVIDIA GeForce 7900 GS\"\n",
+        "the key in any case, unquoted values too")
+
 // Video memory
 let labels = BCDGPUCards.memoryChoices([0, 512, 1024, 1536, 4352, 6144])
 require(labels.map(\.0) == ["", "512", "1024", "1536", "4352", "6144"], "memory values are megabytes, empty for automatic")

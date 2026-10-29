@@ -1,0 +1,16 @@
+{
+ "dialogs": [],
+ "end": {
+  "killed": true,
+  "seconds": 138,
+  "userSaid": "froze"
+ },
+ "matched": [
+  "forza-horizon-4-start-wait"
+ ],
+ "next": [],
+ "note": "Send Log RVXHV6 (build 622, iPad17,1): the same game started from the program (no Valve client), 138 s, presents=0, the same wait at ForzaHorizon4.exe+0x304d8a0.",
+ "outcome": "hung",
+ "stage": 2,
+ "status": "known"
+}

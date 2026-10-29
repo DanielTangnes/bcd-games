@@ -165,6 +165,10 @@ fi
 #    its own EC code bitmap test (the loop top tests L1 misses): 11
 #    instructions less on every return from ARM64EC code.
 #    MADEIRA_FEX_EC_RET_DIRECT=0 keeps the test.
+#  - patch-fex-ios-mono-bp-unlocked-miss.py: opt-in (MADEIRA_MONO_BP_UNLOCKED_MISS=1):
+#    MonoBackpatcherWrite stores an alias-table miss without CodeInvalidationMutex,
+#    so the access violation that store raises no longer leaves the mutex write-owned
+#    (the "[fexlock] STUCK write-wait" owner == waiter hang). Applied to every pin.
 # madeira-bcd: since the 2026-10-15 upstream merge the FEX pin (f59cab9) carries
 # willfaust/FEX #15-#20, which are these overlays as the fork applied them, except
 # the Launcher full-SMC opt-in and the rpmalloc spans (rpmalloc#2 is still open).
@@ -201,6 +205,8 @@ else
     python3 "$R/tools/patch-fex-ios-alias-xlate-bounds.py" "$R/FEX"
     python3 "$R/tools/patch-fex-ios-ec-ret-direct.py" "$R/FEX"
 fi
+# Opt-in, whichever pin: MADEIRA_MONO_BP_UNLOCKED_MISS=1 (round 623).
+python3 "$R/tools/patch-fex-ios-mono-bp-unlocked-miss.py" "$R/FEX/FEXCore/Source/Interface/Core/Core.cpp"
 build
 git -C FEX checkout -- "$CPUF" Source/Windows/ARM64EC/Module.cpp Source/Windows/ARM64EC/Module.S Source/Windows/Common/InvalidationTracker.h Source/Windows/Common/InvalidationTracker.cpp FEXCore/Source/Interface/IR/PassManager.cpp Source/Windows/Common/Priv.h FEXCore/Source/Interface/Core/CPUID.cpp Source/Windows/ARM64EC/IosJitAlias.cpp FEXCore/include/FEXCore/Core/CoreState.h FEXCore/Source/Interface/Core/JIT/BranchOps.cpp Source/Windows/ARM64EC/libarm64ecfex.def FEXCore/include/FEXCore/Debug/InternalThreadState.h FEXCore/Source/Interface/Core/Core.cpp Source/Windows/Common/CallRetStack.h FEXCore/Source/Interface/Core/Dispatcher/Dispatcher.cpp FEXCore/Source/Interface/Core/ArchHelpers/Arm64Emitter.h FEXCore/Source/Interface/Core/ArchHelpers/Arm64Emitter.cpp FEXCore/Source/Interface/Core/JIT/JIT.cpp
 git -C FEX/External/rpmalloc checkout -- rpmalloc/rpmalloc.c

@@ -1,0 +1,17 @@
+{
+ "dialogs": [],
+ "end": {
+  "killed": true
+ },
+ "matched": [
+  "the-forest-bc-decode-memory-kill",
+  "swap-8gb-memory-kill"
+ ],
+ "next": [
+  "dxmt = d3d11.mipClampBC=1"
+ ],
+ "note": "The Forest, build 622, iPhone15,3 (PRM25K): A16 (bc=0) expands BC textures, iOS closes the game at 4073 of 4076 MB; mipClampBC=1 is tried ahead of the swap tier",
+ "outcome": "killed",
+ "stage": 2,
+ "status": "trying"
+}

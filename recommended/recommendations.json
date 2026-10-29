@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "version": 18,
-  "generated": "2026-10-28",
+  "version": 20,
+  "generated": "2026-10-29",
   "rules": [
     {
       "id": "rdr2-steam",
@@ -2428,11 +2428,11 @@
     {
       "id": "trails-in-the-sky-1st-chapter",
       "title": "Trails in the Sky 1st Chapter",
-      "version": 1,
+      "version": 2,
       "match": {
         "steamAppIDs": [3375780],
-        "steamFolders": ["trails in the sky 1st chapter"],
-        "programs": [{"name": "sora_1st.exe", "steam": true}]
+        "steamFolders": ["trails in the sky 1st chapter", "sora no kiseki the 1st"],
+        "programs": [{"name": "sora_1st.exe", "steam": true}, {"name": "sora_1st.exe", "steam": false}]
       },
       "config": [
         "# BCD's recommended settings for Trails in the Sky 1st Chapter.",
@@ -2447,7 +2447,11 @@
         "sized its window one pixel. PBP9YD: auto-tune added env.MADEIRA_VDCFG_PATH = 1 (L31: \"trying vdcfg-virtual-path\"), the line lists the",
         "virtual monitor's path (\"MADEIRA_VDCFG_PATH=1: QueryDisplayConfig lists the virtual monitor's path ... -> 0, 1 paths 2 modes\", L11138-11143)",
         "and the game ran 143 s (stage 5, exit 0, 4.8 GB at most) without the read. The list gives the first start the line. The name is",
-        "new to the download policy of build 580, hence minBuild 580 (build 579 has the switch, not the policy)."
+        "new to the download policy of build 580, hence minBuild 580 (build 579 has the switch, not the policy).",
+        "Version 2 (2026-10-29, round 623): the match also takes a start from a program folder. Build 622, iPhone18,1 (Send Log M5G99X): the game,",
+        "started from C:\\Program Files (x86)\\Sora No Kiseki the 1st, shows the same signature as the Dock logs above (QueryDisplayConfig",
+        "\"success, 0 paths 0 modes\" L4599, a one-pixel window L6438, a read of address 0x10 at sora_1st.exe+0x558220 L6548; the game was updated,",
+        "it was +0x5215E0) and nothing in the list reached it. The line is the one PBP9YD kept. Not tried on this path."
       ]
     },
     {
@@ -2898,7 +2902,9 @@
         "of the 512 GiB advertised (a pool of half the address limit, 256 GiB plus 64 MiB of alignment), so a 32 GiB advertisement should",
         "bring the ask to 16 GiB, which fits the 32 GiB hole. If one device log shows the ask still at 32 GiB or more, the number goes down",
         "to 16. Likely for the mechanism; if the 256 GiB is a constant of the game's allocator the cap does nothing. Not tried on a device",
-        "yet."
+        "yet.",
+        "Round 623: env.MADEIRA_USER_VA_GB = 32 does not change the game's single 256 GiB reserve (round 620, X4WZ5E);",
+        "the address map has at most 32 GiB free in one piece, so the reserve fails either way. Auto-tune's rule reserve-256gib-no-gap names the stop."
       ]
     },
     {
@@ -2929,7 +2935,7 @@
     {
       "id": "fallout-new-vegas",
       "title": "Fallout: New Vegas",
-      "version": 2,
+      "version": 3,
       "match": {
         "steamAppIDs": [22380],
         "steamFolders": ["fallout new vegas"],
@@ -2940,7 +2946,8 @@
         "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
         "env.MADEIRA_EC_HOOK_TRACE = 0",
         {"line": "env.MADEIRA_DOCK_SCRIPT_REGISTRY = 1", "minBuild": 591},
-        {"line": "env.MADEIRA_D3D9_LAST = 1", "minBuild": 598}
+        {"line": "env.MADEIRA_D3D9_LAST = 1", "minBuild": 598},
+        {"line": "gpu-card = nvidia-7900gs", "minBuild": 623}
       ],
       "notes": [
         "Fallout: New Vegas (Steam 22380, Madeira Dock), iPhone16,2 (iOS 26.6.1, 63 GB map, full memory rights; Send Log GA6QN2, build 580,",
@@ -2959,7 +2966,15 @@
         "seven Wine d3dx \"Unhandled filter 0x80004\" notes (harmless: a triangle filter with dither falls back to a point filter) from its texture loads.",
         "Which Direct3D 9 call returned NULL or failed is not in the log. env.MADEIRA_D3D9_LAST = 1 (build 598; build 597's ring of the last 64 Direct3D 9",
         "calls with their results, dumped at a guest access violation) names it in the next log; it is a diagnostic, not a fix, and costs one emulated",
-        "locked read-modify-write per call. FGQGEP (the fifth log) is the launcher session only and ends before the game's own window."
+        "locked read-modify-write per call. FGQGEP (the fifth log) is the launcher session only and ends before the game's own window.",
+        "v3 (build 623, 2026-10-28): gpu-card = nvidia-7900gs. The game picks its render path from the Direct3D 9 adapter's description AND its",
+        "driver file; with BCD's Apple name and DXMT's driver it takes the basic path and crashes loading a save at 00B57AA9 (the four logs above).",
+        "Upstream Madeira found it (willfaust/dxmt f25e5568d, d3d9.customDriver; Madeira adec653, 2026-10-26): NVIDIA ids alone did not help;",
+        "a GeForce 7900 GS (10de:0292) on nv4_disp.dll made New Vegas load the save on an iPhone. BCD's card nvidia-7900gs sets those four",
+        "(build 623: tools/patch-dxmt-d3d9-custom-driver.py for the 32-bit d3d9.dll), and the app keeps sD3DDevice in the game's",
+        "FalloutPrefs.ini on the card's name (the game reopens its launcher when that name changes). Likely (same address and engine; not yet",
+        "seen on a BCD device). The list matches the Steam copy; for any other copy the auto-tune rule fallout-nv-older-nvidia-card gives the",
+        "same line after this crash, and the prefs sync finds the file by the program's name (FalloutNV.exe, FalloutNVLauncher.exe)."
       ]
     },
     {
@@ -3362,6 +3377,31 @@
         "Megabonk loads the very same plugin (rewired_windowsgaminginput.dll-55a4cd8724d701f9) with that line (Send Log 2FYRC6, build 592): the",
         "ApiInformation factory answers (IsApiContractPresentByMajor, L15270), Windows.Gaming.Input.Gamepad's factory loads Wine's",
         "windows.gaming.input.dll and no exception follows. What the game does after that is unknown. Not tried on a device with this game yet."
+      ]
+    },
+    {
+      "id": "jackal",
+      "title": "Jackal",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [3124230],
+        "steamFolders": ["jackal"],
+        "programs": [{"name": "jackal.exe", "steam": true}]
+      },
+      "config": [
+        "# BCD's recommended settings for Jackal.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_WINTYPES = 1", "minBuild": 575}
+      ],
+      "notes": [
+        "Jackal (Steam 3124230, Unity Mono, BCD Dock), round 623, iPad16,5, builds 614 and 622 (Send Logs Z7SMZR and RPMW17, one device without the",
+        "extended virtual addressing entitlement): the game ends 8 s after its program starts with an unhandled C++ exception, 0xe06d7363",
+        "(RPMW17 L16392, exit L16620; Z7SMZR L16465, L16690). It is thrown from the input plugin Rewired_WindowsGamingInput.dll (the same file as",
+        "Risk of Rain 2's and Megabonk's, hash 55a4cd8724d701f9): its first call, RoGetActivationFactory(\"Windows.Foundation.Metadata.ApiInformation\"),",
+        "fails with \"Failed to load module C:\\windows\\system32\\wintypes.dll\" (RPMW17 L16388) and nothing in the game catches the exception.",
+        "BCD's 64-bit set ships no wintypes.dll; env.MADEIRA_WINTYPES = 1 (build 575) gives a game Wine's. Megabonk goes on past this point with",
+        "that line; what Jackal does after it is unknown. Not tried on a device with this game yet."
       ]
     },
     {
@@ -3903,7 +3943,13 @@
         "filled the JIT pool with image copies (\"[jit-pool] EXHAUSTED\"); with env.MADEIRA_X64_IMAGE_NOCOPY = 1 (auto-tune's line, T0ZAMM) the loader",
         "reaches the imports and ends with c0000135: ForzaHorizon4.exe imports api-ms-win-gaming-tcui-l1-1-0.dll (Wine's gamingtcui.dll, which the",
         "64-bit set lacked) and its libcef.dll imports dxva2.dll (YFK3A6 L8946-L9828). Build 620 ships gamingtcui-optin.dll; the line links both.",
-        "What follows the imports is unknown (not tried on a device)."
+        "What follows the imports is unknown (not tried on a device).",
+        "Round 623 (iPad17,1, build 622, Send Logs D9NHGJ 941 s, RVXHV6, 58VNDB, 2026-10-28): with both DLLs linked the loader finishes and",
+        "the program runs. Its only thread asks Wine for the package family \"Microsoft.VCLibs.140.00_8wekyb3d8bbwe\" (GetPackagesByPackageFamily, a",
+        "stub that answers success and no package; D9NHGJ L10784) and then loops at ForzaHorizon4.exe+0x304d8a0 (movzx eax,[rbp+0x2b0]; test al,al;",
+        "je -11; D9NHGJ L12159-L12190) for as long as the player waits: presents=0, no second thread. The same from the Dock and from a direct start,",
+        "with and without AVX. What the loop waits for is not known; auto-tune's rule forza-horizon-4-start-wait says so, and build 623's [spin]",
+        "snapshot prints 256 guest code bytes and the stack around it."
       ]
     },
     {
@@ -3955,7 +4001,11 @@
         "FC3UpdaterSteam.exe shows \"Failed to start the game. Cannot find essential information in the registry.\" (2H38A0 L11374) and nothing",
         "is drawn. Likely the Fallout: New Vegas case: Steam's install script writes the install key on Windows and the Dock does not.",
         "env.MADEIRA_DOCK_SCRIPT_REGISTRY = 1 (build 591) writes the script's missing registry values; a value is written only where the key is",
-        "absent. Not proven: the next log's [dock-script-registry] line says whether the script has such values."
+        "absent. Not proven: the next log's [dock-script-registry] line says whether the script has such values.",
+        "Round 623 (KNYQ40, build 622, iPad17,3, the line on): every value the app could read from the script was in the registry already",
+        "(\"values=8 written=0 present=12\", L55) and the box still appeared (L11062), so those values are not what the updater misses. 34 script",
+        "entries were left out as language sections without English text and their layout is not known; the keys the updater reads are not known",
+        "either. Build 623 logs which script values are present and the shape of the entries it left out. Not solved."
       ]
     },
     {
@@ -4258,6 +4308,30 @@
         "after DXMT's \"D3D11Resource(buffer): Unknown interface query\" for ID3D11Texture2D: the engine asks for a render target view on a",
         "buffer, which DXMT does not have. DXVK answered S_OK and no view for that from 2018 until 2026-08 (Battlefield 3 and 4, the same",
         "engine); env.MADEIRA_BUFFER_RTV_EMPTY = 1 (build 620) does the same. Not tried on a device."
+      ]
+    },
+    {
+      "id": "bloons-td-6",
+      "title": "Bloons TD 6",
+      "version": 1,
+      "match": {
+        "steamAppIDs": [960090],
+        "steamFolders": ["bloonstd6"],
+        "programs": [{"name": "bloonstd6.exe"}]
+      },
+      "config": [
+        "# BCD's recommended settings for Bloons TD 6.",
+        "# Reset to Recommended, at the bottom of the game's settings, brings them back.",
+        "env.MADEIRA_EC_HOOK_TRACE = 0",
+        {"line": "env.MADEIRA_WINTYPES = 1", "minBuild": 575},
+        {"line": "env.MADEIRA_OPTIN_DLLS = qwave", "minBuild": 623}
+      ],
+      "notes": [
+        "Bloons TD 6 (Epic copy C:\\Program Files\\Epic Games\\BloonsTD6, Unity IL2CPP), build 622, iPad16,8 (Send Log 4EJFKD, 2026-10-28):",
+        "env.MADEIRA_WINTYPES = 1 (auto-tune's line, kept) lets GameAssembly.dll load; 16 s into the start, after 9 s of play at 56 FPS,",
+        "the game loads Plugins\\x86_64\\discord_partner_sdk.dll (the Discord Social SDK), which imports qwave.dll; the 64-bit set had none, and",
+        "Unity ends the process with \"Unable to load DLL 'discord_partner_sdk'\" (exit 1). Build 623 ships Wine's qwave.dll as",
+        "qwave-optin.dll, linked for a game with env.MADEIRA_OPTIN_DLLS = qwave. Not tried on a device: the plugin may need more than the DLL."
       ]
     },
     {

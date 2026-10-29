@@ -306,12 +306,21 @@ let script = """
                 lines.last?.contains("skipped=dword(1),path(2),token(1),type:binary(1)") == true, "the summary says what was read, written and left out (\(lines.last ?? ""))")
         LogStore.shared.lines.removeAll()
         let second = DockScriptRegistry.prepare(game, drive: drive, prefix: prefix, now: Date(timeIntervalSince1970: 1_900_000_000), gameConfigPath: cfg.path)
+        let secondLines = registryLines()
         require(second == "present" && read(prefix.appendingPathComponent("system.reg")) == system && read(prefix.appendingPathComponent("user.reg")) == userNow
-                && registryLines().count == 1 && registryLines()[0].contains("written=0"), "a second start writes nothing: one summary line, files unchanged")
+                && secondLines.count == 12 && secondLines.last?.contains("written=0") == true && secondLines.filter { $0.contains(" present ") }.count == 11
+                && secondLines.filter { $0.contains(" wrote ") }.isEmpty,
+                "a second start writes nothing: files unchanged; round 623 lists the 11 values that are there, then the summary (\(secondLines.count) lines)")
+        require(secondLines.contains { $0.contains("present HKLM\\Software\\Bethesda Softworks\\FalloutNV \"Installed Path\": 2 of 2 view(s), same as the script") }
+                && secondLines.contains { $0.contains("present HKCU\\Software\\Fixture User \"Seen\": 1 of 1 view(s), same as the script") },
+                "a present value is named with its hive, key, how many registry views hold it and whether the text is the script's (\(secondLines.prefix(3)))")
         // A value an earlier session or the user changed is never overwritten.
         try write(prefix.appendingPathComponent("system.reg"), system.replacingOccurrences(of: "\"Installed Path\"=\"C:\\\\Program Files (x86)\\\\Steam\\\\steamapps\\\\common\\\\Fallout New Vegas\"", with: "\"Installed Path\"=\"E:\\\\Mine\""))
+        LogStore.shared.lines.removeAll()
         _ = DockScriptRegistry.prepare(game, drive: drive, prefix: prefix, gameConfigPath: cfg.path)
         require(!read(prefix.appendingPathComponent("system.reg")).contains("steamapps\\\\common\\\\Fallout New Vegas\"") && read(prefix.appendingPathComponent("system.reg")).contains("E:\\\\Mine"), "a value that is there is not overwritten")
+        require(registryLines().contains { $0.contains("\"Installed Path\": 2 of 2 view(s), differs: stored \"E:\\\\Mine\", the script has \"C:\\\\Program Files (x86)") },
+                "…and the log says it differs, with the stored text and the script's (\(registryLines().filter { $0.contains("differs") }))")
 
         // A prefix that is not seeded yet, or a registry file that is not Wine's.
         let empty = base.appendingPathComponent("empty")
@@ -339,6 +348,41 @@ let script = """
         require(DockScriptRegistry.prepare(shaped, drive: drive, prefix: prefix, gameConfigPath: cfg.path) == "none" && read(prefix.appendingPathComponent("system.reg")) == systemBefore
                 && registryLines().count == 1 && registryLines()[0].contains("scripts=1 values=0 skipped=type:reg_sz(1) keys=HKEY_LOCAL_MACHINE\\Software\\Odd Vendor"),
                 "a shape that is not read: nothing written; the log names the type and the key (\(registryLines()))")
+
+        // Round 623: entries a language section leaves out show their shape; stored() names what the registry text holds.
+        let oddLang = "\"InstallScript\" { \"Registry\" { \"HKEY_LOCAL_MACHINE\\\\Software\\\\Odd Lang\" { \"string\" { \"english\" { \"Name\" \"Odd\" } \"french\" { \"Name\" \"Impair\" \"Q\" \"x\" } } } } }"
+        let shapes = SteamInstallRegistry.parse(script: Data(oddLang.utf8), installDir: dir, language: "english")
+        require(shapes.values.isEmpty && shapes.skipped == ["language", "language"]
+                && shapes.languageShapes == ["HKEY_LOCAL_MACHINE\\Software\\Odd Lang | string | english | name", "HKEY_LOCAL_MACHINE\\Software\\Odd Lang | string | french | name,q"],
+                "entries a language section leaves out are described: key, type, name and the names under it (\(shapes.languageShapes))")
+        let sixMany = "\"InstallScript\" { \"Registry\" { \"HKLM\\\\Software\\\\S\" { \"string\" { " + (0..<9).map { "\"l\($0)\" { \"A\\\"B\" \"c\" }" }.joined(separator: " ") + " } } } }"
+        let capped6 = SteamInstallRegistry.parse(script: Data(sixMany.utf8), installDir: dir, language: "english")
+        require(capped6.skipped.count == 9 && capped6.languageShapes.count == 6 && !capped6.languageShapes.joined().contains("\""), "at most six shapes, quotes taken out (\(capped6.languageShapes.first ?? ""))")
+        require(SteamInstallRegistry.parse(script: Data(script.utf8), installDir: dir, language: "english").languageShapes.isEmpty, "a script with no language entries left out describes none")
+        let probe = [SteamInstallRegistryValue(hive: .machine, key: "Software\\Probe", name: "Path", payload: .string("C:\\Game")),
+                     SteamInstallRegistryValue(hive: .machine, key: "Software\\Probe", name: "Flag", payload: .dword(1)),
+                     SteamInstallRegistryValue(hive: .machine, key: "Software\\Probe", name: "Gone", payload: .string("g")),
+                     SteamInstallRegistryValue(hive: .machine, key: "Software\\Probe", name: "Other", payload: .string("same"))]
+        let probeText = "WINE REGISTRY Version 2\n\n[Software\\\\Probe] 1\n\"Path\"=\"C:\\\\Game\"\n\"FLAG\"=dword:00000002\n\"Other\"=\"same\"\n\n[Software\\\\Wow6432Node\\\\Probe] 1\n\"path\"=\"D:\\\\Else\"\n"
+        let stored = SteamInstallRegistry.stored(probe, in: probeText)
+        require(stored.map { $0.value.name } == ["Path", "Flag", "Other"], "stored(): only the values that are there, in the script's order (\(stored.map { $0.value.name }))")
+        require(stored[0].views == 2 && stored[0].found == 2 && !stored[0].same && stored[0].stored == "\"D:\\\\Else\"" && stored[0].wanted == "\"C:\\\\Game\"",
+                "a value held by both views with a different text in one: not the same, the differing text is shown (\(stored[0]))")
+        require(stored[1].found == 1 && stored[1].same == false && stored[1].stored == "dword:00000002" && stored[1].wanted == "dword:00000001", "a dword, found in any case: its text and the script's")
+        require(stored[2].found == 1 && stored[2].views == 2 && stored[2].same, "present in one view only, with the script's text: same")
+        require(SteamInstallRegistry.stored(probe, in: "WINE REGISTRY Version 2\n").isEmpty, "an empty registry holds none")
+        // prepare(): the shapes come before the summary, which stays the last line.
+        let langGame = DockGame(id: 7, name: "Lang", installDir: "Lang", library: "Program Files (x86)/Steam/steamapps", installed: true, customExecutables: false)
+        try write(common.appendingPathComponent("Lang/installscript.vdf"),
+                  "\"InstallScript\" { \"Registry\" { \"HKLM\\\\Software\\\\Lang Vendor\" { \"string\" { \"Dir\" \"%INSTALLDIR%\" } } \"HKLM\\\\Software\\\\Lang Vendor2\" { \"string\" { \"english\" { \"N\" \"x\" } } } } }")
+        try write(common.appendingPathComponent("Lang/appmanifest.txt"), "x")
+        LogStore.shared.lines.removeAll()
+        _ = DockScriptRegistry.prepare(langGame, drive: drive, prefix: prefix, gameConfigPath: cfg.path)
+        let langLines = registryLines()
+        require(langLines.count >= 3 && langLines.last?.contains("scripts=1 values=1") == true && langLines.last?.contains("skipped=language(1)") == true
+                && langLines.contains { $0.contains("app=7 left out for language: HKLM\\Software\\Lang Vendor2 | string | english | n") }
+                && langLines.firstIndex { $0.contains("left out for language") }! < langLines.count - 1,
+                "prepare logs the shape of a language entry it left out, before the summary (\(langLines))")
 
         // ---- DockInstallers.prepare calls it
         let before = read(prefix.appendingPathComponent("user.reg"))

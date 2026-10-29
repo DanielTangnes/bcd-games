@@ -20481,6 +20481,7 @@ static void *map_reserved_area( void *limit_low, void *limit_high, size_t size, 
     return r;
 }
 
+
 /* ajan5-motor (2026-10-21): a request that lies in one of our own guest windows and gets NO place.
  *
  * Shade: Wrath of Angels (39Z345, C534F0, Z5F6MG; build 576, iPhone13,4, iOS 18.6.2, address map 63 GB,
@@ -20537,9 +20538,146 @@ struct ios_reserved_ctx
 {
     size_t size; int top_down; int unix_prot; size_t align_mask;
     void *refused_list[40]; unsigned nrefused; void *next_pre_addr; char next_pre[200];
+    void *last_refused; int last_err;   /* madeira-bcd (round 623): the newest refusal, for ios_reserved_skip */
 };
 
 static void *map_reserved_area_once( void *limit_low, void *limit_high, void *ctx_, void **refused, int *err );
+static int ios_va_blocker( const void *addr, size_t size, uintptr_t *blo, uintptr_t *bhi );   /* below the skip block */
+
+/* madeira-bcd (round 623, Hotline Miami 2 3NB0B0 and Metro: Last Light QJANDC, builds 622; also Terraria N5CNVF, Shade 4Y6VJS, Left 4 Dead
+ * CZPSX2/PG1JW0, explorer.exe FA6K09: iOS 18.5-18.7.8 devices with a 63 GB address map, 8 logs, 7 sessions): a MAP_FIXED over a range of
+ * a 32-bit program's 4 GB window that holds a kernel region of MAXIMUM protection none (vm_region p/m "0/0") is refused with ENOMEM,
+ * and munmap leaves such a region where it is (round 579's last resort: "munmap ok, the no-overwrite map failed errno=17 (File exists)"
+ * in every one of the 8 logs, never a placement). Wine's free-range table does not know these regions (the leftovers of images the
+ * program mapped and dropped: the abandoned preferred base 0x410000000 of the exe, a DLL a game loads and frees again), so it keeps
+ * offering the same neighbourhood. All 306 refusals the corpus logged ([reserved-area] detail, 2026-10-20..28) hold a 0/0 region in the
+ * range, and none of the 122 candidates that took the mapping after a refusal held one. The plain retry (ios_reserved_retry) steps 64 KB
+ * 32 times, which covers 2 MB: enough to pass a 576 KB band at load time, not a 2.7 MB residue (Hotline Miami 2 loads and frees
+ * d3dcompiler_43.dll + wined3d.dll 13 times; the 13th pair failed and the game used the NULL it got) nor a 256 KB region inside a 369 MB
+ * request (Metro). ios_reserved_skip asks the kernel for the blocking region in the range that was refused and moves the next candidate
+ * past it. It runs ONLY in a request's last attempt (map_reserved_area_last, called where map_view is about to return STATUS_NO_MEMORY
+ * for a request that may not relax: the LAA low-half pre-attempt, the 64-bit programs' biased first try, map_free_area and the high band
+ * were all tried and failed), so a request that is placed today, by whatever fallback, is placed exactly as before. Small address maps
+ * only (ios_wow_small_va_slots), ENOMEM only; env.MADEIRA_RESERVED_SKIP = 0 turns it off.
+ *
+ * skip-test:begin (tests/host/check-reserved-area-retry.py compiles this region) */
+#define IOS_RESERVED_SKIP_MAX 64
+
+/* Set only by map_reserved_area_last, with virtual_mutex held: this is the request's LAST attempt (every other way to place it has
+ * failed and it would return STATUS_NO_MEMORY), so the skip below may run. Any other placement, including the pre-attempt in a program's
+ * low half and the biased first try of a 64-bit program, has a fallback that places it today and is left exactly as it was. */
+static int ios_reserved_skip_now;
+
+static int ios_reserved_skip_enabled(void)
+{
+    static int on = -1;
+
+    if (on < 0)
+    {
+        const char *e = getenv( "MADEIRA_RESERVED_SKIP" );
+        on = !(e && e[0] == '0' && !e[1]);
+    }
+    return on;
+}
+
+/* The kernel's region at or after `addr`: [*lo, *hi) and its maximum protection; 0 when there is none. */
+typedef int (*ios_region_next_fn)( uintptr_t addr, uintptr_t *lo, uintptr_t *hi, unsigned *max_prot );
+
+/* The first run of adjacent regions of maximum protection none in [addr, addr+size), as [*blo, *bhi) with the regions' real ends (the
+ * first may begin below addr). 0 when the range holds none. At most 8192 regions are read. */
+static int ios_va_blocker_scan( uintptr_t addr, size_t size, ios_region_next_fn next, uintptr_t *blo, uintptr_t *bhi )
+{
+    uintptr_t a = addr, end = addr + size, lo = 0, hi = 0;
+    unsigned n = 0, prot = 0;
+    int found = 0;
+
+    while (a < end && n++ < 8192)
+    {
+        uintptr_t rlo, rhi;
+
+        if (!next( a, &rlo, &rhi, &prot ) || rlo >= end || rhi <= a) break;
+        if (!prot)
+        {
+            if (!found) { found = 1; lo = rlo; hi = rhi; }
+            else if (rlo <= hi) { if (rhi > hi) hi = rhi; }
+            else break;
+        }
+        else if (found) break;
+        a = rhi;
+    }
+    if (found) { *blo = lo; *bhi = hi; }
+    return found;
+}
+
+/* After a refusal at `refused`, the placement continues past the blocking region: bottom-up the next range starts at its end, top-down it
+ * ends at its start. Each step moves strictly past the last refusal, at most IOS_RESERVED_SKIP_MAX of them, and the loop ends at the
+ * first placement, at a refusal other than ENOMEM, at a search that finds nothing, or at a refusal no blocking region explains. */
+static void *ios_reserved_skip( void *low, void *high, size_t size, int top_down, size_t align_mask, ios_reserved_once_fn once, void *ctx,
+                                void *refused, unsigned *refused_n, unsigned *jumps, uintptr_t *blk_lo, uintptr_t *blk_hi )
+{
+    void *ptr = NULL;
+    int err;
+
+    while (*jumps < IOS_RESERVED_SKIP_MAX)
+    {
+        uintptr_t blo, bhi;
+
+        if (!ios_va_blocker( refused, size, &blo, &bhi )) break;
+        if (top_down)
+        {
+            if (blo <= size || blo <= (uintptr_t)low) break;
+            high = (void *)blo;
+        }
+        else
+        {
+            uintptr_t next_low = (bhi + align_mask) & ~(uintptr_t)align_mask;
+            if (next_low <= (uintptr_t)refused || next_low >= (uintptr_t)high) break;
+            low = (void *)next_low;
+        }
+        ++*jumps; *blk_lo = blo; *blk_hi = bhi;
+        refused = NULL; err = 0;
+        ptr = once( low, high, ctx, &refused, &err );
+        if (refused) ++*refused_n;
+        if (ptr || !refused || err != ENOMEM) break;
+    }
+    return ptr;
+}
+/* skip-test:end */
+
+/* The real kernel behind ios_va_blocker_scan: mach_vm_region reports the region containing `addr` or the next one above it. */
+static int ios_va_region_next( uintptr_t addr, uintptr_t *lo, uintptr_t *hi, unsigned *max_prot )
+{
+    mach_vm_address_t r = (mach_vm_address_t)addr;
+    mach_vm_size_t sz = 0;
+    vm_region_basic_info_data_64_t info;
+    mach_msg_type_number_t cnt = VM_REGION_BASIC_INFO_COUNT_64;
+    mach_port_t obj = MACH_PORT_NULL;
+
+    if (mach_vm_region( mach_task_self(), &r, &sz, VM_REGION_BASIC_INFO_64, (vm_region_info_t)&info, &cnt, &obj ) != KERN_SUCCESS)
+        return 0;
+    *lo = (uintptr_t)r; *hi = (uintptr_t)(r + sz); *max_prot = (unsigned)info.max_protection;
+    return 1;
+}
+
+/* Read-only; called only after a refusal (the failure path), with virtual_mutex held. */
+static int ios_va_blocker( const void *addr, size_t size, uintptr_t *blo, uintptr_t *bhi )
+{
+    return ios_va_blocker_scan( (uintptr_t)addr, size, ios_va_region_next, blo, bhi );
+}
+
+/* madeira-bcd (round 623): the request's LAST attempt in a reserved area, called only where map_view is about to return STATUS_NO_MEMORY
+ * for a request that may not relax its limits (a 32-bit program's window): the same placement once more, this time allowed to go on past
+ * the kernel's fixed regions (ios_reserved_skip). virtual_mutex is held by the caller. */
+static void *map_reserved_area_last( void *limit_low, void *limit_high, size_t size, int top_down,
+                                     int unix_prot, size_t align_mask )
+{
+    void *r;
+
+    ios_reserved_skip_now = 1;
+    r = map_reserved_area( limit_low, limit_high, size, top_down, unix_prot, align_mask );
+    ios_reserved_skip_now = 0;
+    return r;
+}
 
 /* madeira-bcd (round 579, Shade 6NE7KH): a LAST RESORT for a placement the kernel refused on every candidate.
  *
@@ -20582,6 +20720,15 @@ static void *ios_reserved_remap( void *addr, size_t size, int unix_prot, char *h
     { snprintf( how, how_len, "remap not tried: not wholly inside one reserved area" ); return NULL; }
     if (ios_jit_pool_intersects( addr, size ))
     { snprintf( how, how_len, "remap not tried: it touches the JIT pool" ); return NULL; }
+    {   /* madeira-bcd (round 623): a region of maximum protection none stays through munmap and refuses the no-overwrite map too (8 of 8
+         * logs: "munmap ok, the no-overwrite map failed errno=17 (File exists); reservation NOT put back"), so the unmap could only leave a
+         * hole where the reservation was. Not tried when the range holds one. */
+        uintptr_t blo, bhi;
+
+        if (ios_va_blocker( addr, size, &blo, &bhi ))
+        { snprintf( how, how_len, "remap not tried: the range holds a kernel region no munmap removes (0x%lx+0x%lx, prot 0/0)",
+                    (unsigned long)blo, (unsigned long)(bhi - blo) ); return NULL; }
+    }
     ios_pool_va_warn( "munmap", addr, size );
     if (munmap( addr, size ))
     { snprintf( how, how_len, "remap: munmap failed errno=%d (%s), nothing changed", errno, strerror( errno ) ); return NULL; }
@@ -20599,7 +20746,8 @@ static void *map_reserved_area_inner( void *limit_low, void *limit_high, size_t 
                                       int unix_prot, size_t align_mask )
 {
     struct ios_reserved_ctx ctx = { size, top_down, unix_prot, align_mask };
-    unsigned int refused_n;
+    unsigned int refused_n, skip_jumps = 0;
+    uintptr_t skip_lo = 0, skip_hi = 0;
     void *first_refused, *ptr;
     char remap_how[200], regions[260];
     int first_err, show = 0, big = size >= 0x100000;
@@ -20607,7 +20755,7 @@ static void *map_reserved_area_inner( void *limit_low, void *limit_high, size_t 
 
     remap_how[0] = regions[0] = 0;
     ptr = ios_reserved_retry( limit_low, limit_high, size, top_down, align_mask,
-                              ios_wow_small_va_slots ? IOS_RESERVED_RETRY_MAX : 0,
+                              ios_wow_small_va_slots && !ios_reserved_skip_now ? IOS_RESERVED_RETRY_MAX : 0,   /* the last attempt: the plain steps were refused already */
                               map_reserved_area_once, &ctx, &refused_n, &first_refused, &first_err );
     if (first_refused)
     {
@@ -20616,6 +20764,10 @@ static void *map_reserved_area_inner( void *limit_low, void *limit_high, size_t 
         show = big ? (++ra_big_n <= 64 || !(ra_big_n % 64)) : (++ra_n <= 8 || !(ra_n % 256));
         /* what the refused range held, taken before anything below changes it */
         if (show && ctx.nrefused) ios_va_regions( first_refused, size, regions, sizeof(regions) );
+        /* madeira-bcd (round 623): the request's last attempt (map_reserved_area_last): go on past the kernel's fixed regions. See ios_reserved_skip. */
+        if (!ptr && ios_reserved_skip_now && ctx.last_err == ENOMEM && ios_wow_small_va_slots && ios_reserved_skip_enabled())
+            ptr = ios_reserved_skip( limit_low, limit_high, size, top_down, align_mask, map_reserved_area_once, &ctx, ctx.last_refused,
+                                     &refused_n, &skip_jumps, &skip_lo, &skip_hi );
         /* every candidate was refused: the request would fail. See ios_reserved_remap. */
         if (!ptr && first_err == ENOMEM && ios_wow_small_va_slots && ios_reserved_remap_enabled())
             ptr = ios_reserved_remap( first_refused, size, unix_prot, remap_how, sizeof(remap_how) );
@@ -20630,8 +20782,14 @@ static void *map_reserved_area_inner( void *limit_low, void *limit_high, size_t 
             dprintf( 2, "[reserved-area] #%lu MAP_FIXED over our own reservation refused: %p+0x%lx errno=%d (%s) | %s | "
                         "%s (%u refused in all; small address map retry %s) rev=ajan5-motor\n",
                      n, first_refused, (unsigned long)size, first_err, strerror( first_err ), what,
-                     ptr ? (remap_how[0] ? "the last resort placed it" : "the retry placed it") : "NOT placed", refused_n,
+                     ptr ? (remap_how[0] ? "the last resort placed it" : skip_jumps ? "the retry placed it past the kernel's fixed regions" : "the retry placed it")
+                         : "NOT placed", refused_n,
                      ios_wow_small_va_slots ? "on" : "off" );
+            if (skip_jumps)
+                dprintf( 2, "[reserved-area] #%lu skip: %u step(s) past kernel regions no MAP_FIXED replaces and no munmap removes (maximum "
+                            "protection none), the last 0x%lx+0x%lx; %s (%u refused in all) rev=ajan58-skip\n",
+                         n, skip_jumps, (unsigned long)skip_lo, (unsigned long)(skip_hi - skip_lo),
+                         ptr ? "the placement took a range beyond it" : "still NOT placed", refused_n );
             list[0] = 0;
             for (i = 0; i < ctx.nrefused && i < 40 && k + 24 < sizeof(list); i++)
                 k += snprintf( list + k, sizeof(list) - k, "%s%p", i ? " " : "", ctx.refused_list[i] );
@@ -20725,6 +20883,7 @@ static void *map_reserved_area_once( void *limit_low, void *limit_high, void *ct
     {
         *refused = ptr;          /* ajan5-motor: the MAP_FIXED failed, not the search (see ios_reserved_retry) */
         *err = errno;
+        ctx->last_refused = ptr; ctx->last_err = *err;   /* madeira-bcd (round 623): ios_reserved_skip goes on from the newest one */
         if (ctx->nrefused < 40) ctx->refused_list[ctx->nrefused] = ptr;   /* madeira-bcd (round 579) */
         ctx->nrefused++;
         ptr = NULL;
@@ -21292,6 +21451,16 @@ static NTSTATUS map_view( struct file_view **view_ret, void *base, size_t size,
              * ceiling_relaxable, so its contract still holds. */
             if (!ceiling_relaxable)
             {
+#ifdef WINE_IOS
+                /* madeira-bcd (round 623): nothing above placed it and the request may not relax: one more try that goes on past
+                 * the kernel's fixed regions (small address maps only; ios_reserved_skip). It changes only a request that fails here. */
+                if (ios_wow_small_va_slots &&
+                    (ptr = map_reserved_area_last( start, end, host_size, top_down, unix_prot, align_mask )))
+                {
+                    ios_fex_arena_headroom( start, end );
+                    goto done;
+                }
+#endif
                 ios_af_set( 2, ios_scan_fail_errno, ios_scan_fail_addr, size );
                 return STATUS_NO_MEMORY;
             }

@@ -283,7 +283,7 @@ RULES = [
     {
         "id": "small-map-window-refusals",
         "lines": [],
-        "fixedIn": 579,
+        "fixedIn": 623,
         "priority": 1,
         # Shade: Wrath of Angels on build 578 (6NE7KH, iPhone13,4, iOS 18.6.2, 63 GB address map, 32-bit program): the 576 failure above
         # is fixed (the retry placed the loader-time requests), but every MAP_FIXED over the 4 GB window's lowest free ranges is still
@@ -303,6 +303,34 @@ RULES = [
         "reason": "On this device's smaller address map the system kept refusing BCD's memory placements inside a 32-bit program's "
                   "window and a larger request found none; from this build on BCD makes one more attempt when every candidate was refused.",
         "evidence": ["shade-2026-10-21 (6NE7KH, build 578)", "tests/host/check-reserved-area-retry.py (build 579)"],
+        # Round 623: fixedIn 579 -> 623. Build 579's last resort never placed anything (0 of 8 logs: Terraria N5CNVF, Metro ZZQ6S5/QJANDC,
+        # Shade 4Y6VJS, Left 4 Dead CZPSX2/PG1JW0, explorer.exe FA6K09, Hotline Miami 2 3NB0B0; builds 600-622), so "the build that ran
+        # already had the fix" told these players to send a report for a failure that was understood. See small-map-reserved-skip.
+    },
+    {
+        "id": "small-map-reserved-skip",
+        "lines": [],
+        "fixedIn": 623,
+        "priority": 1,
+        # Hotline Miami 2 (3NB0B0, build 622, iPhone15,2, iOS 18.5, 63 GB address map, no extended VA): the game loads d3dcompiler_43.dll
+        # and, through it, wined3d.dll (2.7 MB) for every shader it compiles and frees both again (13 loads of d3dcompiler_43.dll, 12 of
+        # wined3d.dll placed, some only after the spill into the window's high half); the last one was not: "[reserved-area] #27
+        # MAP_FIXED over our own reservation refused: 0x47e7e0000+0x2b4000 errno=12 ... NOT placed (33 refused in all; small address map
+        # retry on)" and #28 in the high half (L17219, L17221; 18 NOT placed lines in the log), c0000017 for the section, "L"wined3d.dll"
+        # status=c0000017", d3dcompiler_43.dll c0000135, and the game used the NULL it got ("Unhandled page fault on read access to 00000000",
+        # [wow-null32] ... d3d9-emulated.dll, 34 s into the start). Metro: Last Light (QJANDC, same phone and iOS): a 369 MB reservation
+        # (0x17010000, [alloc-fail] ... STAGE=fixed-map, L9003) found 33 refusals and the game wrote through the NULL (0x00AA86F2).
+        # Cause (proved in the logs, build/ntdll-unix/virtual_ios.c ios_reserved_skip): the range of every refusal holds a kernel region
+        # of maximum protection none ("0/0") that MAP_FIXED does not replace and munmap does not remove; the free-range table does not
+        # know it; the 33 plain candidates lie within 2 MB. From build 623 the request's last attempt goes on past the region (ENOMEM only,
+        # small address maps only, only for a request that would otherwise fail). This rule also covers the sessions whose log has no STAGE=fixed-map line
+        # (small-map-window-refusals needs it).
+        "all": [s("[wow-window] small address map"), s("[reserved-area] #", "NOT placed", "small address map retry on")],
+        "reason": "On this device's smaller address map the system refused every memory placement inside a 32-bit program's window, "
+                  "because regions left by libraries the program had loaded and dropped cannot be replaced; from this build on BCD places "
+                  "the memory beyond them.",
+        "evidence": ["hotline-miami-2-reserved-skip-2026-10-28 (3NB0B0, build 622)", "metro-last-light-reserved-skip-2026-10-28 (QJANDC, build 622)",
+                     "tests/host/check-reserved-area-retry.py (build 623)"],
     },
     {
         "id": "dotnet-setup-never-finishes",
@@ -373,6 +401,48 @@ RULES = [
                   "closed the app; from this build on it keeps the request until it is done.",
         "evidence": ["beamng-drive-2026-10-21 (SYDJDY, build 576)", "BeamNG VV1FQ4, SRWY27, DZ6BN4 (build 574)",
                      "tests/host/check-wineserver-async-cancel.py (build 577)"],
+    },
+    {
+        "id": "fallout-nv-older-nvidia-card",
+        "lines": ["gpu-card = nvidia-7900gs"],
+        "priority": 9,
+        "noRetry": True,
+        # Fallout: New Vegas (BCD logs 6RMMDY, EKD4SG, Y0W8ER, Z51AP0, build 592, four devices): after the intro videos, loading a
+        # save, "Unhandled page fault on write access to 00000000 at address 00B57AA9" (FalloutNV.exe+0x757AA9). The game picks
+        # its render path from the D3D9 adapter's description and driver file; with BCD's Apple name and DXMT's driver it takes the
+        # basic path and crashes there. Upstream Madeira (adec653 + willfaust/dxmt f25e5568d, 2026-10-26) reports a
+        # GeForce 7900 GS on nv4_disp.dll, as the d3d9.dll wrapper the game's players install does, and the save loads (iPhone).
+        # Build 623: BCD's card nvidia-7900gs (d3d9.customDriver) and the sD3DDevice sync of FalloutPrefs.ini.
+        # Round 623 (9273DN, build 614, iPad14,8, Dock): the same crash at the same address is logged as a READ since build 613
+        # ("Unhandled page fault on read access to 00000000 at address 00B57AA9", [av-detail] p0=READ, host instruction 0xb8bfc304 = a
+        # 32-bit LDAPR): build 613 stopped labelling the load-acquire half of a locked read-modify-write a write (signal_arm64_ios.c
+        # bus_handler, 4dd176f3). The rule asked for "write access", so it matched no log of build 613 or later: auto-tune said "stuck"
+        # and spent its retry ("tried retry: reverted") on a crash no retry changes. Both spellings are accepted now.
+        "all": [s("Unhandled page fault on", "access to 00000000 at address 00B57AA9")],
+        "any": [s("FalloutNV"), s("falloutnv")],
+        "none": [s("[gpu-card] nvidia-7900gs")],
+        "reason": "Fallout: New Vegas took its basic render path on this GPU and crashed loading the save; the line shows it the "
+                  "older NVIDIA card its players use (GeForce 7900 GS on NVIDIA's driver), with which the save loads.",
+        "evidence": ["fallout-nv-b57aa9-2026-10-23 (6RMMDY, build 592)", "fallout-nv-b57aa9-read-2026-10-28 (9273DN, build 614: a read)",
+                     "upstream Madeira adec653 / willfaust/dxmt f25e5568d"],
+    },
+    {
+        "id": "wow64-low-rip-native-dispatch",
+        "lines": [],
+        "fixedIn": 623,
+        "priority": 1,
+        # A 32-bit program's call or jump to an address below 64 KB (36 BCD logs: MDK 2 HD 6DFEBH and D868S1, Atari 50,
+        # Sleeping Dogs, Resident Evil 6, Half-Life 2, Fields of Mistria...): FEX refuses the block ("CompileBlock: REFUSING
+        # low/invalid RIP=0x0"), its dispatcher branches to 0, the fault reaches the host with pc = 0 and lr in the JIT pool
+        # ("[mach_exc] UNHANDLED ... pc=0x0 addr=0x0"), FEX declines to turn it into a guest exception, the native unwind stalls
+        # and the program ends c0000005. Build 623 (upstream Madeira 726686e) moves pc to the dispatcher's call for a WoW64
+        # thread, so the 32-bit program gets the access violation and its own handlers run; "[wow-low-rip]" says so. No config
+        # line changes it. libwow64fex.dll in the same log ties it to a 32-bit program.
+        "all": [s("CompileBlock: REFUSING low/invalid RIP"), s("[mach_exc] UNHANDLED #", "pc=0x0 addr=0x0"), s("libwow64fex.dll")],
+        "none": [s("[wow-low-rip]")],
+        "reason": "The 32-bit program jumped to an empty address and BCD ended it instead of letting the game handle the error "
+                  "itself; from build 623 the game sees the error as on Windows.",
+        "evidence": ["mdk2-hd-low-rip-2026-10-26 (6DFEBH, build 614)", "upstream Madeira 726686e (Black Ops II)"],
     },
     {
         "id": "wow64-thread-map-uninitialised",
@@ -1009,6 +1079,29 @@ RULES = [
         "reason": "A reservation of 4 GB or more found no hole; the game probes with a double-size "
                   "reservation and keeps half, so the line gives it that half.",
         "evidence": ["riftapart-2026-10-15-22-07-15", "HANDOFF 2026-10-15 (evening): Rift Apart 549"],
+    },
+    {
+        "id": "reserve-256gib-no-gap",
+        "lines": [],
+        "noFix": True,
+        "priority": 2,
+        "maxStage": 2,
+        # Round 623, Digimon Story Time Stranger (BGCT5V, build 622, iPad17,4: 12 GB, extended VA, a full 512 GB map): one second into
+        # the game its allocator ("Failed to initialise snmalloc." in the object the crashing instruction reads; its pagemap reserve)
+        # asks for 0x4000000000 = 256 GiB in one MEM_RESERVE | PAGE_READWRITE piece: "[mmap-place] ml1027 NO GAP FITS size=0x4000010000
+        # ... largest gap 32768 MB -- the map really is full for this size", "[jumbo] kernel-pick reserve failed (0xc0000017) for
+        # size=0x4000000000", "[nt-fail] #1 NtAllocateVirtualMemory status=c0000017 ... size=0x4000000000" (L2016-2019); the allocator
+        # does not check the result and the next read of its object faults at 0xC9 (L2208, 0x103cc26 into the exe). FINAL FANTASY
+        # TACTICS (X4WZ5E, build 611, round 620) asks for 0x4003ffffff the same way and ends itself with exit 0; its list's
+        # MADEIRA_USER_VA_GB = 32 did not change the ask. The map's carveout leaves at most a 32 GiB hole, so no setting gives the
+        # game the piece; a larger hole is an address-map layout change of BCD's (an owner decision). Not the .NET runtime's 256 GB
+        # reserve (0x3f..., rules dotnet-gc-region-range*), which has DOTNET_GCRegionRange. maxStage 2: a game that reached its
+        # first frame after such a refusal coped with it, and its later failure is another.
+        "all": [s("[mmap-place] ml1027 NO GAP FITS")],
+        "any": [s("kernel-pick reserve failed", "for size=0x4000000000"), s("kernel-pick reserve failed", "for size=0x4003ffffff")],
+        "reason": "The game's memory allocator reserves 256 GB of address space in one piece, and this device's address map has no gap "
+                  "that large (at most 32 GB): the game stops at start. This is not a setting.",
+        "evidence": ["digimon-story-time-stranger-256gib-2026-10-28 (BGCT5V, build 622)", "FINAL FANTASY TACTICS X4WZ5E (round 620, tur620/A.md 2.8)"],
     },
     {
         "id": "readback-probe-freed-buffer",
@@ -1673,7 +1766,10 @@ RULES = [
         # engine's own lines, printed whatever the diagnostic switches; the initial process is always pid 0020. "none":
         # the end work ran ("[WineProc] stopping wineserver..." is what both the boot thread and the new path print).
         "all": [s("[Wine ntdll/server] process_exit_wrapper("), s("[srv-kill] kill_process pid=0020 violent=0")],
-        "none": [s("[WineProc] stopping wineserver")],
+        # Round 623: "none" also holds when the boot thread did return from __wine_main and waits for the program's children (the line below is
+        # that wait); the session is then not stuck on a dead thread, it is waiting on purpose, and this rule's "update" verdict was wrong for it
+        # (Trails in the Sky M5G99X, build 622: services.exe kept the wait going after the game died; PES2018 7Y5YFC, Crysis Z19V91, Fallout 4 C5Y6PW).
+        "none": [s("[WineProc] stopping wineserver"), s("[WineProc] madeira-bcd: the main process exited but")],
         "reason": "The game ended on a thread BCD was not watching, so BCD stayed on its last frame; "
                   "from this build on BCD notices, says that the game closed and returns to the library.",
         "evidence": ["gta-iv-2026-10-21 (gta4-freeze, build 576)", "Stranglehold RVBE4K (build 569)",
@@ -2002,6 +2098,28 @@ RULES = [
         "evidence": ["forza-horizon-4-2026-10-27 (YFK3A6, build 614: both imports missing, c0000135 at once)"],
     },
     {
+        "id": "qwave-dll-optin",
+        "lines": ["env.MADEIRA_OPTIN_DLLS = qwave"],
+        "priority": 10,
+        "noRetry": True,
+        # Bloons TD 6 (Epic copy, 4EJFKD, build 622, iPad16,8): the Unity IL2CPP game loads Plugins\x86_64\discord_partner_sdk.dll (the
+        # Discord Social SDK) through a P/Invoke 16 s into the start, after 9 s of play at 56 FPS; the plugin imports qwave.dll
+        # (Windows' quality-of-service API), which the 64-bit set lacks ("err:module:import_dll Library qwave.dll (which is needed by
+        # ...\discord_partner_sdk.dll) not found", L13392), the other imports of the plugin load, and Unity's handler ends the process:
+        # "UnhandledExceptionHandler caught: Unable to load DLL 'discord_partner_sdk' ... Runtime terminating: True" (L13779), exit 1
+        # (L14354). Wine builds qwave.dll (dlls/qwave: QOSCreateHandle answers FALSE, ERROR_SERVICE_ALREADY_RUNNING, which an SDK
+        # that asks for QoS and does not get it handles like Windows without the QoS service); build 623 ships it as qwave-optin.dll.
+        # Both signals are required: Mycopunk (Unity Mono; BP35FG, NEQQN0) prints the same import failure but only logs the
+        # DllNotFoundException and goes on, and its sessions end for another reason (Steam's IPC, see tur623), so the import line
+        # alone would spend an attempt on every failing game that merely carries the plugin.
+        "all": [s("UnhandledExceptionHandler caught: Unable to load DLL")],
+        "any": [s("err:module:import_dll Library " + n + e, "not found") for n in ("qwave", "QWAVE", "Qwave") for e in (".dll", ".DLL")],
+        "none": [s("MADEIRA_OPTIN_DLLS: qwave.dll -> qwave-optin.dll")],
+        "reason": "The game's Discord plugin imports qwave.dll (Windows' quality-of-service library), which BCD does not ship for every game, "
+                  "and the game ends when the plugin cannot load; the line gives this game Wine's qwave.dll.",
+        "evidence": ["bloons-td-6-qwave-2026-10-28 (4EJFKD, build 622, exit 1 after 16 s)"],
+    },
+    {
         "id": "eaapp-background-service-msi-dll",
         "lines": ["env.MADEIRA_OPTIN_DLLS = msi,mspatcha,odbccp32,sxs,rstrtmgr"],
         "priority": 10,
@@ -2148,6 +2266,27 @@ RULES = [
         "reason": "The game's launcher looks in the registry for the install folder that Steam's install script writes on Windows, and BCD "
                   "Dock never wrote it; the line has BCD write the script's missing registry values before the start.",
         "evidence": ["fallout-new-vegas-install-script-registry-2026-10-22 (GA6QN2, build 580)", "tests/host/check-dock-script-registry.py (build 591)"],
+    },
+    {
+        "id": "install-script-registry-present-box",
+        "lines": [],
+        "noFix": True,
+        "priority": 5,
+        "session": "dock",
+        # Round 623: Far Cry 3 (Steam 220240, through BCD Dock; KNYQ40, build 622, iPad17,3). The previous rule's line is on
+        # (env.MADEIRA_DOCK_SCRIPT_REGISTRY = 1 is in the game's list since build 591), the log has "[dock-script-registry] app=220240 scripts=1
+        # values=8 written=0 present=12 skipped=language(34)" (L55: every value the app could read from the install script was in the registry
+        # already, 34 entries were left out because they carry no English text) and FC3UpdaterSteam.exe still shows "Failed to start the game.
+        # Cannot find essential information in the registry." (L11062; the game is not started, nothing is drawn). So the registry values of the
+        # script are not what the updater misses, or not all of them are: the entries left out and the keys the updater reads are not known.
+        # The next log of this rule's sessions lists the present values and the shape of the entries left out (build 623). The rule stops the
+        # unchanged retries and says so; "none": the summary line says the script gave no values at all (values=0), a different case.
+        "all": [s("[msgbox-origin] box", "Cannot find essential information in the registry"), s("[dock-script-registry] app=", "scripts=")],
+        "none": [s("[dock-script-registry] app=", " values=0 ")],
+        "reason": "The game's updater says it cannot find essential information in the registry, although BCD has put every registry value it "
+                  "could read from the game's Steam install script there already. No BCD setting is known to change this; the log lists what "
+                  "BCD checked, for the next report.",
+        "evidence": ["far-cry-3-install-script-registry-present-2026-10-28 (Send Log KNYQ40, build 622)"],
     },
     # ajan10/motor (build 591): engine switches (keyed, off by default) and one code fix
     {
@@ -2343,6 +2482,49 @@ RULES = [
         "reason": "The game stopped with its own message \"Disable Mandatory ASLR\" before it opened a window. It is a check in the game's start-up; "
                   "BCD does not know yet what it looks at, and no setting changes it.",
         "evidence": ["demon-slayer-hinokami-chronicles-2-2026-10-23 (PPV8SW, build 592; KG3A3G, N4GR8A, 4V6S9J: the same box on two devices)"],
+    },
+    {
+        "id": "forza-horizon-4-start-wait",
+        "lines": [],
+        "noFix": True,
+        "priority": 3,
+        # Forza Horizon 4 (Steam 1293830) on build 622, one iPad17,1, three logs, Dock and direct start: with gamingtcui.dll and dxva2.dll linked
+        # (build 620) the loader finishes, the program's only thread runs, asks Wine for the package family "Microsoft.VCLibs.140.00_8wekyb3d8bbwe"
+        # (GetPackagesByPackageFamily, a stub that answers success and no package) and then sits at ForzaHorizon4.exe+0x304d8a0 for as long as
+        # the player waits (941 s in D9NHGJ, 100% of one core, presents=0, no other thread of the game's process ever created). The [spin] snapshot
+        # shows the loop: movzx eax,[rbp+0x2b0]; test al,al; je -11, a wait for a byte in a frame near the top of the stack that nothing sets.
+        # What sets it, and whether the package answer matters, is not known. The signals are Wine's own fixme line (the family is only asked
+        # for by this game's start-up code; every other session that asks, asks for Microsoft.D3DMappingLayers) and the app's 30-second line.
+        "all": [s("GetPackagesByPackageFamily (L\"Microsoft.VCLibs.140.00_8wekyb3d8bbwe\""), s("detach-wait: presents=0 running=1 elapsed=30s")],
+        "reason": "Forza Horizon 4 reaches its own start-up code and then waits there for something that never happens (no frame is drawn, "
+                  "one thread loops). It is the same on every start; no setting changes it and waiting longer does not help. BCD does not "
+                  "know yet what the game waits for.",
+        "evidence": ["forza-horizon-4-start-wait-2026-10-28 (Send Log D9NHGJ, build 622, iPad17,1, 941 s with presents=0; RVXHV6 started "
+                     "directly without Valve's client, 58VNDB: the same place, ForzaHorizon4.exe+0x304d8a0)"],
+    },
+    {
+        "id": "mono-backpatch-lock-leak",
+        "lines": ["env.MADEIRA_MONO_BP_UNLOCKED_MISS = 1"],
+        # Before the generic image / pool rules (priorities 10 and 11): the signature below is specific, and the Mycopunk freeze with this
+        # signature also showed a shrunk JIT pool whose "EXHAUSTED" line those rules read (997BBV L17380).
+        "priority": 6,
+        # Unity (Mono) games frozen by a thread that waits for a FEX lock it owns (round 623: Kindergarten 9DEZ8A, Mycopunk 997BBV, Skate Story
+        # XYPY9J, build 622; the same last access violation and a self-park in Raft, Risk of Rain 2, Ultimate Chicken Horse, Scam Line, builds
+        # 614-622). The access violation is the `str x22,[x26]` of FEXCore's MonoBackpatcherWrite (libarm64ecfex.dll+0x16440, "pre: code=c0000005
+        # ... insim=1", the page COMMITTED READ EXEC, no writable alias for it): the helper holds CodeInvalidationMutex (write) for that store,
+        # the exception leaves it without the destructor, and the thread's next lock request waits for itself ("[fexlock] STUCK write-wait ...
+        # owner tid == waiting tid"). The line makes the helper let go of the mutex before an alias-miss store (tools/patch-fex-ios-mono-bp-
+        # unlocked-miss.py; the access violation stays, the lock no longer). The signals are the instruction bytes of that function around the faulting
+        # store (the first exception's code window, printed whatever the diagnostic switches) and the freeze; "none": the helper already ran
+        # without the lock ("[mono-bp] RW miss"). An ATTEMPT: it removes the lock leak; whether the game then plays is not known.
+        "all": [s("[guest-bytes] ml631 #1 RIP=", "RX from -32, 64 of 64 bytes: 7a 02 80 9a e0 03 08 2a",
+                  "88 1e 00 12 1f 11 00 71 a0 00 00 54 1f 21 00 71 e1 02 00 54 56 03 00 f9 02 00 00 14 56 03 00 b9"),
+                s("[fexlock] STUCK write-wait")],
+        "none": [s("[mono-bp] RW miss")],
+        "reason": "A thread of the game waited for a BCD lock it had left held after an access violation in BCD's write helper for Mono. "
+                  "The line lets the helper release the lock before that write; the access violation itself is not changed.",
+        "evidence": ["mono-backpatch-lock-leak-2026-10-28 (Send Logs 9DEZ8A Kindergarten, 997BBV Mycopunk, XYPY9J Skate Story, build 622)",
+                     "tools/patch-fex-ios-mono-bp-unlocked-miss.py; tests/host/check-fex-mono-bp-unlocked-miss.py"],
     },
     {
         "id": "d2r-loader-empty-code-view",
@@ -3155,11 +3337,19 @@ RULES = [
         # needed too. docs/OPENGL.md has the plan for OpenGL; until it lands no setting changes any of these. Priority 2 puts it ahead of
         # the 596 rule `wow64-native-iosb-completion-store`, which Cry of Fear RT4TB5 also matches through a console helper but which is
         # not why that game stops.
+        # Round 623 (text only): Godot 3's OpenGL-only games put up "Unable to initialize Video driver" over "Your video card driver does not support any of
+        # the supported OpenGL versions. Please update your drivers or if you have a very old or integrated GPU, upgrade it." (An Arcade Full of Cats,
+        # Steam 2368470, godot.windows.opt.64.exe, W9AXC0 build 622: the box, then exit code 0xff; the access violations come after the exit call).
         # Round 620 (text only; the same stub line is required): The Binding of Isaac: Rebirth prints GLFW's errors through
         # OutputDebugString, which the log shows on "[exc-disp]" lines, not "[win-name]" (F2X5S9 L10439 "GLFW Error 65542: WGL: The driver
         # does not appear to support OpenGL", L10442 "Failed to create OpenGL window / context"; WVBQ7V L10080 "WGL: No pixel formats
         # found"); Friday Night Funkin' (Lime/SDL2, 9PV6NT L9821) names its window "Could not create SDL Window"; Lugaru HD (2A5176
         # L9923) shows "Could not find appropriate pixel format".
+        # Round 623 (text only; the same stub line is required): Half-Life / Counter-Strike (Steam 10, hl.exe -steam -game cstrike, the SDL2 engine of
+        # the 25th Anniversary builds; N09SP1 build 622 iPhone17,2): SDL creates and destroys three windows ("SDL_app", L10507-L10532), then the engine
+        # prints "Failed to create SDL Window" (OutputDebugString L10534) and shows its "Fatal Error" box with that text (L10547-L10573); the
+        # stub line is L9423, and the assertion box "!m_bMounted" (FileSystem_Stdio.cpp line 84, L12122) comes after, during the engine's own
+        # shutdown. Mewgenics' F0KN1C says the same in SDL's words ("No matching GL pixel format available").
         "all": [s("[unixlib] opengl32 (GL-absent stub table)")],
         "any": [s("[win-name] #", "ChoosePixelFormat failed"), s("[win-name] #", "Unable to create OpenGL window"),
                 s("[win-name] #", "Could not create window: No matching GL pixel format available"),
@@ -3170,13 +3360,23 @@ RULES = [
                 s("WGL: The driver does not appear to support OpenGL", "[exc-disp]"), s("WGL: No pixel formats found", "[exc-disp]"),
                 s("Failed to create OpenGL window", "[exc-disp]"),
                 s("[win-name] #", "Could not create SDL Window"),
+                s("[win-name] #", "Failed to create SDL Window"),
                 s("[win-name] #", "Could not find appropriate pixel format"),
-                s("[msgbox-origin] box", "Could not find appropriate pixel format")],
+                s("[msgbox-origin] box", "Could not find appropriate pixel format"),
+                s("Your video card driver does not support any of the supported OpenGL versions", "[win-name] #"),
+                # Round 623 (HVZ6P1, build 622; XAY19N, build 614; J787G9): DOOM 3: BFG Edition (32-bit, OpenGL only) prints nothing about
+                # OpenGL. Its next call after "enabled Denormals-Are-Zero mode" reads a string through the value a GL call returned, and
+                # every call of the stub table returns STATUS_NOT_SUPPORTED (virtual_ios.c ios_stub_unix_call): the wild pointer is
+                # 0xC00000BB, "Unhandled page fault on read access to C00000BB at address 0075CC7E" (Doom3BFG.exe+0x35CC7E, the same
+                # address in three logs on two devices). No window text, so the earlier signals never matched and auto-tune retried.
+                s("Unhandled page fault on read access to C00000BB at address")],
         "reason": "This game draws with OpenGL, and BCD has no OpenGL yet: the game cannot make its window and stops. This is not a setting; "
                   "Direct3D games are not affected.",
         "evidence": ["gp-bikes-opengl-2026-10-23 (Send Log CCKWDR, build 592)", "gravity-circuit-love-opengl-2026-10-23 (Send Log HESXRX, build 592)",
                      "geometry-dash-opengl-2026-10-23 (Send Log 1H4EFS, build 592)", "cry-of-fear-opengl-2026-10-23 (Send Log RT4TB5, build 592)",
                      "mewgenics-opengl-pixel-format-2026-10-26 (Send Logs 0CBF7Q, W4AJG1, Y6RAEH, build 600)",
+                     "half-life-sdl-window-2026-10-28 (Send Log N09SP1, build 622)",
+                     "doom-3-bfg-opengl-stub-status-2026-10-28 (HVZ6P1, build 622: a read of 0xC00000BB, STATUS_NOT_SUPPORTED)",
                      "docs/OPENGL.md"],
     },
     {
@@ -3368,6 +3568,96 @@ RULES = [
         "evidence": ["postal-2-d3d8-2026-10-24 (EN0AAS, build 592, iPhone15,4)", "hotline-miami-d3d8-2026-10-21 (339R82, build 576)",
                      "gta-iii-d3d8-2026-10-24 (AN4ETP, build 592)", "MWRBPS (Max Payne 2, build 592; no fixture: the session was still open)",
                      "tests/host/check-d3d8-to-d3d9.py (build 602)", "docs/OPENGL.md"],
+    },
+    # ajan59 (round 623: access violations) --------------------------------------------------------------------------------------------
+    {
+        "id": "slay-spire-2-gpr-store-straddle",
+        "lines": [],
+        "fixedIn": 623,
+        "priority": 1,
+        # Slay the Spire 2 (Godot 4 + .NET 9; 1WF6J7, D1A9QX, KRFN07, build 622, one iPad17,4 each): CoreCLR started (build 620's
+        # DOTNET_GCRegionRange line), Direct3D 12 came up, and 9 s in the program died with "Fatal error. System.AccessViolationException ...
+        # at Godot.Constructors..cctor()" (the class that registers every engine class; a method of more than 128 KB). The JIT writes it into RWX
+        # memory committed one 16 KB chunk at a time, each chunk an alias of its own, with unaligned 4-byte stores. 1WF6J7: the instruction at
+        # 0x7198a7fffb is `mov rcx,[rbp-0x430]` (48 8b 8d d0 fb ff ff), five bytes at the end of one chunk and two in the next; the store of its
+        # displacement started at offset 0x3ffe ([smc-gen] ml636 "highest = highest store START +1" = 0x3fff), the emulator wrote all four bytes
+        # at the first chunk's RW address, the next RW page reads "ff ff fa 3f" where its stubs read "ff 25 fa 3f" ([guest-bytes] ml631 #2), and
+        # the next chunk kept 00 00 there: FEX translated `mov rcx,[rbp+0xfbd0]` and read 0x706df6b760 (rbp+0xfbd0, above the thread's stack).
+        # D1A9QX and KRFN07 die in the same method with other garbage (a write barrier called with RCX=0x100000007, a read of 0x63006100620067).
+        # Build 623 stores a scalar store that leaves its alias page by page (ios_gpr_store_straddle.h). No config line changes it. The signals
+        # are the CLR's own fatal-error text and the frame; the game's identity keeps the rule to the evidence (every Godot .NET game has that class).
+        "all": [s("Fatal error. System.AccessViolationException"), s("at Godot.Constructors..cctor()")],
+        "any": [s("Session log: logs/SlayTheSpire2.exe-"), s("[session-log] Steam game SlayTheSpire2.exe:"), s("library launch SlayTheSpire2.exe:")],
+        "reason": "The game's .NET runtime wrote a few bytes of its generated code into the wrong memory page and the game then read a wrong address; "
+                  "from this build BCD stores such a write page by page.",
+        "evidence": ["slay-the-spire-2-gpr-store-straddle-2026-10-28 (1WF6J7, build 622; D1A9QX and KRFN07 end in the same method)",
+                     "tests/host/check-gpr-store-straddle.py (build 623)"],
+    },
+    {
+        "id": "vdcfg-virtual-path-library",
+        "lines": ["env.MADEIRA_VDCFG_PATH = 1"],
+        "priority": 20,
+        "noRetry": True,
+        "session": "library",
+        # Trails in the Sky 1st Chapter started from a program folder instead of BCD Dock (M5G99X, build 622, iPhone18,1, folder "Sora No Kiseki the 1st",
+        # sora_1st.exe): the same signature as rule vdcfg-virtual-path (Dock sessions, builds 573-579), word for word: GetDisplayConfigBufferSizes "1 paths 2
+        # modes", QueryDisplayConfig "success, 0 paths 0 modes" ([vdcfg-mismatch]), the window set to {32767,32767}-{32768,32768} (win-pos #14), then a read
+        # of address 0x10 in the game ([av-args] NULL-class fault addr=0x10, `mov rdx,[rdx+0x10]` at sora_1st.exe+0x558220 after the game's update; it was
+        # +0x5215E0), a swapchain/render-target wrapper it never made (the call it feeds is vtable slot 50, ID3D11DeviceContext::ClearRenderTargetView).
+        # The Dock rule needs a Dock session and the name sora_deploy_steam.exe, neither is here. The line is the one PBP9YD kept (build 579: 143 s, stage 5,
+        # exit 0). Kept only if the game then does better; off (default) nothing changes for any game.
+        "all": [s("[vdcfg] QueryDisplayConfig", "-> 0, 0 paths 0 modes"), s("[av-args]", "NULL-class fault addr=0x10")],
+        "any": [s("library launch sora_1st.exe:"), s("Session log: logs/sora_1st.exe-")],
+        "none": [s("[vdcfg] QueryDisplayConfig", "-> 0, 1 paths 2 modes")],
+        "reason": "The game builds its fullscreen window from the display paths and BCD answered with none, so it made a one-pixel "
+                  "window and then used a screen it never created; the line lists the virtual monitor's path as Windows does.",
+        "evidence": ["trails-in-the-sky-1st-chapter-library-2026-10-28 (M5G99X, build 622)", "rule vdcfg-virtual-path (PBP9YD, build 579: kept)",
+                     "tests/host/check-vdcfg-path.py (build 579)"],
+    },
+    {
+        "id": "the-forest-bc-decode-memory-kill",
+        "lines": ["dxmt = d3d11.mipClampBC=1"],
+        "priority": 49,
+        "noRetry": True,
+        "outcomes": ["killed"],
+        "memoryMinPct": 85,
+        # The Forest (Steam 242760, 64-bit, Direct3D 11) on phones whose GPU cannot read BC textures ("[device] gpu=... bc=0": A13 to A16), with the memory
+        # rights: NBXX78 (iPhone15,2, build 580: killed, the swap tier was tried and reverted) and PRM25K (iPhone15,3, build 622: the first start was killed,
+        # the retry's log ends with no exit at 4073 MB, the device offering 4076 MB at the start). DXMT expands every BC texture to RGBA8 ("[bc-decode] ml679 ... -> 4B/texel"): PRM25K's census at the end
+        # counts 1152 BC resources, 495 MB logical, up to 2048x2048 with 12 levels, every one DEFAULT usage, shader-resource only, with initial data and
+        # no CPU access ("use def=396 ... bind srv=396 rt=0 uav=0", "RUNTIME OPS ... Map=0"), which is exactly what d3d11.mipClampBC takes (DXMT
+        # d3d11_texture_device.cpp: BC format, DEFAULT or IMMUTABLE, SRV only, no CPU access, 2 or more levels). BC1 grows 8-fold and BC3 4-fold:
+        # about 2.5 GB of the 3.8 GB at that point. mipClampBC=1 drops each texture's top level, three quarters of its bytes (God of War 4.0 GB -> 1.05 GB,
+        # No Rest for the Wicked: the same line). Not tried on a device: an attempt, kept only if the game then lasts longer. Priority 49 puts it ahead of
+        # the swap rules, which did not help this game (NBXX78 "swap-8gb-memory-kill: reverted"; the memory is the GPU's: PRM25K's guest memory was
+        # 578 MB internal + 926 MB compressed). A phone without the memory rights (H9GK9G, YT3HEY: increased-memory=0) is another case.
+        "all": [s("[device] gpu=", "bc=0"), s("[bc-decode] ml679")],
+        "any": [s("library launch TheForest.exe:"), s("Session log: logs/TheForest.exe-"), s("[session-log] Steam game TheForest.exe:")],
+        "none": [s("[device] address-map=", "increased-memory=0")],
+        "reason": "The Forest needs more memory than iOS gives an app on this phone: the phone's GPU cannot read the game's compressed textures, so they "
+                  "are expanded to four to eight times their size. The line drops the largest level of each texture, which is the biggest saving a setting can make.",
+        "evidence": ["the-forest-bc-decode-memory-kill-2026-10-28 (PRM25K, build 622, iPhone15,3)", "NBXX78 (build 580, iPhone15,2: the swap tier reverted)",
+                     "No Rest for the Wicked and God of War lists (the same line)"],
+    },
+    {
+        "id": "ffrs-protected-code-wild-read",
+        "lines": [],
+        "noFix": True,
+        "priority": 2,
+        # FINAL FANTASY RESONANCE DEMO (Steam 4474710), the Unreal program FFRS-Win64-Shipping.exe (474 MiB, entry point at RVA 0xf647d20, TLS callbacks in
+        # the last section): 7 sessions on three devices and builds 592 to 622 (1K4NC2, FVGKKQ, YVQ9XG, 3W6HJQ, A9YKAH, STD9KZ, H7WGNX) stop at the same
+        # guest instruction, RIP 0x151f280f9 (RVA 0x11f280f9, `sub r8,[rdx]` in code made of junk instructions: "48 c7 c5 99 cf 5f be 48 23 2d ..."), a
+        # read of an address that does not exist (0xaf421756e8, 0xaf5f1756e8 ...: another value every session, [fault_rip] "UNMAPPED AT ENTRY (wild
+        # pointer)"). The sessions reach it about 27 s into the start ("crashed at stage 2 after 27 s"), moments after the program's TLS connections to
+        # srv0N.codefusion.technology and srv03.antitamper.net (the names of Denuvo's servers: in this corpus only Denuvo titles contact them) completed
+        # ("gnutls_handshake COMPLETED", STD9KZ L13772-L13872).
+        # STD9KZ and H7WGNX are on the build with every line of the list (exe window, VCRT key, image without a copy) in force. The log does not say
+        # why the pointer is wrong, and BCD does not work on a game's copy protection, so no line or fix is offered. The signal is the program name and the
+        # address, which changes with a new version of the game.
+        "all": [s("FFRS-Win64-Shipping.exe"), s("Unhandled exception code c0000005 flags 0 addr 0x151f280f9")],
+        "reason": "The game stopped inside its copy-protection layer, reading an address that does not exist, at the same place in every session. "
+                  "The log does not show why; no setting is known to change it, and BCD does not work on a game's copy protection.",
+        "evidence": ["ffrs-demo-protected-code-2026-10-28 (STD9KZ, H7WGNX, build 622; the same instruction in 1K4NC2, FVGKKQ, YVQ9XG, 3W6HJQ, A9YKAH)"],
     },
 ] + SWAP_RULES
 

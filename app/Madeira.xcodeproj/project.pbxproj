@@ -271,6 +271,7 @@
 		A1005116 /* BCDPhoneRumble.m in Sources */ = {isa = PBXBuildFile; fileRef = A2005116 /* BCDPhoneRumble.m */; };
 		A1005118 /* BCDPauseGate.c in Sources */ = {isa = PBXBuildFile; fileRef = A2005118 /* BCDPauseGate.c */; };
 		A1004711 /* BCDGPUCardsLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004711 /* BCDGPUCardsLive.swift */; };
+		A1005417 /* ExternalGamesPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2005417 /* ExternalGamesPicker.swift */; };
 		A1004710 /* BCDGPUCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004710 /* BCDGPUCards.swift */; };
 		A1004703 /* BCDExtraKeysLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004703 /* BCDExtraKeysLive.swift */; };
 		A1004702 /* BCDExtraKeyBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2004702 /* BCDExtraKeyBar.swift */; };
@@ -692,6 +693,7 @@
 		A2005118 /* BCDPauseGate.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = BCDPauseGate.c; sourceTree = "<group>"; };
 		A2005119 /* BCDPauseGate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BCDPauseGate.h; sourceTree = "<group>"; };
 		A2004711 /* BCDGPUCardsLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGPUCardsLive.swift; sourceTree = "<group>"; };
+		A2005417 /* ExternalGamesPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalGamesPicker.swift; sourceTree = "<group>"; };
 		A2004710 /* BCDGPUCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDGPUCards.swift; sourceTree = "<group>"; };
 		A2004703 /* BCDExtraKeysLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDExtraKeysLive.swift; sourceTree = "<group>"; };
 		A2004702 /* BCDExtraKeyBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BCDExtraKeyBar.swift; sourceTree = "<group>"; };
@@ -1099,6 +1101,7 @@
 				A2005118 /* BCDPauseGate.c */,
 				A2005119 /* BCDPauseGate.h */,
 				A2004711 /* BCDGPUCardsLive.swift */,
+				A2005417 /* ExternalGamesPicker.swift */,
 				A2004710 /* BCDGPUCards.swift */,
 				A2004703 /* BCDExtraKeysLive.swift */,
 				A2004702 /* BCDExtraKeyBar.swift */,
@@ -1677,6 +1680,7 @@
 				A1005116 /* BCDPhoneRumble.m in Sources */,
 				A1005118 /* BCDPauseGate.c in Sources */,
 				A1004711 /* BCDGPUCardsLive.swift in Sources */,
+				A1005417 /* ExternalGamesPicker.swift in Sources */,
 				A1004710 /* BCDGPUCards.swift in Sources */,
 				A1004703 /* BCDExtraKeysLive.swift in Sources */,
 				A1004702 /* BCDExtraKeyBar.swift in Sources */,

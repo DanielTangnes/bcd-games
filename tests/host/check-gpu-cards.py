@@ -89,8 +89,9 @@ for name in ("BCDGPUCards.swift", "BCDGPUCardsLive.swift"):
 
 # ---- 3. one table ----------------------------------------------------------------------------------
 VENDORS = {"apple": 0x106B, "nvidia": 0x10DE, "amd": 0x1002, "intel": 0x8086}
-swift_cards = re.findall(r'\.init\(id: "([\w-]+)", title: "([^"]+)", vendor: (\w+), device: (0x[0-9A-Fa-f]+), name: "([^"]+)"\)', cards_src)
-check(len(swift_cards) == 6, "the app has six cards", len(swift_cards))
+# Build 623: a card may name Direct3D 9's driver file too (the GeForce 7900 GS: nv4_disp.dll).
+swift_cards = re.findall(r'\.init\(id: "([\w-]+)", title: "([^"]+)", vendor: (\w+), device: (0x[0-9A-Fa-f]+), name: "([^"]+)"(?:, driver: "[^"]+")?\)', cards_src)
+check(len(swift_cards) == 7, "the app has seven cards (build 623: the GeForce 7900 GS)", len(swift_cards))
 swift_pairs = {(VENDORS[v], int(d, 16)) for _, _, v, d, _ in swift_cards}
 block = re.search(r"static const struct \{ UINT16 vendor, device; \} ios_known_gpus\[\] =\s*\{(.*?)\};", sysparams, re.S)
 check(block is not None, "win32u lists the identities it may find in a prefix")

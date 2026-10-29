@@ -1,0 +1,126 @@
+[20:11:15.079] [INFO] Checking entitlements...
+[20:11:15.080] [INFO] [build] v0.1.622 (622)
+[20:11:15.080] [INFO] [device] model=iPad17,4 idiom=pad os=iPadOS Version 27.2 (Build 24B119) ram=11443MB available=12262MB cores=9
+[20:11:15.080] [INFO] [device] address-map=[0x1045ac000,0x8000000000) 512GB increased-memory=1 extended-va=1
+[20:11:15.091] [INFO] [device] gpu="Apple M5 GPU" family=apple10 argument-buffers=tier2 mesh=1 bc=1 atomics64=1 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[20:11:17.956] [INFO] Requesting JIT with Built-in StikJIT...
+[20:11:19.210] [INFO] [bcd] library launch Digimon Story Time Stranger.exe: avx=0 wine-vcrt=0 nvidia=0 game-config=1 metalfx=off
+[20:11:19.234] [INFO] Running full Wine sequence...
+[20:11:19.234] [INFO] [device] launch: cs-flags=0x32003005 get-task-allow=1 cs-debugged=1 debugger-attached=1 traced=1 address-map=[0x1045ac000,0x8000000000) 512GB available=12245MB low-power=0 thermal=nominal
+[20:11:19.240] [INFO] Allocating 896MB JIT pool (BRK will suspend process)...
+[20:11:19.240] [INFO] Allocating 896MB JIT pool via debugger...
+[20:11:19.241] [INFO] [jit-pool] path: debugger (attached at the pool request; it makes every region)
+[20:11:19.241] [INFO] [jit-debugger] attached=1 at the pool request
+[20:11:19.243] [ERR] ml1036: no hole fits a 896MB pool — SHRINKING to 560MB (the alternative is a pool in the guest window or on top of 0x140000000, both of which are fatal)
+[20:11:19.868] [INFO] RX pool at 0x148000000
+[20:11:19.883] [INFO] Detaching debugger...
+[phase] wine-start             t+  0.685s rev=ml526
+[hwinput] keyboard focus: program (poll)
+[shell-dir] user folders for madeira, mobile: 0 created (Start Menu included)
+[cage] holdback reserved 0x7200000000+0x1ffff0000 rev=ml433
+[Wine init_process] reply_pipe=41, sending init_first_thread...
+[20:11:20.114] [Wine init_process] reply_pipe=41, sending init_first_thread...
+[iOS env] INCLUDED: SteamAppId=356400
+ml992: os_proc_available_memory=11669 MB + phys_footprint=618 MB = 12288 MB (hw.memsize says 11443 MB)
+ml985: preferred base 0x140000000+0x20fc000 REFUSED status=0xc0000018 image_flags=0x4 charact=0x22 map_addr=0 info_base=0x140000000 | STAGE=fixed-map err=3 at 0x140000000+0x20fc000 rev=ajan5-motor
+[wow-rwx] ml1279 MADEIRA_WOW_RWX_PLAIN=(unset) -> 32-bit guest RWX memory is plain read/write in a window once Wine Mono is mapped there
+[copy-verify] app_digister02.exe: OK, 1244 .text pages executable (copy @0x148006000)
+[copy-verify] ntdll.dll: OK, 30 .text pages executable (copy @0x14a104000)
+0024:err:seh:init_syscall_frame page0: trying debugger (BRK #0xf00d, x16=3)...
+[nls-getptr] type=11 id=1252 peb=0x71ffff0000
+[nls-getptr] type=11 id=437 peb=0x71ffff0000
+[copy-verify] libarm64ecfex.dll: OK, 131 .text pages executable (copy @0x14a23e000)
+[footprint] rev=ml358 phys=694 MB (peak 694) internal=687 MB compressed=0 MB external=83 MB reusable=7 MB (cycle=1)
+[copy-verify] ucrtbase.dll: OK, 34 .text pages executable (copy @0x14a658000)
+[copy-verify] kernel32.dll: OK, 10 .text pages executable (copy @0x14a78c000)
+[copy-verify] kernelbase.dll: OK, 28 .text pages executable (copy @0x14a854000)
+[nls-getptr] type=11 id=20127 peb=0x71ffff0000
+D 24 Load module Digimon Story Time Stranger.exe (digimon story time stranger.exe-dfe8304ccb0c3450): 122420000
+D 24 Load module ntdll.dll (ntdll.dll-391ab96a83e82f14): 71FFCD0000
+[nls-getptr] type=11 id=1252 peb=0x71ffff0000
+[nls-getptr] type=11 id=437 peb=0x71ffff0000
+D 24 Load module steam_api64.dll (steam_api64.dll-385dfe10bda4a65b): 71FE080000
+D 24 Load module ADVAPI32.dll (advapi32.dll-e40c14e1190b1df2): 71FDFD0000
+D 24 Load module sechost.dll (sechost.dll-b36ef44c04b21a0b): 71FDF50000
+D 24 Load module msvcrt.dll (msvcrt.dll-237acf236e8130e9): 71FDE40000
+[copy-verify] coml2.dll: OK, 1 .text pages executable (copy @0x14b9b4000)
+[copy-verify] oleaut32.dll: OK, 24 .text pages executable (copy @0x14ba48000)
+[copy-verify] psapi.dll: OK, 1 .text pages executable (copy @0x14bb7c000)
+[copy-verify] shell32.dll: OK, 34 .text pages executable (copy @0x14bc10000)
+[copy-verify] shlwapi.dll: OK, 8 .text pages executable (copy @0x14c594000)
+D 24 Load module comctl32.dll (comctl32.dll-8c564d137baf4ee2): 71FB7D0000
+D 24 Load module hid.dll (hid.dll-c3a5177fc021edec): 71FB740000
+[copy-verify] comdlg32.dll: OK, 12 .text pages executable (copy @0x14d808000)
+D 24 Load module COMDLG32.dll (comdlg32.dll-bb3453125056fbd5): 71FB5E0000
+D 24 Load module bcrypt.dll (bcrypt.dll-5a6e36eeb1a98b0b): 71FB550000
+D 24 Load module XINPUT1_4.dll (xinput1_4.dll-a6149d3778dec34c): 71FB4C0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+D 24 Load module uxtheme.dll (uxtheme.dll-4e1d696344b97035): 71FB410000
+[unixlib] opengl32 (GL-absent stub table) (module 0x71fbff0000) -> 64-bit table (0x10737c758)
+[mmap-place] ml1027 NO GAP FITS size=0x4000010000 after 72673 regions (ceiling=0x8000000000 walk_stopped_at=0x8000000000 tail=0 MB gaps_seen=0, largest gap 32768 MB, walk 73 ms) -- the map really is full for this size
+[jumbo] kernel-pick reserve failed (0xc0000017) for size=0x4000000000 — top window is full
+[jumbo#1] +0ms tid=16bb0b000 wtid=0024 peb=0x71ffff0000 nrip=0x71fe454f00 grip=0x0 size=0x4000000000 (262144 MB) hint=0x0 -> 0x0 st=0xc0000017 | granted=0 MB ok=0 fail=1
+[alloc-fail] ml814 #1 status=c0000017 hint=0x0 size=0x4000000000 type=0x2000 protect=0x4 tid=0024 | STAGE=anon-mmap err=12 at 0x0+0x4000010000
+[nt-fail] #1 NtAllocateVirtualMemory status=c0000017 proc=digimon story time stranger.exe tid=0024 size=0x4000000000 type=0x2000 prot=0x4 hint=0x0 zb=0x0 hits=1 rev=ajan5-rockstar
+[store-noalias] #1 rev=ml348 addr=0xc9 insn=0x19439086 pc=0x16a0cc228 NO pool/anon alias | region 0x1045ac000+0x26dc000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #1 p0=READ p1=0xc9 hostpc=0x16a0cc228 hinsn=0x19439086 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=idx=1 base=0x169ffc000 size=0x1000000 state=live p1_in_carve=0 regs=0 rev=ml613
+[fault_rip] cnt=1 rip=0x12345cc26 pc=0x16a0cc228 addr=0xc9 kr=1(INVALID_ADDRESS) entryprot=5 nowprot=5 region=0x1045ac000+0x26dc000 [first] rev=ml555
+[mach_exc] UNHANDLED #1 pc=0x16a0cc228 addr=0xc9 x18=0x71fffe0000 type=1 lr=0x16affc274 sp=0x71fe3b0000 x16=0x14a15d9a4 x17=0x71fe3aff20
+[guest-code] rev=ml333 pool_rip=0x149042c26 (PE 0x12345cc26): 48 8b c7 48 8b 5c 24 40 48 83 c4 30 5f c3 40 57
+[av-args] rev=ajan3-dyinglight #1 NULL-class fault addr=0xc9 at host pc=0x16a0cc228; x86 registers that point at a module, an object with a vtable or text:
+[av-args]   RBX=0x123ba3210 = app_digister02.exe+0x1783210 "Failed to initialise snmalloc."
+[av-args]   R9=0x123edd740 = app_digister02.exe+0x1abd740
+[av-args]   R11=0x1242ece90 = app_digister02.exe+0x1ecce90
+[fault-host] 16a0cc128: aa0303e2 f90012f9 aa0303e1 528002c6 d503201f 990233a6 6b000009 aa0303e0
+[fault-host] 16a0cc148: d29d3806 f2a46886 f2c00026 f81f8ee6 1000004a 940000c1 10fff90a f900038a
+[fault-host] 16a0cc168: b945eb8b 3400004b d4395fc0 92800006 aa06035a 1400006e f100003f 54fffc80
+[fault-host] 16a0cc188: 99414028 d503201f 530c7d08 12000109 7100013f 540006c1 aa0103e0 d29d3c26
+[fault-host] 16a0cc1a8: f2a46886 f2c00026 f81f8ee6 1000004a 94000107 10fff62a f900038a b945eb8b
+[fault-host] 16a0cc1c8: 3400004b d4395fc0 93407d02 d29ae803 f2a47da3 f2c00023 d299d205 f2a485c5
+[mach_exc] insn_stream PC-12..PC+8: 8b000d04 14000002 aa0303e4 [19439086] 53081cca 6b19615f 54fff701
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0x71fffe0000 TEB=0x71fffe0000 TEB[0x58]=0x702384faa0 *(gs_cached+0x58)=0x702384faa0
+[store-noalias] #2 rev=ml348 addr=0xc9 insn=0x19439086 pc=0x16a0cc228 NO pool/anon alias | region 0x1045ac000+0x26dc000 prot=5 max=5 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #2 p0=READ p1=0xc9 hostpc=0x16a0cc228 hinsn=0x19439086 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=idx=1 base=0x169ffc000 size=0x1000000 state=live p1_in_carve=0 regs=0 rev=ml613
+[fault_rip] cnt=2 rip=0x12345cc26 pc=0x16a0cc228 addr=0xc9 kr=1(INVALID_ADDRESS) entryprot=5 nowprot=5 region=0x1045ac000+0x26dc000 rev=ml555
+[mach_exc] UNHANDLED #2 pc=0x16a0cc228 addr=0xc9 x18=0x71fffe0000 type=1 lr=0x16affc274 sp=0x71fe3b0000 x16=0x14a15d9a4 x17=0x71fe3aff20
+[guest-code] rev=ml333 pool_rip=0x149042c26 (PE 0x12345cc26): 48 8b c7 48 8b 5c 24 40 48 83 c4 30 5f c3 40 57
+[fault-host] 16a0cc188: 99414028 d503201f 530c7d08 12000109 7100013f 540006c1 aa0103e0 d29d3c26
+[fault-host] 16a0cc1a8: f2a46886 f2c00026 f81f8ee6 1000004a 94000107 10fff62a f900038a b945eb8b
+[fault-host] 16a0cc1c8: 3400004b d4395fc0 93407d02 d29ae803 f2a47da3 f2c00023 d299d205 f2a485c5
+[fault-host] 16a0cc1e8: f2c00025 aa0203e1 91000846 2a0603e0 7100041f 54000149 aa0203e0 9346fc48
+[fault-host] 16a0cc208: 12001400 8b080ca6 d94000c8 d503201f 8b000c00 8b000d04 14000002 aa0303e4
+[fault-host] 16a0cc228: 19439086 53081cca 6b19615f 54fff701 00000000 00000000 00000000 00000000
+[mach_exc] insn_stream PC-12..PC+8: 8b000d04 14000002 aa0303e4 [19439086] 53081cca 6b19615f 54fff701
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0x71fffe0000 TEB=0x71fffe0000 TEB[0x58]=0x702384faa0 *(gs_cached+0x58)=0x702384faa0
+0024:err:seh:segv_handler   [guest-rip-sec] rip=0x12345cc26 in image 0x122420000: rva 0x103cc26, section #0 '.text' rva 0x1000+0x136fbf8 chars 0x60000020 (R-X CODE), vprot=0x25
+0024:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #1 RIP=0x16a0cc228 RX from -32, 64 of 64 bytes: 00 14 00 12 a6 0c 08 8b c8 00 40 d9 1f 20 03 d5 00 0c 00 8b 04 0d 00 8b 02 00 00 14 e4 03 03 aa 86 90 43 19 ca 1c 08 53 5f 61 19 6b 01 f7 ff 54 46 08 00 91 e8 03 06 2a 1f 05 00 71 09 01 00 54 
+0024:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #1 no RW alias for 0x16a0cc228 (not an anon-JIT page)
+0024:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #2 RIP=0x12344ea1c RX from -32, 64 of 64 bytes: 76 1b 49 8b c8 49 8b c0 48 c1 f8 06 83 e1 3f 49 8b 04 c3 48 8d 0c c9 4c 8d 14 c8 eb 03 4d 8b d1 41 38 72 39 0f 85 72 ff ff ff 41 8d 40 02 83 f8 01 76 16 48 8b c2 48 c1 f8 06 83 e2 3f 49 8b 04 
+0024:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #2 no RW alias for 0x12344ea1c (not an anon-JIT page)
+0024:err:seh:call_seh_handlers [unwind-root] ml633 ACCEPTING terminal root frame 7023810000 (== stack hi) ControlPc=71ffd32dd8 handler=00000071FFCF5388 — this is the unhandled-exception filter frame
+wine: Unhandled page fault on read access to 00000000000000C9 at address 000000012344EA1C (thread 0024), starting debugger...
+0024:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0xc0000005) syscalls=0 unix_calls=913
+[unwind] term ml661 begin rip=14a182284 rsp=702380e3d8 window=[702380e3d8..702400e3d8) max=32
+[unwind] term ml661 #00 pc=14a182284 rsp=702380e3d8  <no module — STOP>
+[unwind] term ml661 end
+[Wine ntdll/server] process_exit_wrapper(-1073741819)
+[WineProc] Wine exited with code -1073741819 (caught by longjmp)
+[WineProc] stopping wineserver...
+[20:11:20.734] [INFO] [session] length=1s play=0s frames=0 stalls=0/0s peak=788MB limit=12287MB thermal=nominal lpm=0 api=D3D11/64 res=1112x832 cap=60 game=Digimon Story Time Stranger
+[20:11:20.736] [INFO] [exit-report] status=0xc0000005
+[frontend] returned to library
+[hwinput] keyboard focus: elsewhere (poll)
+[footprint] rev=ml358 phys=800 MB (peak 800) internal=797 MB compressed=0 MB external=127 MB reusable=6 MB (cycle=2)
+[footprint] rev=ml1060 fast phys=800 MB compressed=0 MB
+[20:11:22.945] [INFO] Detaching debugger...
+[footprint] rev=ml358 phys=799 MB (peak 800) internal=797 MB compressed=0 MB external=127 MB reusable=7 MB (cycle=3)
+[footprint] rev=ml358 phys=799 MB (peak 800) internal=797 MB compressed=0 MB external=127 MB reusable=7 MB (cycle=4)
+[footprint] rev=ml358 phys=799 MB (peak 800) internal=797 MB compressed=0 MB external=127 MB reusable=7 MB (cycle=5)

@@ -1,0 +1,18 @@
+{
+ "dialogs": [],
+ "end": {
+  "killed": true,
+  "seconds": 16,
+  "userSaid": "froze"
+ },
+ "matched": [
+  "mono-backpatch-lock-leak"
+ ],
+ "next": [
+  "env.MADEIRA_MONO_BP_UNLOCKED_MISS = 1"
+ ],
+ "note": "Send Log XYPY9J (build 622, iPhone18,1): Skate Story, the same access violation (L11660-L11663) and the same self-park (L11731).",
+ "outcome": "hung",
+ "stage": 2,
+ "status": "trying"
+}

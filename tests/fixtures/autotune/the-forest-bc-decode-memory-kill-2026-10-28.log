@@ -1,0 +1,162 @@
+[22:12:38.926] [INFO] Checking entitlements...
+[22:12:38.927] [INFO] [build] v0.1.622 (622)
+[22:12:38.927] [INFO] [device] model=iPhone15,3 idiom=phone os=iOS Version 26.4.2 (Build 23E261) ram=5636MB available=4076MB cores=6
+[22:12:38.927] [INFO] [device] address-map=[0x102824000,0xfc0000000) 63GB increased-memory=1 extended-va=0
+[22:12:38.956] [INFO] [device] gpu="Apple A16 GPU" family=apple8 argument-buffers=tier2 mesh=1 bc=0 atomics64=0 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[22:12:57.247] [INFO] Requesting JIT with Built-in StikJIT...
+[22:12:58.830] [INFO] [bcd] library launch TheForest.exe: avx=0 wine-vcrt=0 nvidia=0 game-config=1 metalfx=off
+[22:12:58.833] [INFO] Session log: logs/TheForest.exe-2026-10-28_22-12-58.txt
+[22:12:58.863] [INFO] Running full Wine sequence...
+[22:12:58.864] [INFO] [device] launch: cs-flags=0x32003005 get-task-allow=1 cs-debugged=1 debugger-attached=1 traced=1 address-map=[0x102824000,0xfc0000000) 63GB available=4063MB low-power=0 thermal=serious
+[22:12:58.874] [INFO] Allocating 256MB JIT pool (BRK will suspend process)...
+[22:12:58.874] [INFO] Allocating 256MB JIT pool via debugger...
+[22:12:58.874] [INFO] [jit-pool] path: debugger (attached at the pool request; it makes every region)
+[22:12:58.874] [INFO] [jit-debugger] attached=1 at the pool request
+[22:12:59.317] [INFO] RX pool at 0x12083c000
+[22:12:59.331] [INFO] Detaching debugger...
+[phase] wine-start             t+  0.519s rev=ml526
+[shell-dir] user folders for madeira, mobile: 0 created (Start Menu included)
+[22:12:59.731] [Wine connect] fd_socket=35, receiving version fd...
+[Wine init_process] waiting for request_fd from wineserver...
+[22:12:59.731] [Wine init_process] waiting for request_fd from wineserver...
+[Wine init_process] reply_pipe=41, sending init_first_thread...
+[22:12:59.731] [Wine init_process] reply_pipe=41, sending init_first_thread...
+[iOS env] INCLUDED: SteamAppId=356400
+ml992: os_proc_available_memory=3792 MB + phys_footprint=303 MB = 4096 MB (hw.memsize says 5636 MB)
+[wow-rwx] ml1279 MADEIRA_WOW_RWX_PLAIN=(unset) -> 32-bit guest RWX memory is plain read/write in a window once Wine Mono is mapped there
+[footprint] rev=ml358 phys=328 MB (peak 328) internal=328 MB compressed=0 MB external=81 MB reusable=7 MB (cycle=1)
+[copy-verify] player_win.exe: OK, 1071 .text pages executable (copy @0x120842000)
+[copy-verify] ntdll.dll: OK, 30 .text pages executable (copy @0x121efc000)
+0024:err:seh:init_syscall_frame page0: trying debugger (BRK #0xf00d, x16=3)...
+[nls-getptr] type=11 id=1252 peb=0xfbfff0000
+[nls-getptr] type=11 id=437 peb=0xfbfff0000
+[copy-verify] libarm64ecfex.dll: OK, 131 .text pages executable (copy @0x122036000)
+[copy-verify] ucrtbase.dll: OK, 34 .text pages executable (copy @0x122450000)
+[copy-verify] kernel32.dll: OK, 10 .text pages executable (copy @0x122584000)
+[copy-verify] kernelbase.dll: OK, 28 .text pages executable (copy @0x12264c000)
+[nls-getptr] type=11 id=20127 peb=0xfbfff0000
+D 24 Load module TheForest.exe (theforest.exe-08d915cf2f53e53b): 140000000
+D 24 Load module ntdll.dll (ntdll.dll-391ab96a83e82f14): FBFCD0000
+[nls-getptr] type=11 id=1252 peb=0xfbfff0000
+[nls-getptr] type=11 id=437 peb=0xfbfff0000
+D 24 Load module HID.DLL (hid.dll-c3a5177fc021edec): FBF0E0000
+D 24 Load module USER32.dll (user32.dll-7d4349728057d260): FBEEC0000
+D 24 Load module gdi32.dll (gdi32.dll-c5970f8a59a953f3): FBEDD0000
+D 24 Load module advapi32.dll (advapi32.dll-e40c14e1190b1df2): FBED20000
+[copy-verify] shcore.dll: OK, 3 .text pages executable (copy @0x123520000)
+[copy-verify] shell32.dll: OK, 34 .text pages executable (copy @0x1235a4000)
+[copy-verify] opengl32.dll: OK, 38 .text pages executable (copy @0x123f28000)
+[copy-verify] winmm.dll: OK, 9 .text pages executable (copy @0x12408c000)
+[copy-verify] msacm32.dll: OK, 4 .text pages executable (copy @0x1241b0000)
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+[unixlib] opengl32 (GL-absent stub table) (module 0xfbda80000) -> 64-bit table (0x1055f4758)
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+[nls-getptr] type=11 id=10000 peb=0xfbfff0000
+E 24 [mono-cfg] ml623 module=mono.dll base=0xfbd080000 xend=0xfbd34fd5e | MonoHacks=1 Multiblock=1 MaxInst=5000 => HOOKS ARMED (MarkMonoDetected)
+E 24 [mono-cfg] ml623 module=mono.dll base=0xfbd080000 xend=0xfbd34fd5e | MonoHacks=1 Multiblock=1 MaxInst=5000 => HOOKS ARMED (MarkMonoDetected)
+0024:err:module:load_dll [dll-missing] rev=ml336 #1 L"C:\\Games\\The Forest v.1.12\\TheForest_Data\\Managed\\mscorlib.dll.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[swp-emul] ml626 #1 REFUSING unaligned atomic: insn=0xf8f980d9 size=8 addr=0x134ca0056 rw=0x14c154056
+[store-undecoded] #1 rev=ml350 insn=0xf8f980d9 pc=0x12fb303b0 addr=0x134ca0056 rw_addr=0x14c154056 — alias OK, ADD THIS ENCODING to the case-4 emulator
+[av-detail] ml613 #1 p0=WRITE p1=0x134ca0056 hostpc=0x12fb303b0 hinsn=0xf8f980d9 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=idx=1 base=0x12f838000 size=0x1000000 state=live p1_in_carve=0 regs=0 rev=ml613
+[fault_rip] cnt=1 rip=0xfbd1235c9 pc=0x12fb303b0 addr=0x134ca0056 kr=2(PROTECTION_FAILURE) entryprot=5 nowprot=5 region=0x134ca0000+0x4000 [first] rev=ml555
+[mach_exc] UNHANDLED #1 pc=0x12fb303b0 addr=0x134ca0056 x18=0xfbffe0000 type=1 lr=0x12fb2f448 sp=0xfbf1b0000 x16=0x121f559a4 x17=0xfbf1aff20
+[guest-code] rev=ml333 pool_rip=0x12492d5c9 (PE 0xfbd1235c9): 48 85 c0 74 16 8b 88 00 01 00 00 48 8b 05 fd 2b
+[fault-host] 12fb302b0: 33642110 45623110 00746125 d503201f 000007e8 10ffffea f900038a b945eb8b
+[fault-host] 12fb302d0: 3400004b d4395fc0 f90012fb a9bf76f9 a9bf6af3 f81f8ef4 d10142f7 d2858206
+[fault-host] 12fb302f0: f2b7a5c6 f2c001e6 d94000c8 d503201f ca170108 f1000109 f90022e8 aa0203f9
+[fault-host] 12fb30310: 9100c2e3 528001c2 aa0103fd 52800206 b90022e6 d2809fa6 f2b7a3a6 f2c001e6
+[fault-host] 12fb30330: f81f8ee6 1000004a 97fffbff 10fffc2a f900038a b945eb8b 3400004b d4395fc0
+[fault-host] 12fb30350: 52800926 3940c6e7 53081cea 6b06615f 3940e6e6 b3401cc0 2a0803f3 540000c1
+[mach_exc] insn_stream PC-12..PC+8: 7100011f 54001fc0 d1002fa6 [f8f980d9] 140000fb b2607ff4 ea190289
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0xfbffe0000 TEB=0xfbffe0000 TEB[0x58]=0x11abafe40 *(gs_cached+0x58)=0x11abafe40
+[swp-emul] ml626 #2 REFUSING unaligned atomic: insn=0xf8f980d9 size=8 addr=0x134ca0056 rw=0x14c154056
+[store-undecoded] #2 rev=ml350 insn=0xf8f980d9 pc=0x12fb303b0 addr=0x134ca0056 rw_addr=0x14c154056 — alias OK, ADD THIS ENCODING to the case-4 emulator
+[av-detail] ml613 #2 p0=WRITE p1=0x134ca0056 hostpc=0x12fb303b0 hinsn=0xf8f980d9 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=idx=1 base=0x12f838000 size=0x1000000 state=live p1_in_carve=0 regs=0 rev=ml613
+[fault_rip] cnt=2 rip=0xfbd1235c9 pc=0x12fb303b0 addr=0x134ca0056 kr=2(PROTECTION_FAILURE) entryprot=5 nowprot=5 region=0x134ca0000+0x4000 rev=ml555
+[mach_exc] UNHANDLED #2 pc=0x12fb303b0 addr=0x134ca0056 x18=0xfbffe0000 type=1 lr=0x12fb2f448 sp=0xfbf1b0000 x16=0x121f559a4 x17=0xfbf1aff20
+[guest-code] rev=ml333 pool_rip=0x12492d5c9 (PE 0xfbd1235c9): 48 85 c0 74 16 8b 88 00 01 00 00 48 8b 05 fd 2b
+[fault-host] 12fb30310: 9100c2e3 528001c2 aa0103fd 52800206 b90022e6 d2809fa6 f2b7a3a6 f2c001e6
+[fault-host] 12fb30330: f81f8ee6 1000004a 97fffbff 10fffc2a f900038a b945eb8b 3400004b d4395fc0
+[fault-host] 12fb30350: 52800926 3940c6e7 53081cea 6b06615f 3940e6e6 b3401cc0 2a0803f3 540000c1
+[fault-host] 12fb30370: 52801766 3940cae7 53081cea 6b06615f 540000a0 52801d06 53081c0a 6b06615f
+[fault-host] 12fb30390: 54001e01 52801d06 53081c0a 6b06615f 540000c0 7100011f 54001fc0 d1002fa6
+[fault-host] 12fb303b0: f8f980d9 140000fb b2607ff4 ea190289 00000000 00000000 00000000 00000000
+[mach_exc] insn_stream PC-12..PC+8: 7100011f 54001fc0 d1002fa6 [f8f980d9] 140000fb b2607ff4 ea190289
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0xfbffe0000 TEB=0xfbffe0000 TEB[0x58]=0x11abafe40 *(gs_cached+0x58)=0x11abafe40
+ml998: [wr-strip-declined] 0x134ca0056 vprot=0x25 { COMMITTED READ EXEC  } unix_prot=5
+ml998: [wr-strip-declined]   view 0x134ca0000+0x100000 protect=0x27 {  } page_off=0
+ml998: [wr-strip-declined]   neighbours prev=00 this=0x25 next=0x27
+0024:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #1 RIP=0x12fb303b0 RX from -32, 64 of 64 bytes: 01 1e 00 54 06 1d 80 52 0a 1c 08 53 5f 61 06 6b c0 00 00 54 1f 01 00 71 c0 1f 00 54 a6 2f 00 d1 d9 80 f9 f8 fb 00 00 14 f4 7f 60 b2 89 02 19 ea 1f 40 00 d5 20 18 00 54 26 a9 80 d2 a6 a3 b7 f2 
+0024:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #1 no RW alias for 0x12fb303b0 (not an anon-JIT page)
+D 24 Handled self-modifying code: pc: 12FB303B0 fault: 134CA0056
+[win-name] #5 hwnd=0x10036 class='' text="Default IME" rev=ml853
+[copy-verify] winemetal.dll: OK, 2 .text pages executable (copy @0x125456000)
+[xp-names] m1491303 "wine-x18-exc"
+D 24 Load module cfgmgr32.dll (cfgmgr32.dll-9e975325c50ed383): FBC200000
+D 24 Load module mmdevapi.dll (mmdevapi.dll-57db4935cb1d4a81): FBBA60000
+D C0 Load module avrt.dll (avrt.dll-cbf6d88ff1151c3b): FBB960000
+0024:err:module:load_dll [dll-missing] rev=ml336 #2 L"C:\\Games\\The Forest v.1.12\\TheForest_Data\\Managed\\UnityEngine.dll.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #1 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:module:load_dll [dll-missing] rev=ml336 #3 L"C:\\Games\\The Forest v.1.12\\TheForest_Data\\Managed\\Assembly-CSharp-firstpass.dll.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #4 L"C:\\Games\\The Forest v.1.12\\TheForest_Data\\Managed\\Assembly-CSharp.dll.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #5 L"C:\\Games\\The Forest v.1.12\\TheForest_Data\\Managed\\Assembly-UnityScript-firstpass.dll.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #6 L"C:\\Games\\The Forest v.1.12\\TheForest_Data\\Managed\\Assembly-UnityScript.dll.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #22 L"C:\\Games\\The Forest v.1.12\\TheForest_Data\\Managed\\TheForest.Modding.dll.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #23 L"C:\\Games\\The Forest v.1.12\\TheForest_Data\\Managed\\PlayMaker.dll.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #24 L"C:\\Games\\The Forest v.1.12\\TheForest_Data\\Managed\\Rewired_Core.dll.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #25 L"C:\\Games\\The Forest v.1.12\\TheForest_Data\\Managed\\Rewired_Windows_Lib.dll.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[footprint] rev=ml358 phys=1141 MB (peak 1141) internal=1107 MB compressed=0 MB external=126 MB reusable=7 MB (cycle=2)
+0024:err:module:load_dll [dll-missing] rev=ml336 #26 L"C:\\Games\\The Forest v.1.12\\TheForest_Data\\Managed\\System.Core.dll.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #27 L"C:\\Games\\The Forest v.1.12\\TheForest_Data\\Managed\\System.dll.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #2 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #3 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #4 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #5 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #6 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #7 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #8 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #14 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+[footprint] rev=ml1060 fast phys=1294 MB compressed=0 MB
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #15 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #16 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+D 24 Load module rsaenh.dll (rsaenh.dll-6cd5b371ff05d55f): FBB860000
+D 24 Load module crypt32.dll (crypt32.dll-6b697b9bfcd69537): FBB730000
+D 24 Load module bcrypt.dll (bcrypt.dll-5a6e36eeb1a98b0b): FBB6A0000
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #17 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #18 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #19 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #20 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #21 handle=0000000000000180 status=00000000 native_pc=0000000237665ED8 is_ec=0 -> returned rip=0000000237665ED8 rsp=0000000134F2E9D0 flags=00100003
+[footprint] rev=ml1060 fast phys=1324 MB compressed=0 MB
+err:   [bc-decode] ml679 #0 BC3 1024x1024 level=0 slice=0 -> 4B/texel 4194304B
+err:   [bc-decode] ml679 #1 BC3 512x512 level=1 slice=0 -> 4B/texel 1048576B
+err:   [bc-decode] ml679 #2 BC3 256x256 level=2 slice=0 -> 4B/texel 262144B
+err:   [bc-decode] ml679 #3 BC3 128x128 level=3 slice=0 -> 4B/texel 65536B
+err:   [bc-decode] ml679 #4 BC3 64x64 level=4 slice=0 -> 4B/texel 16384B
+err:   [bc-decode] ml679 #5 BC3 32x32 level=5 slice=0 -> 4B/texel 4096B
+[hwinput] keyboard focus: program (responder)
+[footprint] rev=ml1060 fast phys=1474 MB compressed=0 MB
+[footprint] rev=ml1060 fast phys=1717 MB compressed=0 MB
+[footprint] rev=ml1060 fast phys=1846 MB compressed=0 MB
+[footprint] rev=ml358 phys=1912 MB (peak 1912) internal=1519 MB compressed=0 MB external=129 MB reusable=7 MB (cycle=3)
+[footprint] rev=ml1060 fast phys=2042 MB compressed=0 MB
+[footprint] rev=ml358 phys=2837 MB (peak 2837) internal=740 MB compressed=764 MB external=129 MB reusable=7 MB (cycle=4)
+[footprint] rev=ml1060 fast phys=3344 MB compressed=922 MB
+err:   [bc-decode] ml679 #7168 BC3 4x4 level=6 slice=0 -> 4B/texel 64B
+[footprint] rev=ml1060 fast phys=3469 MB compressed=922 MB
+err:   [bc-decode] ml679 #7680 BC1 2x2 level=7 slice=0 -> 4B/texel 16B
+[footprint] rev=ml1060 fast phys=3549 MB compressed=922 MB
+err:   [bc-decode] ml679 #8192 BC3 64x64 level=3 slice=0 -> 4B/texel 16384B
+[footprint] rev=ml1060 fast phys=3659 MB compressed=923 MB
+err:   [bc-decode] ml679 #8704 BC3 16x16 level=5 slice=0 -> 4B/texel 1024B
+[footprint] rev=ml358 phys=3786 MB (peak 3786) internal=578 MB compressed=926 MB external=129 MB reusable=2 MB (cycle=5)
+err:   [bc-decode] ml679 #9216 BC1 512x512 level=0 slice=0 -> 4B/texel 1048576B
+[footprint] rev=ml1060 fast phys=3959 MB compressed=934 MB
+err:   [bc-decode] ml679 #9728 BC1 64x64 level=3 slice=0 -> 4B/texel 16384B
+[footprint] rev=ml1060 fast phys=4073 MB compressed=905 MB

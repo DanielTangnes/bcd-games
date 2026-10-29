@@ -211,9 +211,10 @@ check('the standard list does not have it', NAME not in json.dumps(standard))
 # The Adventures of Elliot (upstream port, build 602) stands last before "standard".
 _r620 = ['forza-horizon-4', 'tiny-tinas-wonderlands', 'far-cry-3', 'barotrauma', 'slay-the-spire-2', 'resident-evil-3', 'marvel-cosmic-invasion',
          'haste', 'big-walk', 'ball-x-pit', 'just-volleyball-demo', 'farming-simulator-22-epic', 'max-payne-3',
-         'f1-2020', 'need-for-speed-the-run']   # round 620's new lists (the last two after the Discord reports)
+         'f1-2020', 'need-for-speed-the-run',   # round 620's new lists (the last two after the Discord reports)
+         'bloons-td-6']                         # round 623 (Bloons TD 6, ajan58)
 _ids = [r['id'] for r in recs['rules']]
-check('the rule stands before "standard" (the last rule), after it only the round-602 lists, The Adventures of Elliot and round 620\'s lists',
+check('the rule stands before "standard" (the last rule), after it only the round-602 lists, The Adventures of Elliot and the round-620/623 lists',
       _ids[_ids.index('glyphica-typing-survival'):] == ['glyphica-typing-survival', 'grand-theft-auto-iii', 'postal-2', 'hotline-miami', 'max-payne-2',
                                                       'pico-park', 'dont-starve-together', 'a-hat-in-time', 'the-adventures-of-elliot'] + _r620 + ['standard'])
 pol = (root / 'app/Madeira/GameRecommendationsList.swift').read_text()

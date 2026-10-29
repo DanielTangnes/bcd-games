@@ -37,4 +37,28 @@ enum BCDGPUCardsLive {
                             + (merged.replaced > 0 ? "; \(merged.replaced) adapter option\(merged.replaced == 1 ? "" : "s") of the game's DXMT lines replaced" : "")
                             + (merged.namesDropped ? "; the names left out, DXMT's \(BCDGPUCards.dxmtConfigLimit)-character limit" : ""))
     }
+
+    /// Before a launch of a game that keeps the card's name in its prefs (Fallout 3 / New Vegas, BCDGPUCards.prefsFile):
+    /// the name is put on the card the game will see, so it does not reopen its launcher. Nothing for any other game.
+    static func syncGamePrefs(appID: Int?, program: String?) {
+        guard let relative = BCDGPUCards.prefsFile(appID: appID, program: program) else { return }
+        let card = chosen().card
+        let metalName = MTLCreateSystemDefaultDevice()?.name
+        let cardName = card.flatMap { $0.isApple ? nil : $0.name }
+        let users = LibraryModel.drive.appendingPathComponent("users", isDirectory: true)
+        for user in (try? FileManager.default.contentsOfDirectory(atPath: users.path)) ?? [] {
+            let file = users.appendingPathComponent(user).appendingPathComponent("Documents/My Games/" + relative)
+            guard let data = try? Data(contentsOf: file) else { continue }
+            let utf8 = String(data: data, encoding: .utf8)
+            guard let text = utf8 ?? String(data: data, encoding: .isoLatin1),
+                  let updated = BCDGPUCards.prefsText(text, cardName: cardName, metalName: metalName),
+                  let out = updated.data(using: utf8 != nil ? .utf8 : .isoLatin1) else { continue }
+            do {
+                try out.write(to: file, options: .atomic)
+                LogStore.shared.log("[gpu-card] \(relative): sD3DDevice set to the card the game sees")
+            } catch {
+                LogStore.shared.log("[gpu-card] \(relative): not written: \(error.localizedDescription)")
+            }
+        }
+    }
 }

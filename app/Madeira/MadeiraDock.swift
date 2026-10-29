@@ -269,6 +269,9 @@ enum MadeiraDock {
                 case 10: return "Steam is still busy with this game, updating or running it. Wait a moment, then try again."
                 case -4: return "Steam couldn't prepare this game's executable because the Windows service manager it needs didn't start."
                 case -5: return "Steam couldn't prepare this game's executable: its Windows service isn't installed in BCD's Windows setup."
+                // Round 623 (Just Cause 2, feedback BEQD9Y): result 55 (Valve's "remote call failed") ends every CEG start whose service is
+                // registered (Call of Duty: Black Ops, Saints Row, Just Cause 2); the auto-tune rule dock-ceg-result-55 names it the same way.
+                case 55: return "Steam's copy protection couldn't start the game: Steam couldn't get this game's executable ready for your account (code 55). This is a known stop: Steam's request to build it failed, and no BCD setting is known to change it."
                 default: return "Steam's copy protection couldn't start the game: Steam couldn't get this game's executable ready for your account (code \(fields["ceg-result"] ?? "?"))."
                 }
             }

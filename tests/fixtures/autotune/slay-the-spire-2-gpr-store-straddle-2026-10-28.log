@@ -1,0 +1,296 @@
+[20:07:21.827] [INFO] Checking entitlements...
+[20:07:21.827] [INFO] [build] v0.1.622 (622)
+[20:07:21.827] [INFO] [device] model=iPad17,4 idiom=pad os=iPadOS Version 27.2 (Build 24B119) ram=11443MB available=12262MB cores=9
+[20:07:21.828] [INFO] [device] address-map=[0x104f1c000,0x8000000000) 512GB increased-memory=1 extended-va=1
+[20:07:21.838] [INFO] [device] gpu="Apple M5 GPU" family=apple10 argument-buffers=tier2 mesh=1 bc=1 atomics64=1 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[20:07:28.180] [INFO] Requesting JIT with Built-in StikJIT...
+[20:07:29.487] [INFO] [bcd] library launch SlayTheSpire2.exe: avx=0 wine-vcrt=0 nvidia=0 game-config=1 metalfx=off
+[20:07:29.488] [INFO] Session log: logs/SlayTheSpire2.exe-2026-10-28_20-07-29.txt
+[20:07:29.510] [INFO] Running full Wine sequence...
+[20:07:29.511] [INFO] [device] launch: cs-flags=0x32003005 get-task-allow=1 cs-debugged=1 debugger-attached=1 traced=1 address-map=[0x104f1c000,0x8000000000) 512GB available=12240MB low-power=0 thermal=nominal
+[20:07:29.517] [INFO] Allocating 896MB JIT pool (BRK will suspend process)...
+[20:07:29.517] [INFO] Allocating 896MB JIT pool via debugger...
+[20:07:29.517] [INFO] [jit-pool] path: debugger (attached at the pool request; it makes every region)
+[20:07:29.517] [INFO] [jit-debugger] attached=1 at the pool request
+[20:07:29.519] [ERR] ml1036: no hole fits a 896MB pool — SHRINKING to 544MB (the alternative is a pool in the guest window or on top of 0x140000000, both of which are fatal)
+[20:07:30.112] [INFO] RX pool at 0x148000000
+[20:07:30.126] [INFO] Detaching debugger...
+[phase] wine-start             t+  0.652s rev=ml526
+[madeira-env] game DOTNET_EnableWriteXorExecute=0
+[madeira-env] game DOTNET_GCRegionRange=400000000
+[hwinput] keyboard focus: program (poll)
+[shell-dir] user folders for madeira, mobile: 0 created (Start Menu included)
+[cage] holdback reserved 0x7200000000+0x1ffff0000 rev=ml433
+[20:07:30.351] [Wine init_process] waiting for request_fd from wineserver...
+[Wine init_process] reply_pipe=41, sending init_first_thread...
+[20:07:30.351] [Wine init_process] reply_pipe=41, sending init_first_thread...
+[iOS env] INCLUDED: SteamAppId=356400
+ml992: os_proc_available_memory=11681 MB + phys_footprint=606 MB = 12288 MB (hw.memsize says 11443 MB)
+ml985: map_image_view size=0x35735000 base=0x140000000 info_base=0x140000000 map_addr=0 flags=0x4 charact=0x22 limits=0x100010000..0x73fffeffff
+ml985: preferred base 0x140000000+0x35735000 REFUSED status=0xc0000018 image_flags=0x4 charact=0x22 map_addr=0 info_base=0x140000000 | STAGE=fixed-map err=3 at 0x140000000+0x35738000 rev=ajan5-motor
+[x64-image] L"\\??\\C:\\Slay the Spire 2\\SlayTheSpire2.exe" 0x7038010000+0x35735000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+[wow-rwx] ml1279 MADEIRA_WOW_RWX_PLAIN=(unset) -> 32-bit guest RWX memory is plain read/write in a window once Wine Mono is mapped there
+[x64-image] #1 0x7038010000+0x4000 prot=rwx -- pure-x64 image page, EXEC has no host meaning here (the emulator runs it at the PE VA); applying rw- (MADEIRA_X64_IMAGE_NOCOPY)
+[x64-image] #2 0x7038010000+0x43b8000 prot=r-x -- pure-x64 image page, EXEC has no host meaning here (the emulator runs it at the PE VA); applying r-- (MADEIRA_X64_IMAGE_NOCOPY)
+[x64-image] #3 0x703c3c8000+0x4000 prot=rwx -- pure-x64 image page, EXEC has no host meaning here (the emulator runs it at the PE VA); applying rw- (MADEIRA_X64_IMAGE_NOCOPY)
+[x64-image] #4 0x703c3c8000+0x4000 prot=r-x -- pure-x64 image page, EXEC has no host meaning here (the emulator runs it at the PE VA); applying r-- (MADEIRA_X64_IMAGE_NOCOPY)
+[x64-image] #5 0x703d620000+0x4000 prot=rwx -- pure-x64 image page, EXEC has no host meaning here (the emulator runs it at the PE VA); applying rw- (MADEIRA_X64_IMAGE_NOCOPY)
+[copy-verify] ntdll.dll: OK, 30 .text pages executable (copy @0x148004000)
+0024:err:seh:init_syscall_frame page0: trying debugger (BRK #0xf00d, x16=3)...
+[nls-getptr] type=11 id=1252 peb=0x71ffff0000
+[nls-getptr] type=11 id=437 peb=0x71ffff0000
+[copy-verify] libarm64ecfex.dll: OK, 131 .text pages executable (copy @0x14813e000)
+[copy-verify] ucrtbase.dll: OK, 34 .text pages executable (copy @0x148558000)
+[copy-verify] kernel32.dll: OK, 10 .text pages executable (copy @0x14868c000)
+[copy-verify] kernelbase.dll: OK, 28 .text pages executable (copy @0x148754000)
+[nls-getptr] type=11 id=20127 peb=0x71ffff0000
+D 24 Load module SlayTheSpire2.exe (slaythespire2.exe-33565a149fd13f69): 7038010000
+D 24 Load module ntdll.dll (ntdll.dll-391ab96a83e82f14): 71FFCD0000
+[nls-getptr] type=11 id=1252 peb=0x71ffff0000
+[nls-getptr] type=11 id=437 peb=0x71ffff0000
+[copy-verify] ole32.dll: OK, 23 .text pages executable (copy @0x148a58000)
+D 24 Load module ole32.dll (ole32.dll-424c26e02d7b7d0d): 71FE250000
+D 24 Load module advapi32.dll (advapi32.dll-e40c14e1190b1df2): 71FE1A0000
+[footprint] rev=ml358 phys=1502 MB (peak 1502) internal=1501 MB compressed=0 MB external=105 MB reusable=9 MB (cycle=1)
+D 24 Load module sechost.dll (sechost.dll-b36ef44c04b21a0b): 71FE120000
+D 24 Load module msvcrt.dll (msvcrt.dll-237acf236e8130e9): 71FE010000
+[copy-verify] imm32.dll: OK, 5 .text pages executable (copy @0x14a03c000)
+[copy-verify] bcrypt.dll: OK, 4 .text pages executable (copy @0x14a0e0000)
+[copy-verify] crypt32.dll: OK, 24 .text pages executable (copy @0x14a174000)
+[copy-verify] avrt.dll: OK, 1 .text pages executable (copy @0x14a2ac000)
+[copy-verify] dwmapi.dll: OK, 1 .text pages executable (copy @0x14a330000)
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[alloc-fail] ml814 #1 status=c0000018 hint=0x71fecc2000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[nt-fail] #1 NtAllocateVirtualMemory status=c0000018 proc=slaythespire2.exe tid=0024 size=0x1000 type=0x3000 prot=0x40 hint=0x71fecc2000 zb=0x0 hits=1 rev=ajan5-rockstar
+[alloc-fail] ml814 #2 status=c0000018 hint=0x71fecc3000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[nt-fail] #2 NtAllocateVirtualMemory status=c0000018 proc=slaythespire2.exe tid=0024 size=0x1000 type=0x3000 prot=0x40 hint=0x71fecc3000 zb=0x0 hits=2 rev=ajan5-rockstar
+[alloc-fail] ml814 #3 status=c0000018 hint=0x71fecc4000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[nt-fail] #3 NtAllocateVirtualMemory status=c0000018 proc=slaythespire2.exe tid=0024 size=0x1000 type=0x3000 prot=0x40 hint=0x71fecc4000 zb=0x0 hits=3 rev=ajan5-rockstar
+[alloc-fail] ml814 #4 status=c0000018 hint=0x71fecc5000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[nt-fail] #4 NtAllocateVirtualMemory status=c0000018 proc=slaythespire2.exe tid=0024 size=0x1000 type=0x3000 prot=0x40 hint=0x71fecc5000 zb=0x0 hits=4 rev=ajan5-rockstar
+[alloc-fail] ml814 #5 status=c0000018 hint=0x71fecc6000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[alloc-fail] ml814 #6 status=c0000018 hint=0x71fecc7000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[alloc-fail] ml814 #7 status=c0000018 hint=0x71fecc8000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[alloc-fail] ml814 #8 status=c0000018 hint=0x71fecc9000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[nt-fail] #5 NtAllocateVirtualMemory status=c0000018 proc=slaythespire2.exe tid=0024 size=0x1000 type=0x3000 prot=0x40 hint=0x71fecc9000 zb=0x0 hits=8 rev=ajan5-rockstar
+[alloc-fail] ml814 #9 status=c0000018 hint=0x71fecca000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[alloc-fail] ml814 #10 status=c0000018 hint=0x71feccb000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[alloc-fail] ml814 #11 status=c0000018 hint=0x71feccc000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[alloc-fail] ml814 #12 status=c0000018 hint=0x71feccd000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[alloc-fail] ml814 #13 status=c0000018 hint=0x71fecce000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[alloc-fail] ml814 #14 status=c0000018 hint=0x71feccf000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=none err=3 at 0x73fff60000+0x90000
+[alloc-fail] ml814 #15 status=c0000018 hint=0x7200000000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0x4000
+[alloc-fail] ml814 #16 status=c0000018 hint=0x7200001000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0x4000
+[nt-fail] #6 NtAllocateVirtualMemory status=c0000018 proc=slaythespire2.exe tid=0024 size=0x1000 type=0x3000 prot=0x40 hint=0x7200001000 zb=0x0 hits=16 rev=ajan5-rockstar
+[alloc-fail] ml814 #17 status=c0000018 hint=0x7200002000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0x4000
+[alloc-fail] ml814 #18 status=c0000018 hint=0x7200003000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0x4000
+[alloc-fail] ml814 #19 status=c0000018 hint=0x7200004000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0x8000
+[alloc-fail] ml814 #20 status=c0000018 hint=0x7200005000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0x8000
+[alloc-fail] ml814 #21 status=c0000018 hint=0x7200006000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0x8000
+[alloc-fail] ml814 #22 status=c0000018 hint=0x7200007000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0x8000
+[alloc-fail] ml814 #23 status=c0000018 hint=0x7200008000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0xc000
+[alloc-fail] ml814 #24 status=c0000018 hint=0x7200009000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0xc000
+[alloc-fail] ml814 #25 status=c0000018 hint=0x720000a000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0xc000
+[alloc-fail] ml814 #26 status=c0000018 hint=0x720000b000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0xc000
+[alloc-fail] ml814 #27 status=c0000018 hint=0x720000c000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0x10000
+[alloc-fail] ml814 #28 status=c0000018 hint=0x720000d000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0x10000
+[alloc-fail] ml814 #29 status=c0000018 hint=0x720000e000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0x10000
+[alloc-fail] ml814 #30 status=c0000018 hint=0x720000f000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200000000+0x10000
+[alloc-fail] ml814 #31 status=c0000018 hint=0x7200010000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0x4000
+[alloc-fail] ml814 #32 status=c0000018 hint=0x7200011000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0x4000
+[alloc-fail] ml814 #33 status=c0000018 hint=0x7200012000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0x4000
+[alloc-fail] ml814 #34 status=c0000018 hint=0x7200013000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0x4000
+[alloc-fail] ml814 #35 status=c0000018 hint=0x7200014000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0x8000
+[alloc-fail] ml814 #36 status=c0000018 hint=0x7200015000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0x8000
+[alloc-fail] ml814 #37 status=c0000018 hint=0x7200016000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0x8000
+[alloc-fail] ml814 #38 status=c0000018 hint=0x7200017000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0x8000
+[alloc-fail] ml814 #39 status=c0000018 hint=0x7200018000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0xc000
+[alloc-fail] ml814 #40 status=c0000018 hint=0x7200019000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0xc000
+[alloc-fail] ml814 #41 status=c0000018 hint=0x720001a000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0xc000
+[alloc-fail] ml814 #42 status=c0000018 hint=0x720001b000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0xc000
+[alloc-fail] ml814 #43 status=c0000018 hint=0x720001c000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0x10000
+[alloc-fail] ml814 #44 status=c0000018 hint=0x720001d000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0x10000
+[alloc-fail] ml814 #45 status=c0000018 hint=0x720001e000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0x10000
+[alloc-fail] ml814 #46 status=c0000018 hint=0x720001f000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200010000+0x10000
+[alloc-fail] ml814 #47 status=c0000018 hint=0x7200020000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0x4000
+[alloc-fail] ml814 #48 status=c0000018 hint=0x7200021000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0x4000
+[alloc-fail] ml814 #49 status=c0000018 hint=0x7200022000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0x4000
+[alloc-fail] ml814 #50 status=c0000018 hint=0x7200023000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0x4000
+[alloc-fail] ml814 #51 status=c0000018 hint=0x7200024000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0x8000
+[alloc-fail] ml814 #52 status=c0000018 hint=0x7200025000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0x8000
+[alloc-fail] ml814 #53 status=c0000018 hint=0x7200026000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0x8000
+[alloc-fail] ml814 #54 status=c0000018 hint=0x7200027000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0x8000
+[alloc-fail] ml814 #55 status=c0000018 hint=0x7200028000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0xc000
+[alloc-fail] ml814 #56 status=c0000018 hint=0x7200029000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0xc000
+[alloc-fail] ml814 #57 status=c0000018 hint=0x720002a000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0xc000
+[alloc-fail] ml814 #58 status=c0000018 hint=0x720002b000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0xc000
+[alloc-fail] ml814 #59 status=c0000018 hint=0x720002c000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0x10000
+[alloc-fail] ml814 #60 status=c0000018 hint=0x720002d000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0x10000
+[alloc-fail] ml814 #61 status=c0000018 hint=0x720002e000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0x10000
+[alloc-fail] ml814 #62 status=c0000018 hint=0x720002f000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200020000+0x10000
+[alloc-fail] ml814 #63 status=c0000018 hint=0x7200030000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200030000+0x4000
+[alloc-fail] ml814 #64 status=c0000018 hint=0x7200031000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200030000+0x4000
+[nt-fail] #8 NtAllocateVirtualMemory status=c0000018 proc=slaythespire2.exe tid=0024 size=0x1000 type=0x3000 prot=0x40 hint=0x7200031000 zb=0x0 hits=64 rev=ajan5-rockstar
+[alloc-fail] ml814 #128 status=c0000018 hint=0x7200071000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200070000+0x4000
+[nt-fail] #9 NtAllocateVirtualMemory status=c0000018 proc=slaythespire2.exe tid=0024 size=0x1000 type=0x3000 prot=0x40 hint=0x7200071000 zb=0x0 hits=128 rev=ajan5-rockstar
+[alloc-fail] ml814 #192 status=c0000018 hint=0x72000b1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72000b0000+0x4000
+[alloc-fail] ml814 #256 status=c0000018 hint=0x72000f1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72000f0000+0x4000
+[nt-fail] #10 NtAllocateVirtualMemory status=c0000018 proc=slaythespire2.exe tid=0024 size=0x1000 type=0x3000 prot=0x40 hint=0x72000f1000 zb=0x0 hits=256 rev=ajan5-rockstar
+[alloc-fail] ml814 #320 status=c0000018 hint=0x7200131000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200130000+0x4000
+[alloc-fail] ml814 #384 status=c0000018 hint=0x7200171000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200170000+0x4000
+[alloc-fail] ml814 #448 status=c0000018 hint=0x72001b1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72001b0000+0x4000
+[alloc-fail] ml814 #512 status=c0000018 hint=0x72001f1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72001f0000+0x4000
+[nt-fail] #11 NtAllocateVirtualMemory status=c0000018 proc=slaythespire2.exe tid=0024 size=0x1000 type=0x3000 prot=0x40 hint=0x72001f1000 zb=0x0 hits=512 rev=ajan5-rockstar
+[alloc-fail] ml814 #576 status=c0000018 hint=0x7200231000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200230000+0x4000
+[alloc-fail] ml814 #640 status=c0000018 hint=0x7200271000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200270000+0x4000
+[alloc-fail] ml814 #704 status=c0000018 hint=0x72002b1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72002b0000+0x4000
+[alloc-fail] ml814 #768 status=c0000018 hint=0x72002f1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72002f0000+0x4000
+[alloc-fail] ml814 #832 status=c0000018 hint=0x7200331000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200330000+0x4000
+[alloc-fail] ml814 #896 status=c0000018 hint=0x7200371000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200370000+0x4000
+[alloc-fail] ml814 #960 status=c0000018 hint=0x72003b1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72003b0000+0x4000
+[alloc-fail] ml814 #1024 status=c0000018 hint=0x72003f1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72003f0000+0x4000
+[nt-fail] #12 NtAllocateVirtualMemory status=c0000018 proc=slaythespire2.exe tid=0024 size=0x1000 type=0x3000 prot=0x40 hint=0x72003f1000 zb=0x0 hits=1024 rev=ajan5-rockstar
+[alloc-fail] ml814 #1088 status=c0000018 hint=0x7200431000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200430000+0x4000
+[alloc-fail] ml814 #1152 status=c0000018 hint=0x7200471000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200470000+0x4000
+[alloc-fail] ml814 #1216 status=c0000018 hint=0x72004b1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72004b0000+0x4000
+[alloc-fail] ml814 #1280 status=c0000018 hint=0x72004f1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72004f0000+0x4000
+[alloc-fail] ml814 #1344 status=c0000018 hint=0x7200531000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200530000+0x4000
+[alloc-fail] ml814 #1408 status=c0000018 hint=0x7200571000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200570000+0x4000
+[alloc-fail] ml814 #1472 status=c0000018 hint=0x72005b1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72005b0000+0x4000
+[alloc-fail] ml814 #1536 status=c0000018 hint=0x72005f1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72005f0000+0x4000
+[alloc-fail] ml814 #1600 status=c0000018 hint=0x7200631000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200630000+0x4000
+[alloc-fail] ml814 #1664 status=c0000018 hint=0x7200671000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200670000+0x4000
+[alloc-fail] ml814 #1728 status=c0000018 hint=0x72006b1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72006b0000+0x4000
+[alloc-fail] ml814 #1792 status=c0000018 hint=0x72006f1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72006f0000+0x4000
+[alloc-fail] ml814 #1856 status=c0000018 hint=0x7200731000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200730000+0x4000
+[alloc-fail] ml814 #1920 status=c0000018 hint=0x7200771000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200770000+0x4000
+[alloc-fail] ml814 #1984 status=c0000018 hint=0x72007b1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72007b0000+0x4000
+[alloc-fail] ml814 #2048 status=c0000018 hint=0x72007f1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72007f0000+0x4000
+[nt-fail] #13 NtAllocateVirtualMemory status=c0000018 proc=slaythespire2.exe tid=0024 size=0x1000 type=0x3000 prot=0x40 hint=0x72007f1000 zb=0x0 hits=2048 rev=ajan5-rockstar
+[alloc-fail] ml814 #2112 status=c0000018 hint=0x7200831000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200830000+0x4000
+[alloc-fail] ml814 #2176 status=c0000018 hint=0x7200871000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200870000+0x4000
+[alloc-fail] ml814 #2240 status=c0000018 hint=0x72008b1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72008b0000+0x4000
+[alloc-fail] ml814 #2304 status=c0000018 hint=0x72008f1000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x72008f0000+0x4000
+[alloc-fail] ml814 #2368 status=c0000018 hint=0x7200931000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200930000+0x4000
+[alloc-fail] ml814 #2432 status=c0000018 hint=0x7200971000 size=0x1000 type=0x3000 protect=0x40 tid=0024 | STAGE=fixed-map err=3 at 0x7200970000+0x4000
+[xp-names] m459870 "wine-x18-exc"
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #1 handle=0000000000000120 status=00000000 native_pc=000000023C93CAE8 is_ec=0 -> returned rip=000000023C93CAE8 rsp=00000001293FFA00 flags=00100001
+[copy-verify] uxtheme.dll: OK, 5 .text pages executable (copy @0x14adc4000)
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[footprint] rev=ml358 phys=1737 MB (peak 1737) internal=1735 MB compressed=0 MB external=156 MB reusable=9 MB (cycle=2)
+0024:err:module:load_dll [dll-missing] rev=ml336 #1 L"wintab32.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[win-name] #5 hwnd=0x10038 class='' text="Default IME" rev=ml853
+[madeira-d3d12] command queue: type 0
+[madeira-d3d12] command queue: type 0
+[madeira-d3d12] command queue: type 0
+[madeira-d3d12] command queue: type 0
+[madeira-d3d12] command queue: type 3
+[madeira-d3d12] command queue: type 3
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[madeira-d3d12] ml1057 live GPU backing (estimated) total=1MB: tex-RT=0MB/0 (peak 0) tex-DS=0MB/0 (peak 0) tex-UAV=0MB/0 (peak 0) tex-sampled=0MB/0 (peak 0) tex-MSAA=0MB/0 (peak 0) buf-private=0MB/0 (peak 0) buf-shared=1MB/7 (peak 1)
+[madeira-d3d12] ml1057 live GPU backing (estimated) total=1MB: tex-RT=0MB/0 (peak 0) tex-DS=0MB/0 (peak 0) tex-UAV=0MB/0 (peak 0) tex-sampled=0MB/0 (peak 0) tex-MSAA=0MB/0 (peak 0) buf-private=0MB/0 (peak 0) buf-shared=1MB/7 (peak 1)
+[free-delay] #1 release of 0x702f870000+0x110000 held for 2000 ms (1 in flight)
+[free-delay] #2 release of 0x702f980000+0xfd0000 held for 2000 ms (2 in flight)
+[free-delay] #3 release of 0x7031920000+0x110000 held for 2000 ms (3 in flight)
+[free-delay] #4 release of 0x7032a00000+0x110000 held for 2000 ms (4 in flight)
+[free-delay] #5 release of 0x7032b10000+0x110000 held for 2000 ms (5 in flight)
+[free-delay] #6 release of 0x7032c20000+0x110000 held for 2000 ms (6 in flight)
+[free-delay] #7 release of 0x7032d30000+0x110000 held for 2000 ms (7 in flight)
+[free-delay] #8 release of 0x7032e40000+0x110000 held for 2000 ms (8 in flight)
+[footprint] rev=ml358 phys=2119 MB (peak 2119) internal=2055 MB compressed=0 MB external=163 MB reusable=9 MB (cycle=3)
+[footprint] rev=ml358 phys=2267 MB (peak 2267) internal=2161 MB compressed=0 MB external=164 MB reusable=9 MB (cycle=4)
+[jumbo#1] +0ms tid=16b2b3000 wtid=0024 peb=0x71ffff0000 nrip=0x71f85ec0bd grip=0x14808b050 size=0x400000000 (16384 MB) hint=0x0 -> 0x73ffff0000 st=0x0 | granted=16384 MB ok=1 fail=0
+[steer] #1 size=0x94a2000 reserved_total=0MB armed=va-pressure -> above ceiling 0x7c7c810000
+[stp-emul] ml629 #1 insn=0xac814570 mode=post off=+32 Rt=q16 Rt2=q17 Rn=x11 addr=0x71989d0c00 rw=0x7003f20c00 base 0x71989d0c00 -> 0x71989d0c20 (writeback)
+[stp-emul] ml629 #2 insn=0xac814570 mode=post off=+32 Rt=q16 Rt2=q17 Rn=x11 addr=0x71989d0c20 rw=0x7003f20c20 base 0x71989d0c20 -> 0x71989d0c40 (writeback)
+[stp-emul] ml629 #3 insn=0xac814570 mode=post off=+32 Rt=q16 Rt2=q17 Rn=x11 addr=0x71989d0c40 rw=0x7003f20c40 base 0x71989d0c40 -> 0x71989d0c60 (writeback)
+[stp-emul] ml629 #4 insn=0xac814570 mode=post off=+32 Rt=q16 Rt2=q17 Rn=x11 addr=0x71989d0c60 rw=0x7003f20c60 base 0x71989d0c60 -> 0x71989d0c80 (writeback)
+[stp-emul] ml629 #5 insn=0xac814570 mode=post off=+32 Rt=q16 Rt2=q17 Rn=x11 addr=0x71989d0c80 rw=0x7003f20c80 base 0x71989d0c80 -> 0x71989d0ca0 (writeback)
+[stp-emul] ml629 #6 insn=0xac814570 mode=post off=+32 Rt=q16 Rt2=q17 Rn=x11 addr=0x71989d0ca0 rw=0x7003f20ca0 base 0x71989d0ca0 -> 0x71989d0cc0 (writeback)
+[stp-emul] ml629 #7 insn=0xac814570 mode=post off=+32 Rt=q16 Rt2=q17 Rn=x11 addr=0x71989d0cc0 rw=0x7003f20cc0 base 0x71989d0cc0 -> 0x71989d0ce0 (writeback)
+[stp-emul] ml629 #8 insn=0xac814570 mode=post off=+32 Rt=q16 Rt2=q17 Rn=x11 addr=0x71989d0ce0 rw=0x7003f20ce0 base 0x71989d0ce0 -> 0x71989d0d00 (writeback)
+0024:err:module:load_dll [dll-missing] rev=ml336 #2 L"icu.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #3 L"icuuc.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[anon-cas] build580 insn=c8e8ff40 pc=15b0d580c addr=719893d050 rw=7003f2d050 width=8
+[ilonly-machine] an IL-only PE32 image (CLR flags=0x9, machine=0x14c) is not promoted to the native machine 0xaa64: its set has no mscoree.dll, so it runs as its own machine (WoW64) (it ended in c000007b before; tests/host/check-ilonly-machine.py)
+[ilonly-machine] an IL-only PE32 image (CLR flags=0x1, machine=0x14c) is not promoted to the native machine 0xaa64: its set has no mscoree.dll, so it runs as its own machine (WoW64) (it ended in c000007b before; tests/host/check-ilonly-machine.py)
+[x64-image] L"\\??\\C:\\Slay the Spire 2\\data_sts2_windows_x86_64\\System.Console.dll" 0x125bd0000+0x28000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+[ilonly-machine] an IL-only PE32 image (CLR flags=0x1, machine=0x14c) is not promoted to the native machine 0xaa64: its set has no mscoree.dll, so it runs as its own machine (WoW64) (it ended in c000007b before; tests/host/check-ilonly-machine.py)
+[x64-image] L"\\??\\C:\\Slay the Spire 2\\data_sts2_windows_x86_64\\System.Linq.dll" 0x127f50000+0x9e000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+D 24 Load module System.Linq.dll (system.linq.dll-1f4ec6c5bf19147c): 127F50000
+[x64-image] L"\\??\\C:\\Slay the Spire 2\\data_sts2_windows_x86_64\\System.Collections.dll" 0x127b00000+0x4f000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+D 24 Load module System.Collections.dll (system.collections.dll-d833efba06ead9f8): 127B00000
+[x64-image] L"\\??\\C:\\Slay the Spire 2\\data_sts2_windows_x86_64\\System.Collections.Concurrent.dll" 0x130df0000+0x45000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+D 24 Load module System.Collections.Concurrent.dll (system.collections.concurrent.dll-892293956436645d): 130DF0000
+[ilonly-machine] an IL-only PE32 image (CLR flags=0x9, machine=0x14c) is not promoted to the native machine 0xaa64: its set has no mscoree.dll, so it runs as its own machine (WoW64) (it ended in c000007b before; tests/host/check-ilonly-machine.py)
+D 24 Load module System.Runtime.Loader.dll (system.runtime.loader.dll-0da77f32f6bd62d5): 71F7BC0000
+[x64-image] L"\\??\\C:\\Slay the Spire 2\\data_sts2_windows_x86_64\\System.Threading.dll" 0x124be0000+0x12000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+D 24 Load module System.Threading.dll (system.threading.dll-4a78bb76bae8d72b): 124BE0000
+[x64-image] L"\\??\\C:\\Slay the Spire 2\\data_sts2_windows_x86_64\\System.Diagnostics.TraceSource.dll" 0x1273c0000+0x21000 mapped without a pool copy (pure x64: the emulator runs it at the PE VA; MADEIRA_X64_IMAGE_NOCOPY)
+D 24 Load module System.Diagnostics.TraceSource.dll (system.diagnostics.tracesource.dll-102b6ab411513b00): 1273C0000
+[store-noalias] #1 rev=ml348 addr=0x706df6b760 insn=0xd94000c0 pc=0x15b88eac4 NO pool/anon alias | region 0x706ef60000+0x10000 prot=3 max=7 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #1 p0=READ p1=0x706df6b760 hostpc=0x15b88eac4 hinsn=0xd94000c0 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=idx=3 base=0x158ffc000 size=0x8000000 state=live p1_in_carve=0 regs=0 rev=ml613
+[fault_rip] cnt=1 rip=0x7198a7f782 pc=0x15b88eac4 addr=0x706df6b760 kr=1(INVALID_ADDRESS) entryprot=3 nowprot=3 region=0x706ef60000+0x10000 [first] rev=ml555
+[mach_exc] UNHANDLED #1 pc=0x15b88eac4 addr=0x706df6b760 x18=0x71fffe0000 type=1 lr=0x169ffc274 sp=0x71fe3b0000 x16=0x14805d9a4 x17=0x71fe3aff20
+[guest-code] rev=ml333 pool_rip=0x7198a7f782 (PE 0x7198a7f782) -- NO pool copy for this address (identity translate)
+[fault-host] 15b88e9c4: 8a06116b 8b0b014a a940294b cb06014a b400006a f945b38b f9000f86 d63f0160
+[fault-host] 15b88e9e4: 10fc51ea f900038a b945eb8b 3400004b d4395fc0 d28f4700 f2b32120 f2c00e20
+[fault-host] 15b88ea04: d29ff6c6 f2b314e6 f2c00e26 f81f8ee6 1000004a 97d002ff 10fc502a f900038a
+[fault-host] 15b88ea24: b945eb8b 3400004b d4395fc0 d110c3a6 d503201f d90000c8 d280c108 f2c00e88
+[fault-host] 15b88ea44: d9400108 d503201f d110e3a6 d503201f d90000c8 d2840c00 f2b32140 f2c00e20
+[fault-host] 15b88ea64: d29ffc06 f2b314e6 f2c00e26 f81f8ee6 1000004a 97d06eeb 10fc4d2a f900038a
+[mach_exc] insn_stream PC-12..PC+8: d503201f 529f7a06 8b0603a6 [d94000c0] d503201f d2940e02 f2b32042
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0x71fffe0000 TEB=0x71fffe0000 TEB[0x58]=0x702203fee0 *(gs_cached+0x58)=0x702203fee0
+[store-noalias] #2 rev=ml348 addr=0x706df6b760 insn=0xd94000c0 pc=0x15b88eac4 NO pool/anon alias | region 0x706ef60000+0x10000 prot=3 max=7 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #2 p0=READ p1=0x706df6b760 hostpc=0x15b88eac4 hinsn=0xd94000c0 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=idx=3 base=0x158ffc000 size=0x8000000 state=live p1_in_carve=0 regs=0 rev=ml613
+[fault_rip] cnt=2 rip=0x7198a7f782 pc=0x15b88eac4 addr=0x706df6b760 kr=1(INVALID_ADDRESS) entryprot=3 nowprot=3 region=0x706ef60000+0x10000 rev=ml555
+[mach_exc] UNHANDLED #2 pc=0x15b88eac4 addr=0x706df6b760 x18=0x71fffe0000 type=1 lr=0x169ffc274 sp=0x71fe3b0000 x16=0x14805d9a4 x17=0x71fe3aff20
+[guest-code] rev=ml333 pool_rip=0x7198a7f782 (PE 0x7198a7f782) -- NO pool copy for this address (identity translate)
+[fault-host] 15b88ea24: b945eb8b 3400004b d4395fc0 d110c3a6 d503201f d90000c8 d280c108 f2c00e88
+[fault-host] 15b88ea44: d9400108 d503201f d110e3a6 d503201f d90000c8 d2840c00 f2b32140 f2c00e20
+[fault-host] 15b88ea64: d29ffc06 f2b314e6 f2c00e26 f81f8ee6 1000004a 97d06eeb 10fc4d2a f900038a
+[fault-host] 15b88ea84: b945eb8b 3400004b d4395fc0 d280c408 f2c00e88 d9400108 d503201f 92873fe6
+[fault-host] 15b88eaa4: 8b0603a7 d503201f d90000e8 8b0603a6 d94000c1 d503201f 529f7a06 8b0603a6
+[fault-host] 15b88eac4: d94000c0 d503201f d2940e02 f2b32042 00000000 00000000 00000000 00000000
+[mach_exc] insn_stream PC-12..PC+8: d503201f 529f7a06 8b0603a6 [d94000c0] d503201f d2940e02 f2b32042
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[x86_seg] State.gs_cached=0x71fffe0000 TEB=0x71fffe0000 TEB[0x58]=0x702203fee0 *(gs_cached+0x58)=0x702203fee0
+[fault-rgn]   history: view 0x706df60000+0x400000 protect=0x3 DELETED by tid 00b8 181 ms ago
+[fault-rgn]   history: view 0x706df60000+0x400000 protect=0x3 CREATED by tid 0038 2252 ms ago
+0024:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #1 RIP=0x15b88eac4 RX from -32, 64 of 64 bytes: a7 03 06 8b 1f 20 03 d5 e8 00 00 d9 a6 03 06 8b c1 00 40 d9 1f 20 03 d5 06 7a 9f 52 a6 03 06 8b c0 00 40 d9 1f 20 03 d5 02 0e 94 d2 42 20 b3 f2 22 0e c0 f2 06 3a 8d d2 c6 13 b3 f2 26 0e c0 f2 
+0024:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #1 no RW alias for 0x15b88eac4 (not an anon-JIT page)
+0024:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #2 RIP=0x7198a7fffb RX from -32, 37 of 37 bytes: e8 20 74 ae 5f 48 b8 20 06 00 00 74 00 00 00 48 8b 00 48 89 85 00 c6 ff ff 48 8b 95 00 c6 ff ff 48 8b 8d d0 fb    (short read / clipped)
+0024:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #2 rw=0x70046fbffb alias=[0x7198a7c000,0x7198a80000) RW  -32..+31: 48 8b 8d d0 fb ff ff fa 3f 00 00 4c 8b 15 fb 3f 00 00 ff 25 fd 3f 00 00 90 66 66 66 66 ff 25 fa 3f 00 00 4c 8b 15 fb 3f 00 00 ff 25 fd 3f 00 00 90 66 66 66 66 ff 25 fa 3f 00 00 4c 8b 15 fb 3f 
+0024:err:seh:prepare_exception_arm64ec [guest-bytes] ml631 #2 VERDICT: RX and RW **DIFFER** — alias coherency/finalisation
+Fatal error. System.AccessViolationException: Attempted to read or write protected memory. This is often an indication that other memory is corrupt.
+   at Godot.Constructors..cctor()
+0024:err:eventlog:ReportEventW L"   at Godot.Constructors..cctor()\n"
+0024:err:seh:NtRaiseException Unhandled exception code c0000005 flags 0 addr 0x7198a7fffb
+0024:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0xc0000005) syscalls=0 unix_calls=8856
+[unwind] term ml661 begin rip=71fe4539a0 rsp=706df525e8 window=[706df525e8..706e7525e8) max=32
+[unwind] term ml661 #00 pc=71fe4539a0 rsp=706df525e8  kernelbase.dll+0x839a0
+[unwind] term ml662 #00 nv: rbx=2 rbp=706f7c6070 rsi=706df54260 rdi=706f7c6070 r12=7070072020 r13=706df54260 r14=0 r15=1
+[unwind] term ml662   rbp=706f7c6070: 20020200 00000000 e03af56d 70000000 01000000 65002000 00000000 00000000
+[unwind] term ml662   rsi=706df54260: d066f56d 70000000 505ef56d 70000000 00000000 00000000 00000000 00000000
+[unwind] term ml661 #01 pc=71f86fb9ca rsp=706df525f0  <no module — STOP>
+[unwind] term ml661 end
+[Wine ntdll/server] process_exit_wrapper(-1073741819)
+[WineProc] Wine exited with code -1073741819 (caught by longjmp)
+[WineProc] stopping wineserver...
+[srv-kill] kill_process pid=0020 violent=0 threads: 0024 rev=ml586
+[20:07:38.508] [INFO] [session] length=9s play=0s frames=0 stalls=0/0s peak=2511MB limit=12287MB thermal=nominal lpm=0 res=1112x832 cap=60 game=Slay the Spire 2
+[20:07:38.510] [INFO] [exit-report] status=0xc0000005
+[frontend] returned to library
+[hwinput] keyboard focus: elsewhere (poll)
+[footprint] rev=ml358 phys=2418 MB (peak 2418) internal=2383 MB compressed=0 MB external=165 MB reusable=8 MB (cycle=5)
+[footprint] rev=ml1060 fast phys=2417 MB compressed=0 MB
+[20:07:40.542] [INFO] Detaching debugger...
+[footprint] rev=ml358 phys=2418 MB (peak 2418) internal=2384 MB compressed=0 MB external=165 MB reusable=8 MB (cycle=6)
+[footprint] rev=ml358 phys=2417 MB (peak 2418) internal=2385 MB compressed=0 MB external=165 MB reusable=8 MB (cycle=7)
+[footprint] rev=ml358 phys=2417 MB (peak 2418) internal=2384 MB compressed=0 MB external=165 MB reusable=8 MB (cycle=8)
+[footprint] rev=ml358 phys=2417 MB (peak 2418) internal=2385 MB compressed=0 MB external=165 MB reusable=8 MB (cycle=9)

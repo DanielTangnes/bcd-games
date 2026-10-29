@@ -1,0 +1,20 @@
+{
+ "dialogs": [],
+ "end": {
+  "killed": true,
+  "seconds": 286,
+  "userSaid": "froze"
+ },
+ "matched": [
+  "mono-backpatch-lock-leak",
+  "x64-image-nocopy",
+  "pool-split-exhausted"
+ ],
+ "next": [
+  "env.MADEIRA_MONO_BP_UNLOCKED_MISS = 1"
+ ],
+ "note": "Send Log 997BBV (build 622, iPad17,4, Dock): Mycopunk, the same access violation (L17850-L17853) and the same self-park (L17994); the session had swap-mb = 6144 from auto-tune, and a shrunk JIT pool whose EXHAUSTED line the generic image/pool rules read (priority 10/11): the lock-leak rule goes first.",
+ "outcome": "hung",
+ "stage": 3,
+ "status": "trying"
+}

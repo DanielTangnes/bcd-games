@@ -1,0 +1,149 @@
+[19:16:33.712] [INFO] Checking entitlements...
+[19:16:33.712] [INFO] [build] v0.1.622 (622)
+[19:16:33.713] [INFO] [device] model=iPhone18,1 idiom=phone os=iOS Version 27.0 (Build 24A437) ram=11722MB available=8172MB cores=6
+[19:16:33.713] [INFO] [device] address-map=[0x102960000,0x8000000000) 512GB increased-memory=1 extended-va=0
+[19:16:33.734] [INFO] [device] gpu="Apple A19 Pro GPU" family=apple10 argument-buffers=tier2 mesh=1 bc=1 atomics64=1 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[19:16:37.488] [INFO] Requesting JIT with Built-in StikJIT...
+[19:16:41.121] [INFO] [bcd] library launch Doom3BFG.exe: avx=0 wine-vcrt=0 nvidia=0 game-config=1 metalfx=off
+[19:16:41.150] [INFO] Running full Wine sequence...
+[19:16:41.150] [INFO] [device] launch: cs-flags=0x32003005 get-task-allow=1 cs-debugged=1 debugger-attached=1 traced=1 address-map=[0x102960000,0x8000000000) 512GB available=8150MB low-power=0 thermal=nominal
+[19:16:41.157] [INFO] Allocating 896MB JIT pool (BRK will suspend process)...
+[19:16:41.157] [INFO] Allocating 896MB JIT pool via debugger...
+[19:16:41.158] [INFO] [jit-pool] path: debugger (attached at the pool request; it makes every region)
+[19:16:41.158] [INFO] [jit-debugger] attached=1 at the pool request
+[19:16:41.160] [ERR] ml1036: no hole fits a 896MB pool — SHRINKING to 592MB (the alternative is a pool in the guest window or on top of 0x140000000, both of which are fatal)
+[19:16:41.874] [INFO] RX pool at 0x148000000
+[19:16:41.891] [INFO] Detaching debugger...
+[phase] wine-start             t+  0.772s rev=ml526
+[shell-dir] user folders for madeira, mobile: 0 created (Start Menu included)
+[cage] holdback reserved 0x7200000000+0x1ffff0000 rev=ml433
+[wow-window] session armed: a 32-bit process is expected
+[wow-window] B=0x7100000000: reserved exactly 4GB; guard BORROWED from the pre-existing PROT_NONE region at 0x7200000000
+[wow-window] placeholder reserved B=0x7100000000..0x7200000000 (guard borrowed)
+[wow-window] adopted placeholder B=0x7100000000..0x7200000000 guard=borrowed
+[wow-window] reserved B=0x7100000000..0x7200000000 (slot 0) guard=borrowed
+[wow-window] main-process window reserved (i386 main image)
+[wow-window] slot 0 B=0x7100000000 bound to peb=0x717ffd0000
+[Wine init_process] reply_pipe=41, sending init_first_thread...
+[19:16:42.166] [Wine init_process] reply_pipe=41, sending init_first_thread...
+[iOS env] INCLUDED: SteamAppId=356400
+ml992: os_proc_available_memory=7546 MB + phys_footprint=645 MB = 8192 MB (hw.memsize says 11722 MB)
+[wow-rwx] ml1279 MADEIRA_WOW_RWX_PLAIN=(unset) -> 32-bit guest RWX memory is plain read/write in a window once Wine Mono is mapped there
+[copy-verify] ntdll.dll: OK, 29 .text pages executable (copy @0x148004000)
+0024:err:seh:init_syscall_frame page0: trying debugger (BRK #0xf00d, x16=3)...
+[nls-getptr] type=11 id=1252 peb=0x717ffd0000
+[nls-getptr] type=11 id=437 peb=0x717ffd0000
+[copy-verify] wow64.dll: OK, 5 .text pages executable (copy @0x14811c000)
+[file-fail] ml665 #1 NtCreateFile status=0xc0000034 disp=1 access=0x80100000 options=0x00000060 unix=(none) name=\??\C:\windows\system32\wow64cpu.dll
+0024:err:module:load_dll [dll-missing] rev=ml336 #1 L"\\??\\C:\\windows\\system32\\wow64cpu.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:wow:load_cpu_dll CPU backend wow64cpu.dll not available, falling back to the platform default xtajit.dll
+[data-align] libwow64fex.dll shifted +0x1000 so .data lands on a 16KB page
+[jit-pool] image 0x70ffac0000+0x3bc000 (libwow64fex.dll) → pool 0x148191000 used=0x555000/0x25000000 tramp+0x4000
+[copy-verify] libwow64fex.dll: OK, 119 .text pages executable (copy @0x148191000)
+ml957: libwow64fex.dll backing 0x70ffac0000+0x4000 W RESTORED (section declares EXECUTE|WRITE; backing stays non-exec, pool copy keeps X)
+[copy-verify] ucrtbase.dll: OK, 39 .text pages executable (copy @0x148554000)
+[copy-verify] KERNEL32.dll: OK, 12 .text pages executable (copy @0x148678000)
+[copy-verify] kernelbase.dll: OK, 30 .text pages executable (copy @0x148720000)
+[nls-getptr] type=11 id=20127 peb=0x717ffd0000
+[unixlib] libwow64fex.dll (module 0x70ffac0000) -> 64-bit table (0x105728758)
+D 24 Load module Doom3BFG.exe (doom3bfg.exe-b48973a1b55d3752): 7100400000
+D 24 Load module ntdll.dll (ntdll.dll-3903196a83cb8bb0): 71FFF40000
+D 24 Load module kernel32.dll (kernel32.dll-3a7c334be1d67fbe): 717BED0000
+[footprint] rev=ml358 phys=693 MB (peak 693) internal=692 MB compressed=0 MB external=71 MB reusable=4 MB (cycle=1)
+D 24 Load module kernelbase.dll (kernelbase.dll-1bada4728aae6d98): 717BC40000
+[nls-getptr] type=11 id=1252 peb=0x717ffd0000
+[nls-getptr] type=11 id=437 peb=0x717ffd0000
+D 24 Load module binkw32.dll (binkw32.dll-d4eff58a6c9e4477): 7110000000
+D 24 Load module USER32.dll (user32.dll-7d7be97280da4697): 717BA80000
+[copy-verify] ?: OK, 2 .text pages executable (copy @0x148a2f000)
+[copy-verify] ?: OK, 4 .text pages executable (copy @0x148a45000)
+[copy-verify] ?: OK, 3 .text pages executable (copy @0x148a61000)
+[copy-verify] ?: OK, 3 .text pages executable (copy @0x148a79000)
+[nls-getptr] type=11 id=20127 peb=0x717ffd0000
+[gdi-shared] session table 0x7025370000 (1572864 bytes, section-backed, name=L"\\KernelObjects\\__wine_ios_gdi_shared")
+[copy-verify] ?: OK, 4 .text pages executable (copy @0x148a93000)
+[free-delay] #1 release of 0x7102b90000+0x100000 held for 2000 ms (1 in flight)
+[free-delay] #2 release of 0x7102ca0000+0x200000 held for 2000 ms (2 in flight)
+[free-delay] #3 release of 0x7102eb0000+0x400000 held for 2000 ms (3 in flight)
+[free-delay] #4 release of 0x71032c0000+0x800000 held for 2000 ms (4 in flight)
+D 24 Load module uxtheme.dll (uxtheme.dll-4e14896344589ea5): 7179CB0000
+[unixlib] opengl32 (GL-absent stub table) (module 0x717b060000) -> wow64 table (0x105730758)
+D 24 Load module concrt140.dll (concrt140.dll-7f70d053658af254): 7179CC0000
+[nls-getptr] type=11 id=10000 peb=0x717ffd0000
+[nls-getptr] type=11 id=10000 peb=0x717ffd0000
+[nls-getptr] type=11 id=10000 peb=0x717ffd0000
+[nls-getptr] type=11 id=10000 peb=0x717ffd0000
+[win-name] #3 hwnd=0x10036 class='' text="Default IME" rev=ml853
+[win-name] #4 hwnd=0x2002c class='' text="DOOM 3: BFG Edition" rev=ml853
+[nls-getptr] type=11 id=10000 peb=0x717ffd0000
+[win-name] #8 hwnd=0x2002c class='' text="DOOM 3: BFG Edition" rev=ml853
+[win-name] #12 hwnd=0x2002c class='' text="DOOM 3: BFG Edition" rev=ml853
+[win-name] #16 hwnd=0x2002c class='' text="DOOM 3: BFG Edition" rev=ml853
+[win-name] #20 hwnd=0x2002c class='' text="DOOM 3: BFG Edition" rev=ml853
+[win-name] #24 hwnd=0x2002c class='' text="DOOM 3: BFG Edition" rev=ml853
+[nls-getptr] type=11 id=10000 peb=0x717ffd0000
+[free-delay] #5 release of 0x7025df0000+0x100000 held for 2000 ms (5 in flight)
+[free-delay] #6 release of 0x7105e30000+0x1000000 held for 2000 ms (6 in flight)
+[file-wfail] ml669 #1 status=0xc0000034 disp=1 access=0xc0100080 sharing=0x00000000 options=0x00000040 unix=(none) name=\??\pipe\svcctl
+D 24 Load module wbemprox.dll (wbemprox.dll-327d7b2744d49b52): 7179C80000
+D 24 Load module winspool.drv (winspool.drv-1d97ce048bb82c5b): 7179C40000
+[copy-verify] ?: OK, 1 .text pages executable (copy @0x148ab0000)
+D 24 Load module compstui.dll (compstui.dll-6ca7db67abfe8825): 7179C10000
+D 24 Load module version.dll (version.dll-f3fe55759b308ab9): 7179BF0000
+[unixlib] call with NULL handle from libwow64fex.dll+0x105b58 code=1 handle=0x0 -> STATUS_NOT_IMPLEMENTED (this module has no unix side on this port; further calls from it are silent)
+[free-delay] #7 release of 0x70254f0000+0x100000 held for 2000 ms (7 in flight)
+[free-delay] #8 release of 0x7104e30000+0x1000000 held for 2000 ms (8 in flight)
+[xp-names] m3169655 "wine-x18-exc"
+[win-name] #30 hwnd=0x3004c class='' text="DOOM 3: BFG Edition" rev=ml853
+[store-noalias] #1 rev=ml348 addr=0x71c00000bb insn=0x38bfc314 pc=0x16c5ca144 NO pool/anon alias | region 0x71c0000000+0x8000000 prot=0 max=7 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #1 p0=READ p1=0x71c00000bb hostpc=0x16c5ca144 hinsn=0x38bfc314 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=idx=1 base=0x16bffc000 size=0x1000000 state=live p1_in_carve=0 regs=0 rev=ml613
+[fault_rip] cnt=1 rip=0x0 pc=0x16c5ca144 addr=0x71c00000bb kr=2(PROTECTION_FAILURE) entryprot=0 nowprot=0 region=0x71c0000000+0x8000000 rev=ml555
+[mach_exc] UNHANDLED #1 pc=0x16c5ca144 addr=0x71c00000bb x18=0x717ffc0000 type=1 lr=0x16cffc14c sp=0x703891f350 x16=0x148069e94 x17=0x703891f2b0
+[guest-code] rev=ml333 pool_rip=0x7b0ff11f (PE 0x7b0ff11f) -- NO pool copy for this address (identity translate)
+[fault-host] 16c5ca044: ca04029b 6b04029a 9a9f07f4 b3401e84 b8684a74 11001108 a94a0780 8a141021
+[fault-host] 16c5ca064: 8b010000 a9400001 cb140000 b4000060 f945b381 f9000f94 d65f0020 6cffc108
+[fault-host] 16c5ca084: 00000001 00000094 00000000 00493790 00000000 00000009 00000000 00000003
+[fault-host] 16c5ca0a4: 00000028 00000000 00000000 57130180 d503201f d503201f d503201f 000002a0
+[fault-host] 16c5ca0c4: 10ffffe0 f9000380 f90f639f 91002118 b8784a67 51002108 8b284278 29002f06
+[fault-host] 16c5ca0e4: 51001108 b8284a6a 8b274278 38bfc314 b3401e85 91004118 b8784a6b 2b0563ff
+[mach_exc] insn_stream PC-12..PC+8: 91005118 b8784a67 8b2b4278 [38bfc314] b3401e84 1100054a 53081c80
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[exit-stk] sp+0x48: 0x1482945f8 = libwow64fex.dll+0x1035f8 copy_owner=0x0
+[exit-stk] sp+0xa8: 0x14829457c = libwow64fex.dll+0x10357c copy_owner=0x0
+[exit-stk] sp+0x1c8: 0x148294574 = libwow64fex.dll+0x103574 copy_owner=0x0
+[x86_seg] State.gs_cached=0x0 TEB=0x717ffc0000 TEB[0x58]=0x0 *(gs_cached+0x58)=0x0
+[store-noalias] #2 rev=ml348 addr=0x71c00000bb insn=0x38bfc314 pc=0x16c5ca144 NO pool/anon alias | region 0x71c0000000+0x8000000 prot=0 max=7 (prot without W = exec-downgraded page that never got dual-mapped)
+[av-detail] ml613 #2 p0=READ p1=0x71c00000bb hostpc=0x16c5ca144 hinsn=0x38bfc314 rcx=0x0 r8=0x0 [rcx+8]=<unreadable>0x0 p1_is_rcx8=0 | carve=idx=1 base=0x16bffc000 size=0x1000000 state=live p1_in_carve=0 regs=0 rev=ml613
+[fault_rip] cnt=2 rip=0x0 pc=0x16c5ca144 addr=0x71c00000bb kr=2(PROTECTION_FAILURE) entryprot=0 nowprot=0 region=0x71c0000000+0x8000000 rev=ml555
+[mach_exc] UNHANDLED #2 pc=0x16c5ca144 addr=0x71c00000bb x18=0x717ffc0000 type=1 lr=0x16cffc14c sp=0x703891f350 x16=0x148069e94 x17=0x703891f2b0
+[guest-code] rev=ml333 pool_rip=0x7b0ff11f (PE 0x7b0ff11f) -- NO pool copy for this address (identity translate)
+[fault-host] 16c5ca0a4: 00000028 00000000 00000000 57130180 d503201f d503201f d503201f 000002a0
+[fault-host] 16c5ca0c4: 10ffffe0 f9000380 f90f639f 91002118 b8784a67 51002108 8b284278 29002f06
+[fault-host] 16c5ca0e4: 51001108 b8284a6a 8b274278 38bfc314 b3401e85 91004118 b8784a6b 2b0563ff
+[fault-host] 16c5ca104: aa0503fa d500401f 54000f00 110004f4 8b344278 38bfc314 b3781e85 53087cb4
+[fault-host] 16c5ca124: 53087cb5 0a1402a0 72001c1f 54000ac0 aa0b03ea 91005118 b8784a67 8b2b4278
+[fault-host] 16c5ca144: 38bfc314 b3401e84 1100054a 53081c80 00000000 00000000 00000000 00000000
+[mach_exc] insn_stream PC-12..PC+8: 91005118 b8784a67 8b2b4278 [38bfc314] b3401e84 1100054a 53081c80
+[mach_exc] sym pc=?`?+0x0 lr=?`?+0x0
+[exit-stk] sp+0x48: 0x1482945f8 = libwow64fex.dll+0x1035f8 copy_owner=0x0
+[exit-stk] sp+0xa8: 0x14829457c = libwow64fex.dll+0x10357c copy_owner=0x0
+[exit-stk] sp+0x1c8: 0x148294574 = libwow64fex.dll+0x103574 copy_owner=0x0
+[x86_seg] State.gs_cached=0x0 TEB=0x717ffc0000 TEB[0x58]=0x0 *(gs_cached+0x58)=0x0
+0024:err:seh:bus_handler BUS->AV: unreadable target addr=0x71c00000bb pc=0x16c5ca144 rw=0 rev=ml420
+wine: Unhandled page fault on read access to C00000BB at address 0075CC7E (thread 0024), starting debugger...
+0024:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0xc0000005) syscalls=0 unix_calls=624
+[Wine ntdll/server] process_exit_wrapper(-1073741819)
+[WineProc] Wine exited with code -1073741819 (caught by longjmp)
+[WineProc] stopping wineserver...
+[19:16:43.149] [INFO] [session] length=2s play=0s frames=0 stalls=0/0s peak=811MB limit=8191MB thermal=nominal lpm=0 api=DirectDraw/OpenGL/32 res=1408x648 cap=60 game=Doom3BFG
+[19:16:43.155] [INFO] [exit-report] status=0xc0000005
+[frontend] returned to library
+[footprint] rev=ml358 phys=824 MB (peak 824) internal=823 MB compressed=0 MB external=77 MB reusable=3 MB (cycle=2)
+[19:16:44.945] [INFO] Detaching debugger...
+[footprint] rev=ml358 phys=824 MB (peak 824) internal=823 MB compressed=0 MB external=77 MB reusable=3 MB (cycle=3)
+[footprint] rev=ml358 phys=824 MB (peak 824) internal=822 MB compressed=0 MB external=76 MB reusable=3 MB (cycle=4)
+[footprint] rev=ml358 phys=820 MB (peak 824) internal=819 MB compressed=0 MB external=76 MB reusable=7 MB (cycle=5)
+[footprint] rev=ml358 phys=820 MB (peak 824) internal=819 MB compressed=0 MB external=76 MB reusable=7 MB (cycle=6)
+[footprint] rev=ml358 phys=820 MB (peak 824) internal=819 MB compressed=0 MB external=76 MB reusable=7 MB (cycle=7)
+[footprint] rev=ml358 phys=820 MB (peak 824) internal=819 MB compressed=0 MB external=76 MB reusable=7 MB (cycle=8)
+[footprint] rev=ml358 phys=825 MB (peak 825) internal=824 MB compressed=0 MB external=96 MB reusable=7 MB (cycle=9)

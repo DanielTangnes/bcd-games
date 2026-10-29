@@ -451,6 +451,7 @@ struct RecommendationsPolicy {
         "MADEIRA_D3D8", "MADEIRA_DDRAW",   // build 602: d3d8to9 as a 32-bit game's d3d8.dll and cnc-ddraw as its ddraw.dll (BCDGraphicsRoutes.c); one value each
         "MADEIRA_REAL_SUSPEND",   // build 620: SuspendThread really stops the thread (wineserver mach_ios.c, opt-in): Unity IL2CPP games whose GC marks objects while it believes the world is stopped (thebcd69/bcd-games#18: Big Walk, Megabonk, BALL x PIT)
         "MADEIRA_BUFFER_RTV_EMPTY",   // build 620: a render target view on a buffer gets S_OK and no view (DXMT, opt-in; Frostbite 2: Need for Speed: The Run)
+        "MADEIRA_PAUSE_IN_BACKGROUND",   // build 623: commits and presents wait while BCD is not active (auto-tune's gpu-work-refused-in-background; F1 2020)
     ]
 
     var configKeys: Set<String>
@@ -479,11 +480,12 @@ struct RecommendationsPolicy {
                 // oledlg, fwpuclnt and sensapi: small system DLLs a program imports (2026-10-23). ddraw: Dying Light's renderer (same day).
                 // msi, mspatcha, odbccp32, sxs and rstrtmgr: what the EA app's 64-bit EABackgroundService.exe imports (same day).
                 // gamingtcui: what Forza Horizon 4's exe imports as api-ms-win-gaming-tcui-l1-1-0.dll (round 620).
+                // qwave: what the Discord Social SDK plugin of Bloons TD 6 imports (round 623).
                 let names = value.lowercased().split(whereSeparator: { ",; ".contains($0) })
                 guard !names.isEmpty, names.allSatisfy({ ["dxva2", "evr", "xpsprint", "sfc", "sfc_os", "tbs", "twinapi.appcore", "setupapi"].contains($0)
                         || ["mfasfsrcsnk", "wmvdecod", "wmadmod"].contains($0) || ["oledlg", "fwpuclnt", "sensapi", "ddraw"].contains($0)
-                        || ["msi", "mspatcha", "odbccp32", "sxs", "rstrtmgr"].contains($0) || ["glu32", "tdh", "gamingtcui"].contains($0) }) else {
-                    throw RecommendationsError.policy("\(path): MADEIRA_OPTIN_DLLS may only name dxva2, evr, xpsprint, sfc, sfc_os, tbs, twinapi.appcore or setupapi, or mfasfsrcsnk, wmvdecod, wmadmod, or oledlg, fwpuclnt, sensapi, ddraw, or msi, mspatcha, odbccp32, sxs, rstrtmgr, or glu32, tdh, gamingtcui")
+                        || ["msi", "mspatcha", "odbccp32", "sxs", "rstrtmgr"].contains($0) || ["glu32", "tdh", "gamingtcui", "qwave"].contains($0) }) else {
+                    throw RecommendationsError.policy("\(path): MADEIRA_OPTIN_DLLS may only name dxva2, evr, xpsprint, sfc, sfc_os, tbs, twinapi.appcore or setupapi, or mfasfsrcsnk, wmvdecod, wmadmod, or oledlg, fwpuclnt, sensapi, ddraw, or msi, mspatcha, odbccp32, sxs, rstrtmgr, or glu32, tdh, gamingtcui, qwave")
                 }
             case "MADEIRA_STEAM_IDENTITY":
                 // No Steam game identity for this session (build 598, Rockstar's launcher of the Epic GTA V / RDR2): the one value, none.

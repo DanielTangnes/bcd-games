@@ -915,6 +915,16 @@ check('if (total <= 40) {' in winios_m and '} else if (total % 5000 == 0) {' in 
       'the drain logs its first 40 events, then a count, not a flushed line per mouse move')
 check('if (n <= 60) {' in winios_m and '} else if (n % 1000 == 0) {' in winios_m,
       'post_key logs its first 60 keys, then a count')
+# 2026-10-28 (privacy; upstream 448391e logged none): a key that types text is logged as "char", never its code, in the three places
+# that log keys (the first keys of a session may be a sign-in name or password, and logs are sent).
+drv = (root / 'build/win32u-unix/driver_ios.c').read_text()
+check('static int winios_vk_types_text(int vk) {' in winios_m
+      and 'return vk == 0x20 || (vk >= 0x30 && vk <= 0x5A) || (vk >= 0x60 && vk <= 0x6F) || (vk >= 0xBA && vk <= 0xE2);' in winios_m
+      and 'if (winios_vk_types_text(vk)) fprintf(stderr, "[winios] post_key vk=char down=%d\\n", down);' in winios_m
+      and 'if (e.type == WINIOS_EV_KEY && (e.x == 0x20 || (e.x >= 0x30 && e.x <= 0x5A) || (e.x >= 0x60 && e.x <= 0x6F) || (e.x >= 0xBA && e.x <= 0xE2)))' in winios_m
+      and 'int text = vk == 0x20 || (vk >= 0x30 && vk <= 0x5A) || (vk >= 0x60 && vk <= 0x6F) || (vk >= 0xBA && vk <= 0xE2);' in drv
+      and 'drv_post_key #%u vk=char flags=0x%x' in drv,
+      'a text key is logged as "char" (no code) by post_key, the drain and the driver')
 print('PASS: driver reports, touch interception, focus gating, text-bridge guard, settings, Info.plist, '
       'project, switches and docs wired')
 

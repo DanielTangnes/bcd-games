@@ -3022,6 +3022,7 @@ static const char *ios_virtual_gpu_name( UINT16 vendor, UINT16 device )
 static const struct { UINT16 vendor, device; } ios_known_gpus[] =
 {
     { 0x106b, 0x0001 }, { 0x10de, 0x2544 }, { 0x1002, 0x73df }, { 0x1002, 0x67df }, { 0x8086, 0x3e92 }, { 0x8086, 0x56a0 },
+    { 0x10de, 0x0292 },   /* build 623: NVIDIA GeForce 7900 GS (older Direct3D 9 games) */
 };
 
 /* Every game shares one prefix and the registry is saved, so a launch with the

@@ -1,0 +1,16 @@
+{
+ "dialogs": [],
+ "end": {
+  "killed": true,
+  "seconds": 941,
+  "userSaid": "froze"
+ },
+ "matched": [
+  "forza-horizon-4-start-wait"
+ ],
+ "next": [],
+ "note": "Send Log D9NHGJ (build 622, iPad17,1, Dock): Forza Horizon 4 loops in its start-up code for 941 s with presents=0 (ForzaHorizon4.exe+0x304d8a0, GetPackagesByPackageFamily for Microsoft.VCLibs.140.00 just before); the player ended it and said it froze. No setting changes it.",
+ "outcome": "hung",
+ "stage": 5,
+ "status": "known"
+}

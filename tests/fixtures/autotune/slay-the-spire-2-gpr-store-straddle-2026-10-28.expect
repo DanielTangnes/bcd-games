@@ -1,0 +1,12 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "slay-spire-2-gpr-store-straddle"
+ ],
+ "next": [],
+ "note": "Slay the Spire 2, build 622, iPad17,4 (1WF6J7): System.AccessViolationException in Godot.Constructors..cctor(); a 4-byte store at offset 0x3ffe of an alias page lost its high bytes (fixedIn 623)",
+ "outcome": "crashed",
+ "stage": 2,
+ "status": "known"
+}

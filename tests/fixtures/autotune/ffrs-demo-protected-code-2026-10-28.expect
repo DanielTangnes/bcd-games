@@ -1,0 +1,12 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "ffrs-protected-code-wild-read"
+ ],
+ "next": [],
+ "note": "FINAL FANTASY RESONANCE DEMO, build 622, iPad17,4 (STD9KZ): wild read at RIP 0x151f280f9 in the protected program, the same instruction in 7 sessions (noFix)",
+ "outcome": "crashed",
+ "stage": 2,
+ "status": "known"
+}

@@ -440,6 +440,17 @@ jobs:
       - name: Check games on an external SSD (opt-in by use, reconnect, safety)
         run: python3 tests/host/check-external-storage.py --require-swift
 
+      # The in-place External SSD folder-picker fix (app/Madeira/ExternalGamesPicker.swift): on an install
+      # whose signed App ID differs from the bundle id, correct the picker's host identity (only, never the
+      # whole app) so Open returns the real folder in place with no -Inbox copy; change nothing for installs
+      # that already work. Gating, no-global-identity-change and the pure identity decision are pinned here.
+      - name: Check the in-place External SSD folder-picker fix
+        run: python3 tests/host/check-external-picker.py --require-swift
+
+      # Every app source is in the Xcode project (build 623's first run: a new Swift file passed the typecheck but not the archive).
+      - name: Check the app sources are in the Xcode project
+        run: python3 tests/host/check-xcode-sources.py
+
       # BCD's controller hub (BCDControllerHub.swift, written clean-room from
       # docs/clean-room/controller-hub-spec.md): the mapping's sectors, keys, order, triggers and
       # default; element handlers only (GamepadInput keeps the profile's and its queue); state on
@@ -758,6 +769,14 @@ jobs:
         run: |
           python3 tests/host/check-guest-log-service.py
           python3 tools/patch-wine-guest-log-service.py wine/dlls/ntdll/unix/file.c
+
+      # madeira-bcd: a Ren'Py game's own error files (traceback.txt, log.txt, errors.txt, stderr.txt) in the session log as
+      # [guest-log]. Doki Doki Literature Club and Coming Out on Top (Python 2.7, three devices, builds 592-622) end with exit -1
+      # right after pyexpat.pyd and nothing in the log says why; the reason can only be in those files. Logging only.
+      - name: Patch wine text-log mirror to mirror a Ren'Py game's error files
+        run: |
+          python3 tests/host/check-guest-log-renpy.py
+          python3 tools/patch-wine-guest-log-renpy.py wine/dlls/ntdll/unix/file.c
 
       # [file-trace]: every guest open / attribute query with its status when
       # MADEIRA_FILE_TRACE=1 (GTA V Enhanced's "incomplete installation"
@@ -1703,6 +1722,17 @@ jobs:
       - name: Patch DXMT render target views on a buffer
         run: python3 tools/patch-dxmt-buffer-rtv.py
 
+      # Build 623 (upstream willfaust/dxmt d811847f2): the GS/TS draw-argument marshal loops never advanced, so a batch of two
+      # or more geometry/tessellation draws spun until the GPU timed out; a zero-size draw dispatches nothing. Reaches the
+      # 32-bit d3d10/d3d11 and the native library (the 64-bit d3d11.dll is upstream's binary).
+      - name: Patch DXMT GS/TS draw-argument marshal loops
+        run: python3 tools/patch-dxmt-gsts-marshal.py
+
+      # Build 623 (upstream willfaust/dxmt f25e5568d): d3d9.customDriver sets the adapter's driver file name (empty = off);
+      # BCD's "NVIDIA GeForce 7900 GS" card uses it for Fallout 3 / New Vegas.
+      - name: Patch DXMT d3d9.customDriver
+        run: python3 tools/patch-dxmt-d3d9-custom-driver.py
+
       # A D3D9 R5G6B5 back buffer went straight to CAMetalLayer, which threw
       # 'invalid pixel format 40' and ended the app (Warcraft III, build 559).
       # A format the layer refuses now presents into BGRA8Unorm. Before the
@@ -2339,6 +2369,11 @@ jobs:
       - name: Check the [spin] call-rate look
         run: python3 tests/host/check-spin-diag.py
 
+      # madeira-bcd (round 623, Forza Horizon 4 D9NHGJ / RVXHV6 / 58VNDB): the [spin] ml677 snapshot (build/ntdll-unix/signal_arm64_ios.c) also
+      # prints 256 guest code bytes from rip-192, the guest registers and 128 guest stack words, only when a spin streak fires.
+      - name: Check the [spin] guest code and stack window
+        run: python3 tests/host/check-spin-guest-context.py
+
       # madeira-bcd (round 579): a BCD Dock session whose game died with an error (Dying Light 32FEAT, The Binding of Isaac VV5NHZ:
       # c0000005) stayed open on its dead desktop: the session's own program is Wine's desktop, which never closes by itself on iOS.
       # The library now ends it when the game's last process ended with an error status, nothing of the game runs, the host
@@ -2694,6 +2729,17 @@ jobs:
       - name: Check the swap-mb cap
         run: python3 tests/host/check-swap-cap.py
 
+      # madeira-bcd (build 623; upstream Madeira 726686e): a 32-bit program's branch to a low address faults in the guest
+      # instead of ending the program (36 logs).
+      - name: Check wow-low-rip
+        run: python3 tests/host/check-wow-low-rip.py
+
+      - name: Check DXMT GS/TS marshal loops
+        run: python3 tests/host/check-dxmt-gsts-marshal.py
+
+      - name: Check DXMT d3d9.customDriver and the GeForce 7900 GS card
+        run: python3 tests/host/check-dxmt-d3d9-custom-driver.py
+
       # madeira-bcd: the ARM64EC JIT no longer maintains the call-ret shadow stack nothing reads on iOS
       # (MADEIRA_FEX_CALLRET_ELIDE=0 keeps it).
       - name: Check fex-callret-elide
@@ -2727,6 +2773,12 @@ jobs:
       # ECV and WFXT; FEX's parsers must keep reading every key exactly as published.
       - name: Check FEX host probe
         run: python3 tests/host/check-fex-hostprobe.py
+
+      # madeira-bcd (round 623, Kindergarten 9DEZ8A / Mycopunk 997BBV / Skate Story XYPY9J): MonoBackpatcherWrite's alias-miss store runs
+      # without CodeInvalidationMutex when MADEIRA_MONO_BP_UNLOCKED_MISS=1, so the access violation it raises leaves no write-owned mutex
+      # behind ("[fexlock] STUCK write-wait", owner == waiter). Off by default; auto-tune's rule mono-backpatch-lock-leak adds the line.
+      - name: Check fex-mono-bp-unlocked-miss
+        run: python3 tests/host/check-fex-mono-bp-unlocked-miss.py
 
       # The native D3D12 runtime is ours to fix now, so build it from
       # madeira-d3d12 instead of shipping upstream's binary as is.

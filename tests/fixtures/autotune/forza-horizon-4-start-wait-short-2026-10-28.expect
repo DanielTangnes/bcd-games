@@ -1,0 +1,16 @@
+{
+ "dialogs": [],
+ "end": {
+  "killed": true,
+  "seconds": 42,
+  "userSaid": "froze"
+ },
+ "matched": [
+  "forza-horizon-4-start-wait"
+ ],
+ "next": [],
+ "note": "Send Log 58VNDB (build 622, iPad17,1, Dock): the same game, the first try, 42 s (one 30-second line).",
+ "outcome": "hung",
+ "stage": 2,
+ "status": "known"
+}

@@ -237,9 +237,15 @@ void winios_drv_post_key(unsigned short vk, unsigned int flags)
          * all and the log looked like they were never sent. Log the first few,
          * then one line per 256 with a running total that is always truthful. */
         static unsigned cnt, bad;
+        /* madeira-bcd (2026-10-28): a key that types text (space, digits, letters, keypad, punctuation) is logged as "char", with
+         * no virtual-key or scan code: a session's first keys can be a name or a password, and logs are sent. */
+        int text = vk == 0x20 || (vk >= 0x30 && vk <= 0x5A) || (vk >= 0x60 && vk <= 0x6F) || (vk >= 0xBA && vk <= 0xE2);
         if (st) bad++;
         cnt++;
-        if (cnt <= 8 || (cnt & 0xff) == 0)
+        if ((cnt <= 8 || (cnt & 0xff) == 0) && text)
+            dprintf(2, "[winios] ml647 drv_post_key #%u vk=char flags=0x%x -> status=0x%x (failures=%u)\n",
+                    cnt, flags, (unsigned)st, bad);
+        else if (cnt <= 8 || (cnt & 0xff) == 0)
             dprintf(2, "[winios] ml647 drv_post_key #%u vk=0x%x scan=0x%x flags=0x%x "
                        "-> status=0x%x (failures=%u)\n",
                     cnt, vk, scan, flags, (unsigned)st, bad);

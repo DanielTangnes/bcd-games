@@ -1,0 +1,14 @@
+{
+ "dialogs": [],
+ "end": {},
+ "matched": [
+  "fallout-nv-older-nvidia-card"
+ ],
+ "next": [
+  "gpu-card = nvidia-7900gs"
+ ],
+ "note": "Fallout: New Vegas (9273DN, build 614, iPad14,8, Dock): the save crash at 00B57AA9 logged as a READ ('Unhandled page fault on read access to 00000000 at address 00B57AA9'; hinsn 0xb8bfc304 = LDAPR, build 613's honest label). The rule asked for 'write access' and matched no log of build 613 or later. Round 623.",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "trying"
+}

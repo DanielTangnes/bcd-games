@@ -35,6 +35,12 @@ assert(transport.fields["session-handoff-stage"] == "1" && transport.fields["ses
 assert(transport.failure!.contains("sign-in transfer") && transport.failure!.contains("hasn't checked"))
 assert(parse("[steam-host] ml1830 session-native-handoff-app-mismatch=1\n[steam-host] ml1830 probe-result=37\n").failure!.contains("another launch"))
 assert(parse("[steam-host] ml1990 ceg-result=10\n[steam-host] ml1830 probe-result=49\n").failure!.contains("busy"))
+// Round 623 (Just Cause 2, feedback BEQD9Y): CEG result 55 keeps the old words and says it is a known stop; another code still gets the plain text.
+let ceg55 = parse("[steam-host] ml1990 ceg-result=55\n[steam-host] ml1830 probe-result=49\n").failure!
+assert(ceg55.contains("copy protection") && ceg55.contains("(code 55)") && ceg55.contains("known stop") && ceg55.contains("no BCD setting is known"))
+let cegOther = parse("[steam-host] ml1990 ceg-result=7\n[steam-host] ml1830 probe-result=49\n").failure!
+assert(cegOther.contains("(code 7)") && !cegOther.contains("known stop"))
+assert(parse("[steam-host] ml1830 probe-result=49\n").failure!.contains("(code ?)"))
 assert(parse("[steam-host] ml1970 launch-client-error=18\n[steam-host] ml1830 probe-result=45\n").failure!.contains("installed"))
 assert(parse("[steam-host] ml2011 launch-config-wait=1\n[steam-host] ml1970 launch-client-error=22\n[steam-host] ml1830 probe-result=48\n").failure!.contains("configuration"))
 let session = parse("[steam-host] ml1970 launch-client-error=35\n[steam-host] ml2015 launch-session-wait=35\n[steam-host] ml2015 launch-session-gave-up=12\n[steam-host] ml1830 probe-result=45\n")

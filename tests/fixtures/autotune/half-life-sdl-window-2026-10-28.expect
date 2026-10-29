@@ -1,0 +1,16 @@
+{
+ "dialogs": [
+  "Fatal Error",
+  "Failed to create SDL Window",
+  "Assertion failed!??Program: C:\\Program Files (x86)\\Steam\\steamapps\\common\\Half-Life\\hl.exe?File: c:\\buildslave\\goldsrc_win32\\build\\GoldSrc\\filesystem\\FileSystem_Stdio\\FileSystem_Stdio.cpp?Line: 84??E"
+ ],
+ "end": {},
+ "matched": [
+  "opengl-only-no-context"
+ ],
+ "next": [],
+ "note": "Half-Life / Counter-Strike (Steam 10, hl.exe -steam -game cstrike) on build 622: the SDL2 engine cannot make its window with BCD's GL-absent opengl32 stub and prints 'Failed to create SDL Window' (a Fatal Error box); the rule opengl-only-no-context now names it (text only, no line).",
+ "outcome": "crashed",
+ "stage": 3,
+ "status": "known"
+}

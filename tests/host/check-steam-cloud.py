@@ -80,6 +80,7 @@ require('$0.kind == .cloudOnly' in owned[owned.index('func resolveCloud'):owned.
 # ------------------------------------------------------------------ Swift
 main = r'''
 import Foundation
+import CryptoKit
 enum SteamAppInfo {
     struct SaveFile: Equatable { var root: String; var path: String; var pattern: String; var recursive: Bool; var platforms: [String] }
     struct RootOverride: Equatable { var root: String; var os: String; var useInstead: String; var addPath: String }
@@ -116,6 +117,24 @@ check(only(plan(e(.differ, cloud: 1, local: 2), hex(1))) == "upload", "changed o
 check(only(plan(e(.differ, cloud: 2, local: 1), hex(1))) == "download", "changed in the cloud only: downloaded")
 check(only(plan(e(.differ, cloud: 2, local: 3), hex(1))) == "ask", "changed on both sides: a choice")
 check(only(plan(e(.differ, cloud: 2, local: 3), nil)) == "ask", "different with no record: a choice")
+// Build 623 (upstream Madeira #472, Jelly-RayTian): a save that could not be read has no checksum; it is never uploaded or
+// overwritten unasked, and a read error gives no partial digest.
+check(only(plan(e(.differ, cloud: 1), hex(1))) == "ask", "an unreadable save with an unchanged cloud copy: a choice, not an upload")
+check(only(plan(e(.differ, cloud: 2), hex(1))) == "ask", "an unreadable save with a changed cloud copy: a choice")
+do {
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent("bcd-cloud-sha-\(getpid())", isDirectory: true)
+    try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let file = dir.appendingPathComponent("save.dat")
+    let big = Data((0..<(3 << 20) + 5).map { UInt8(truncatingIfNeeded: $0 &* 31) })
+    try! big.write(to: file)
+    let empty = dir.appendingPathComponent("empty.dat")
+    try! Data().write(to: empty)
+    check(SteamCloudAudit.sha1(of: file) == Data(Insecure.SHA1.hash(data: big)), "a readable save of several chunks: its whole SHA-1")
+    check(SteamCloudAudit.sha1(of: empty) == Data(Insecure.SHA1.hash(data: Data())), "an empty save: the SHA-1 of nothing")
+    check(SteamCloudAudit.sha1(of: dir.appendingPathComponent("missing.dat")) == nil, "a missing save: no checksum")
+    check(SteamCloudAudit.sha1(of: dir) == nil, "a read error (a folder where the save should be): no checksum, not a partial digest")
+    try? FileManager.default.removeItem(at: dir)
+}
 check(only(plan(e(.cloudOnly, cloud: 1), nil)) == "download", "new in the cloud: downloaded")
 check(only(plan(e(.localOnly, local: 1), nil)) == "upload", "new on this device: uploaded")
 check(only(plan(e(.localOnly, local: 1), hex(1))) == "nothing", "deleted in the cloud: not sent back")

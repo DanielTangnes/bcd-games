@@ -516,12 +516,22 @@ struct BCDTouchEditorHost: View {
     }
 
     func noteExternalPicker(_ what: String) {
-        if what.hasPrefix("opened") { pickerOpenedAt = Date(); pickerAnswered = false }
+        if what.hasPrefix("opened") {
+            // Arm the in-place host-identity fix before iOS builds the picker. A no-op on installs that
+            // already work and when the fix is switched off (ExternalGamesPicker.swift).
+            BCDExternalPickerFix.shared.beginSession()
+            pickerOpenedAt = Date(); pickerAnswered = false
+        }
         if what == "answered" { pickerAnswered = true }
         let seconds = pickerOpenedAt.map { Int(Date().timeIntervalSince($0)) } ?? 0
         if what == "closed" {
+            BCDExternalPickerFix.shared.endSession()
             // Open did nothing, or Cancel: the log cannot tell which, but the time can.
             LogStore.shared.log("[ext-storage] picker closed \(pickerAnswered ? "after an answer" : "without an answer") after \(seconds) s")
+            // Only on an install whose signature cannot pick in place, point the user at the cause.
+            if !pickerAnswered, let help = BCDExternalPickerFix.shared.mismatchHelp {
+                externalGamesMessage = help
+            }
         } else {
             LogStore.shared.log("[ext-storage] picker \(what)\(what == "answered" ? " after \(seconds) s" : "")")
         }

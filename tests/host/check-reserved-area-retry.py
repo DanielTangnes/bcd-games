@@ -63,7 +63,7 @@ check('each retry lies strictly above (bottom-up) or below (top-down) the refuse
       'if (top_down) high = (char *)refused + size - 1;' in retry_fn
       and 'else low = (char *)refused + align_mask + 1;' in retry_fn)
 check('the retry is on only on a small address map (ios_wow_small_va_slots), zero tries elsewhere',
-      'ios_wow_small_va_slots ? IOS_RESERVED_RETRY_MAX : 0' in inner_fn and '#define IOS_RESERVED_RETRY_MAX 32' in source)
+      'ios_wow_small_va_slots && !ios_reserved_skip_now ? IOS_RESERVED_RETRY_MAX : 0' in inner_fn and '#define IOS_RESERVED_RETRY_MAX 32' in source)
 check('the placement is still one MAP_FIXED over the reservation, and a failure of it is reported, not hidden',
       once_fn.count('anon_mmap_fixed(') == 1 and '*refused = ptr;' in once_fn and '*err = errno;' in once_fn)
 check('a search that finds no range still returns NULL with no refusal recorded (nothing is retried)',
@@ -98,6 +98,43 @@ check('the first [reserved-area] line keeps its words (tools and earlier logs re
       '"[reserved-area] #%lu MAP_FIXED over our own reservation refused: %p+0x%lx errno=%d (%s) | %s | "' in inner_fn
       and '"%s (%u refused in all; small address map retry %s) rev=ajan5-motor\\n"' in inner_fn)
 check('the catalog lists env.MADEIRA_RESERVED_REMAP, on', '"env.MADEIRA_RESERVED_REMAP"' in (root / 'build/tools/gen-config-catalog.py').read_text())
+
+# ---- round 623: the skip past the kernel's fixed regions (Hotline Miami 2 3NB0B0, Metro: Last Light QJANDC) ----
+skip_fn = function('static void *ios_reserved_skip(')
+scan_fn = function('static int ios_va_blocker_scan(')
+blocker_fn = function('static int ios_va_blocker( const void *addr, size_t size, uintptr_t *blo, uintptr_t *bhi )\n{')
+check('the skip and the scan only call the placement again and read the kernel through a callback; they map, protect and unmap nothing',
+      all(m not in skip_fn + scan_fn for m in ('mmap(', 'munmap(', 'mprotect(', 'anon_mmap', 'memset(', 'memcpy(', 'mach_vm')))
+check('the kernel is read by mach_vm_region only, and only the blocker query reaches it',
+      'mach_vm_region(' in function('static int ios_va_region_next(') and 'ios_va_blocker_scan( (uintptr_t)addr, size, ios_va_region_next' in blocker_fn
+      and source.count('ios_va_blocker(') == 4)   # forward declaration, definition, the skip, the last resort
+check('a blocker is a region of MAXIMUM protection none (vm_region p/m 0/0), the one kind the log shows in every refusal',
+      'unsigned n = 0, prot = 0;' in scan_fn.replace('\n', ' ') or 'unsigned n = 0, prot = 0;' in scan_fn)
+check('the skip runs only in the request\'s last attempt, on a small address map, after an ENOMEM refusal, with its key on',
+      'if (!ptr && ios_reserved_skip_now && ctx.last_err == ENOMEM && ios_wow_small_va_slots && ios_reserved_skip_enabled())' in inner_fn
+      and inner_fn.index('ios_reserved_retry(') < inner_fn.index('ios_reserved_skip(') < inner_fn.index('ios_reserved_remap( first_refused')
+      and 'ios_wow_small_va_slots && !ios_reserved_skip_now ? IOS_RESERVED_RETRY_MAX : 0' in inner_fn)
+last_fn = function('static void *map_reserved_area_last(')
+check('the last attempt is map_reserved_area_last: the flag set round one map_reserved_area call and cleared again, nowhere else',
+      source.count('ios_reserved_skip_now = 1;') == 1 and last_fn.index('ios_reserved_skip_now = 1;') < last_fn.index('map_reserved_area(')
+      < last_fn.index('ios_reserved_skip_now = 0;') and source.count('ios_reserved_skip_now = 0;') == 1)
+call_at = source.index('map_reserved_area_last( start, end, host_size, top_down, unix_prot, align_mask )')
+check('map_reserved_area_last is called once, on a small address map, only where map_view is about to return STATUS_NO_MEMORY for a request that may not relax',
+      source.count('map_reserved_area_last(') == 2 and 'ios_wow_small_va_slots &&' in source[call_at - 200:call_at]
+      and source.rindex('if (!ceiling_relaxable)', 0, call_at) > call_at - 900
+      and 'return STATUS_NO_MEMORY;' in source[call_at:call_at + 700])
+check('each skip step moves strictly past the last refusal and the steps are capped',
+      '#define IOS_RESERVED_SKIP_MAX 64' in source and 'while (*jumps < IOS_RESERVED_SKIP_MAX)' in skip_fn
+      and 'if (next_low <= (uintptr_t)refused || next_low >= (uintptr_t)high) break;' in skip_fn
+      and 'if (blo <= size || blo <= (uintptr_t)low) break;' in skip_fn)
+check('the skip ends at a placement, a refusal other than ENOMEM, a search that finds nothing, or a refusal no blocker explains',
+      'if (ptr || !refused || err != ENOMEM) break;' in skip_fn and 'if (!ios_va_blocker( refused, size, &blo, &bhi )) break;' in skip_fn)
+check('the last resort asks for a blocker before it unmaps (a region no munmap removes would only leave a hole)',
+      remap_fn.index('ios_va_blocker( addr, size') < remap_fn.index('munmap(') and 'remap not tried: the range holds a kernel region' in remap_fn)
+check('the placement records its newest refusal for the skip', 'ctx->last_refused = ptr; ctx->last_err = *err;' in once_fn)
+check('the first [reserved-area] line keeps its words; the skip has a line of its own',
+      '"[reserved-area] #%lu skip: %u step(s) past kernel regions' in inner_fn and 'rev=ajan58-skip' in inner_fn)
+check('the catalog lists env.MADEIRA_RESERVED_SKIP, on', '"env.MADEIRA_RESERVED_SKIP"' in (root / 'build/tools/gen-config-catalog.py').read_text())
 
 harness = r'''
 #include <assert.h>
@@ -211,6 +248,7 @@ with tempfile.TemporaryDirectory(prefix='reserved-area-retry-') as directory:
 ctx_struct = source[source.index('struct ios_reserved_ctx\n{'):]
 ctx_struct = ctx_struct[:ctx_struct.index('};') + 3]
 remap_region = source[source.index('static int ios_reserved_remap_enabled(void)'):source.index('/* remap-test:end */')]
+skip_region = source[source.index('#define IOS_RESERVED_SKIP_MAX 64'):source.index('/* skip-test:end */')]
 harness2 = r"""
 #include <assert.h>
 #include <errno.h>
@@ -252,7 +290,30 @@ static int dprintf_fake( int fd, const char *fmt, ... )
 #define dprintf dprintf_fake
 static void ios_va_describe( void *a, char *b, size_t n ) { (void)a; n_describe++; snprintf( b, n, "OCCUPIED fake prot=0/0" ); }
 static void ios_va_regions( void *a, size_t s, char *b, size_t n ) { (void)a; (void)s; n_regions++; snprintf( b, n, "0xA+0x10000 0/0" ); }
-""" + ctx_struct + typedefs + retry_fn + remap_region + r"""
+/* the kernel's regions of maximum protection none ("bands", ascending): a MAP_FIXED over a range that touches one is refused (ENOMEM) */
+#define NBANDS 4
+static uintptr_t band_lo[NBANDS], band_hi[NBANDS];
+static unsigned nbands, n_blocker;
+static int comb;   /* bands every 32 MB, 1 MB wide, from 0x40f800000 on: no 32 MB range is free of them */
+static int comb_overlap( uintptr_t x, uintptr_t y, uintptr_t *lo, uintptr_t *hi )
+{
+    uintptr_t k = x <= 0x40f800000UL ? 0 : (x - 0x40f800000UL) / 0x2000000UL, l, h;
+    for (;; k++)
+    {
+        l = 0x40f800000UL + k * 0x2000000UL; h = l + 0x100000;
+        if (l >= y) return 0;
+        if (h > x) { *lo = l; *hi = h; return 1; }
+    }
+}
+static int ios_va_blocker( const void *a, size_t s, uintptr_t *lo, uintptr_t *hi )
+{
+    uintptr_t x = (uintptr_t)a, y = x + s; unsigned i;
+    n_blocker++;
+    if (comb) return comb_overlap( x, y, lo, hi );
+    for (i = 0; i < nbands; i++) if (band_lo[i] < y && band_hi[i] > x) { *lo = band_lo[i]; *hi = band_hi[i]; return 1; }
+    return 0;
+}
+""" + ctx_struct + typedefs + retry_fn + remap_region + skip_region + r"""
 /* the scripted placement: the first `refuse` candidates (64 KB apart from 0x40f8c0000) are refused with `ref_err`, then one is taken (or never) */
 static unsigned refuse, ref_err = ENOMEM, called; static int never_place;
 static void *map_reserved_area_once( void *limit_low, void *limit_high, void *ctx_, void **refused, int *err );
@@ -260,16 +321,33 @@ static void *map_reserved_area_once( void *limit_low, void *limit_high, void *ct
 static void *map_reserved_area_once( void *limit_low, void *limit_high, void *ctx_, void **refused, int *err )
 {
     struct ios_reserved_ctx *ctx = ctx_;
+    uintptr_t lo = (uintptr_t)limit_low, hi = (uintptr_t)limit_high, a;
     void *ptr;
-    (void)limit_high;
-    ptr = (void *)((uintptr_t)limit_low > 0x40f8c0000UL ? (uintptr_t)limit_low : 0x40f8c0000UL);
+    unsigned i;
+    int touches = 0;
     called++;
+    if (ctx->top_down)
+    {
+        if (hi < ctx->size) return NULL;
+        a = (hi - ctx->size) & ~(uintptr_t)ctx->align_mask;
+        if (a < lo) return NULL;                            /* the search finds no range: not a refusal */
+    }
+    else
+    {
+        a = lo > 0x40f8c0000UL ? lo : 0x40f8c0000UL;
+        a = (a + ctx->align_mask) & ~(uintptr_t)ctx->align_mask;
+        if (a + ctx->size > hi) return NULL;
+    }
+    ptr = (void *)a;
+    for (i = 0; i < nbands; i++) if (band_lo[i] < a + ctx->size && band_hi[i] > a) touches = 1;
+    if (comb) { uintptr_t cl, ch; touches |= comb_overlap( a, a + ctx->size, &cl, &ch ); }
     if (ptr && ctx->nrefused) { ctx->next_pre_addr = ptr; ios_va_regions( ptr, ctx->size, ctx->next_pre, sizeof(ctx->next_pre) ); }
-    if (never_place || ctx->nrefused < refuse)
+    if (never_place || touches || ctx->nrefused < refuse)
     {
         *refused = ptr; *err = (int)ref_err;
         if (ctx->nrefused < 40) ctx->refused_list[ctx->nrefused] = ptr;
         ctx->nrefused++;
+        ctx->last_refused = ptr; ctx->last_err = (int)ref_err;
         return NULL;
     }
     return ptr;
@@ -279,11 +357,41 @@ static void *place( size_t size, int unix_prot )
     called = 0;
     return map_reserved_area_inner( (void *)0x400110000UL, (void *)0x500000000UL, size, 0, unix_prot, 0xffff );
 }
+static void *place_td( size_t size, int unix_prot )
+{
+    called = 0;
+    return map_reserved_area_inner( (void *)0x400110000UL, (void *)0x500000000UL, size, 1, unix_prot, 0xffff );
+}
+/* the request's last attempt (map_reserved_area_last sets the flag round the same call) */
+static void *place_last( size_t size, int unix_prot )
+{
+    void *r;
+    ios_reserved_skip_now = 1; r = place( size, unix_prot ); ios_reserved_skip_now = 0;
+    return r;
+}
+static void *place_td_last( size_t size, int unix_prot )
+{
+    void *r;
+    ios_reserved_skip_now = 1; r = place_td( size, unix_prot ); ios_reserved_skip_now = 0;
+    return r;
+}
 static void reset( void )
 {
     n_unmap = n_try = n_restore = n_regions = n_describe = 0; last_unmap = last_try = last_restore = NULL;
     view_overlaps = pool_hit = unmap_rc = 0; in_area = 1; tryfixed_ok = restore_ok = 1; ref_err = ENOMEM; never_place = 0;
     ios_wow_small_va_slots = 12; refuse = 0; logbuf[0] = 0; nlines_first = nlines_detail = nlines_last = 0;
+    nbands = n_blocker = 0; comb = 0; ios_reserved_skip_now = 0;
+}
+static struct { uintptr_t lo, hi; unsigned prot; } fmap[16];
+static unsigned nfmap, freads; static int many;
+static void add_region( uintptr_t lo, uintptr_t hi, unsigned prot ) { fmap[nfmap].lo = lo; fmap[nfmap].hi = hi; fmap[nfmap].prot = prot; nfmap++; }
+static int fake_next( uintptr_t a, uintptr_t *lo, uintptr_t *hi, unsigned *m )
+{
+    unsigned i;
+    freads++;
+    if (many) { *lo = a & ~0xfffUL; *hi = *lo + 0x1000; *m = 7; return 1; }
+    for (i = 0; i < nfmap; i++) if (fmap[i].hi > a) { *lo = fmap[i].lo; *hi = fmap[i].hi; *m = fmap[i].prot; return 1; }
+    return 0;
 }
 int main( int argc, char **argv )
 {
@@ -311,6 +419,46 @@ int main( int argc, char **argv )
         assert( p == NULL && n_unmap == 0 && n_try == 0 && n_restore == 0 && called == 33 && nlines_first == 1 && nlines_detail == 1 );
         assert( !strstr( logbuf, "last resort" ) );
         puts( "PASS: MADEIRA_RESERVED_REMAP=0 keeps the retry and the log, and does no last resort" );
+        return 0;
+    }
+
+    if (argc > 1 && !strcmp( argv[1], "skipoff" ))
+    {
+        /* env.MADEIRA_RESERVED_SKIP = 0 (read once per process): the plain retries only, as before round 623 */
+        reset(); nbands = 1; band_lo[0] = 0x40f900000UL; band_hi[0] = 0x40fc00000UL;
+        p = place_last( 0x810000, 3 );
+        assert( p == NULL && called == 1 && n_blocker == 1 /* only the remap guard asks */ && n_unmap == 0 && n_try == 0 );
+        assert( !strstr( logbuf, "skip:" ) && strstr( logbuf, "NOT placed" ) && strstr( logbuf, "remap not tried: the range holds a kernel region" ) );
+        puts( "PASS: MADEIRA_RESERVED_SKIP=0 keeps the plain retries and does no skip" );
+        return 0;
+    }
+    if (argc > 1 && !strcmp( argv[1], "scan" ))
+    {
+        /* the scan of the kernel's regions, against a fake map */
+        uintptr_t lo, hi;
+        nfmap = freads = 0; many = 0;
+        assert( !ios_va_blocker_scan( 0x410000000UL, 0x1000000, fake_next, &lo, &hi ) );                       /* no region at all */
+        add_region( 0x410000000UL, 0x410004000UL, 7 ); add_region( 0x410004000UL, 0x410044000UL, 7 );
+        assert( !ios_va_blocker_scan( 0x410000000UL, 0x1000000, fake_next, &lo, &hi ) );                       /* regions that MAP_FIXED replaces */
+        nfmap = 0;
+        add_region( 0x410000000UL, 0x410004000UL, 7 ); add_region( 0x410004000UL, 0x410044000UL, 0 ); add_region( 0x41bb60000UL, 0x420000000UL, 7 );
+        assert( ios_va_blocker_scan( 0x404960000UL, 0x17010000, fake_next, &lo, &hi ) && lo == 0x410004000UL && hi == 0x410044000UL );   /* Metro */
+        nfmap = 0;
+        add_region( 0x401000000UL, 0x401030000UL, 0 );
+        assert( ios_va_blocker_scan( 0x401010000UL, 0x20000, fake_next, &lo, &hi ) && lo == 0x401000000UL && hi == 0x401030000UL );     /* begins below the range */
+        nfmap = 0;
+        add_region( 0x402e00000UL, 0x402e10000UL, 0 ); add_region( 0x402e10000UL, 0x402e20000UL, 0 ); add_region( 0x402e20000UL, 0x402e24000UL, 0 );
+        add_region( 0x402e24000UL, 0x402e30000UL, 7 ); add_region( 0x402e40000UL, 0x402e50000UL, 0 );
+        assert( ios_va_blocker_scan( 0x402e00000UL, 0x100000, fake_next, &lo, &hi ) && lo == 0x402e00000UL && hi == 0x402e24000UL );    /* adjacent ones merge, the run ends at a region that is not one */
+        nfmap = 0;
+        add_region( 0x402e00000UL, 0x402e10000UL, 0 ); add_region( 0x402e30000UL, 0x402e40000UL, 0 );
+        assert( ios_va_blocker_scan( 0x402e00000UL, 0x100000, fake_next, &lo, &hi ) && lo == 0x402e00000UL && hi == 0x402e10000UL );    /* a gap ends the run: the first one only */
+        nfmap = 0;
+        add_region( 0x410000000UL, 0x410010000UL, 0 );
+        assert( !ios_va_blocker_scan( 0x404960000UL, 0x1000000, fake_next, &lo, &hi ) );                       /* a blocker beyond the range is none */
+        many = 1; freads = 0;
+        assert( !ios_va_blocker_scan( 0x400000000UL, 0x100000000UL, fake_next, &lo, &hi ) && freads <= 8192 );                          /* capped */
+        puts( "PASS: scan" );
         return 0;
     }
 
@@ -360,6 +508,65 @@ int main( int argc, char **argv )
     reset(); never_place = 1; ref_err = EEXIST; p = place( 0x810000, 3 );
     assert( p == NULL && called == 1 && n_unmap == 0 );
 
+    /* ---- round 623: the skip past the kernel's fixed regions (ios_reserved_skip), the request's LAST attempt only ---- */
+    /* any other placement (the LAA pre-attempt, the biased first try ...) never skips, whatever the kernel holds: plain 33 candidates, then NULL;
+     * the last resort does not unmap a range that holds a blocker */
+    reset(); nbands = 1; band_lo[0] = 0x40f900000UL; band_hi[0] = 0x40fc00000UL;
+    p = place( 0x810000, 3 );
+    assert( p == NULL && called == 33 && n_blocker == 1 && n_unmap == 0 && n_try == 0 && n_restore == 0 && !strstr( logbuf, "skip:" ) );
+    assert( strstr( logbuf, "NOT placed" ) && strstr( logbuf, "remap not tried: the range holds a kernel region no munmap removes (0x40f900000+0x300000" ) );
+
+    /* the last attempt, no blocker known: the first candidate is refused (nothing explains it), nothing more from the skip; the last resort as before */
+    reset(); never_place = 1; p = place_last( 0x810000, 3 );
+    assert( p == (void *)0x40f8c0000UL && called == 1 && n_blocker >= 1 && !strstr( logbuf, "skip:" ) && n_unmap == 1 );
+
+    /* Hotline Miami 2 / Metro: the last attempt jumps the band at once (the plain steps were refused already) and places beyond it */
+    reset(); nbands = 1; band_lo[0] = 0x40f900000UL; band_hi[0] = 0x40fc00000UL;
+    p = place_last( 0x810000, 3 );
+    assert( p == (void *)0x40fc00000UL && called == 2 && n_unmap == 0 && n_try == 0 && n_restore == 0 );
+    assert( nlines_first == 1 && nlines_detail == 1 && strstr( logbuf, "skip: 1 step(s) past kernel regions" ) );
+    assert( strstr( logbuf, "the last 0x40f900000+0x300000" ) && strstr( logbuf, "the retry placed it past the kernel's fixed regions" ) );
+    assert( strstr( logbuf, "(1 refused in all" ) && strstr( logbuf, "(it took the mapping)" ) && !strstr( logbuf, "last resort" ) );
+    assert( strstr( logbuf, "the placement took a range beyond it" ) && strstr( logbuf, "rev=ajan58-skip" ) );
+
+    /* two bands: the second is met after the first jump and skipped as well */
+    reset(); nbands = 2; band_lo[0] = 0x40f900000UL; band_hi[0] = 0x40fc00000UL; band_lo[1] = 0x40fd00000UL; band_hi[1] = 0x40fe00000UL;
+    p = place_last( 0x810000, 3 );
+    assert( p == (void *)0x40fe00000UL && called == 3 && n_unmap == 0 && strstr( logbuf, "skip: 2 step(s)" ) );
+
+    /* top-down: an 8 MB band below the top; the skip ends the next range at its start */
+    reset(); nbands = 1; band_lo[0] = 0x4ff000000UL; band_hi[0] = 0x4ff800000UL;
+    p = place_td_last( 0x810000, 3 );
+    assert( p == (void *)0x4fe7f0000UL && called == 2 && n_unmap == 0 && strstr( logbuf, "skip: 1 step(s)" ) );
+
+    /* a band that fills the window to its top: nothing to place, nothing unmapped, the last resort not tried (it would only leave a hole) */
+    reset(); nbands = 1; band_lo[0] = 0x40f800000UL; band_hi[0] = 0x500000000UL;
+    p = place_last( 0x810000, 3 );
+    assert( p == NULL && called == 1 && n_unmap == 0 && n_try == 0 && n_restore == 0 );
+    assert( strstr( logbuf, "NOT placed" ) && strstr( logbuf, "remap not tried: the range holds a kernel region no munmap removes (0x40f800000+0xf" ) );
+    assert( !strstr( logbuf, "skip:" ) );   /* the one step that could be taken was past the window: not taken */
+
+    /* bands everywhere: the skip is capped at IOS_RESERVED_SKIP_MAX steps and then fails as before */
+    reset(); comb = 1;
+    p = place_last( 0x2000000, 3 );
+    assert( p == NULL && called == 1 + 64 && n_unmap == 0 && strstr( logbuf, "skip: 64 step(s)" ) && strstr( logbuf, "still NOT placed" ) );
+
+    /* a refusal other than ENOMEM is neither retried nor skipped; a 512 GB map neither */
+    reset(); nbands = 1; band_lo[0] = 0x40f900000UL; band_hi[0] = 0x40fc00000UL; ref_err = EEXIST;
+    p = place_last( 0x810000, 3 );
+    assert( p == NULL && called == 1 && !strstr( logbuf, "skip:" ) );
+    reset(); nbands = 1; band_lo[0] = 0x40f900000UL; band_hi[0] = 0x40fc00000UL; ios_wow_small_va_slots = 0;
+    p = place_last( 0x810000, 3 );
+    assert( p == NULL && called == 1 && !strstr( logbuf, "skip:" ) && n_unmap == 0 );
+
+    /* healthy and merely retried placements read no blocker: nothing changes for them */
+    reset(); p = place( 0x810000, 3 );
+    assert( p == (void *)0x40f8c0000UL && n_blocker == 0 );
+    reset(); p = place_last( 0x810000, 3 );
+    assert( p == (void *)0x40f8c0000UL && n_blocker == 0 && logbuf[0] == 0 );
+    reset(); refuse = 9; p = place( 0x14000, 3 );
+    assert( p == (void *)(0x40f8c0000UL + 9 * 0x10000UL) && n_blocker == 0 && !strstr( logbuf, "skip:" ) );
+
     puts( "PASS: nothing but a refused, unplaced chain reaches the new code; the last resort places, restores or does nothing" );
     return 0;
 }
@@ -379,6 +586,15 @@ with tempfile.TemporaryDirectory(prefix='reserved-area-remap-') as directory:
         r = subprocess.run([str(exe), 'off'], capture_output=True, text=True, env={**os.environ, 'ASAN_OPTIONS': 'symbolize=0', 'MADEIRA_RESERVED_REMAP': '0'})
         sys.stdout.write(r.stdout)
         check('env.MADEIRA_RESERVED_REMAP = 0 turns the last resort off', r.returncode == 0, (r.stdout + r.stderr)[-1500:])
+        r = subprocess.run([str(exe), 'skipoff'], capture_output=True, text=True, env={**os.environ, 'ASAN_OPTIONS': 'symbolize=0', 'MADEIRA_RESERVED_SKIP': '0'})
+        sys.stdout.write(r.stdout)
+        check('env.MADEIRA_RESERVED_SKIP = 0 turns the skip off', r.returncode == 0, (r.stdout + r.stderr)[-1500:])
+        r = subprocess.run([str(exe), 'scan'], capture_output=True, text=True, env={**os.environ, 'ASAN_OPTIONS': 'symbolize=0'})
+        sys.stdout.write(r.stdout)
+        check('the scan for a kernel region of maximum protection none, against a fake map', r.returncode == 0, (r.stdout + r.stderr)[-1500:])
+        for value in ('1', '', '00', 'no'):
+            r = subprocess.run([str(exe)], capture_output=True, text=True, env={**os.environ, 'ASAN_OPTIONS': 'symbolize=0', 'MADEIRA_RESERVED_SKIP': value})
+            check('MADEIRA_RESERVED_SKIP=%r leaves the skip on (only "0" turns it off)' % value, r.returncode == 0, (r.stdout + r.stderr)[-800:])
         r = subprocess.run([str(exe), 'budget'], capture_output=True, text=True, env={**os.environ, 'ASAN_OPTIONS': 'symbolize=0'})
         sys.stdout.write(r.stdout)
         check('the log budgets: small requests eight lines then every 256th, 1 MB and more 64 then every 64th', r.returncode == 0, (r.stdout + r.stderr)[-1500:])

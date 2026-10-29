@@ -264,7 +264,7 @@ enum AutoTuneBuiltInRules {
    "shade-2026-10-21 (6NE7KH, build 578)",
    "tests/host/check-reserved-area-retry.py (build 579)"
   ],
-  "fixedIn": 579,
+  "fixedIn": 623,
   "id": "small-map-window-refusals",
   "lines": [],
   "none": [
@@ -277,6 +277,32 @@ enum AutoTuneBuiltInRules {
   ],
   "priority": 1,
   "reason": "On this device's smaller address map the system kept refusing BCD's memory placements inside a 32-bit program's window and a larger request found none; from this build on BCD makes one more attempt when every candidate was refused."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "[wow-window] small address map"
+    ]
+   },
+   {
+    "has": [
+     "[reserved-area] #",
+     "NOT placed",
+     "small address map retry on"
+    ]
+   }
+  ],
+  "evidence": [
+   "hotline-miami-2-reserved-skip-2026-10-28 (3NB0B0, build 622)",
+   "metro-last-light-reserved-skip-2026-10-28 (QJANDC, build 622)",
+   "tests/host/check-reserved-area-retry.py (build 623)"
+  ],
+  "fixedIn": 623,
+  "id": "small-map-reserved-skip",
+  "lines": [],
+  "priority": 1,
+  "reason": "On this device's smaller address map the system refused every memory placement inside a 32-bit program's window, because regions left by libraries the program had loaded and dropped cannot be replaced; from this build on BCD places the memory beyond them."
  },
  {
   "all": [
@@ -424,6 +450,83 @@ enum AutoTuneBuiltInRules {
   "lines": [],
   "priority": 1,
   "reason": "BCD's own Windows server released an I/O request while it was still cancelling it, and iOS closed the app; from this build on it keeps the request until it is done."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "Unhandled page fault on",
+     "access to 00000000 at address 00B57AA9"
+    ]
+   }
+  ],
+  "any": [
+   {
+    "has": [
+     "FalloutNV"
+    ]
+   },
+   {
+    "has": [
+     "falloutnv"
+    ]
+   }
+  ],
+  "evidence": [
+   "fallout-nv-b57aa9-2026-10-23 (6RMMDY, build 592)",
+   "fallout-nv-b57aa9-read-2026-10-28 (9273DN, build 614: a read)",
+   "upstream Madeira adec653 / willfaust/dxmt f25e5568d"
+  ],
+  "id": "fallout-nv-older-nvidia-card",
+  "lines": [
+   "gpu-card = nvidia-7900gs"
+  ],
+  "noRetry": true,
+  "none": [
+   {
+    "has": [
+     "[gpu-card] nvidia-7900gs"
+    ]
+   }
+  ],
+  "priority": 9,
+  "reason": "Fallout: New Vegas took its basic render path on this GPU and crashed loading the save; the line shows it the older NVIDIA card its players use (GeForce 7900 GS on NVIDIA's driver), with which the save loads."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "CompileBlock: REFUSING low/invalid RIP"
+    ]
+   },
+   {
+    "has": [
+     "[mach_exc] UNHANDLED #",
+     "pc=0x0 addr=0x0"
+    ]
+   },
+   {
+    "has": [
+     "libwow64fex.dll"
+    ]
+   }
+  ],
+  "evidence": [
+   "mdk2-hd-low-rip-2026-10-26 (6DFEBH, build 614)",
+   "upstream Madeira 726686e (Black Ops II)"
+  ],
+  "fixedIn": 623,
+  "id": "wow64-low-rip-native-dispatch",
+  "lines": [],
+  "none": [
+   {
+    "has": [
+     "[wow-low-rip]"
+    ]
+   }
+  ],
+  "priority": 1,
+  "reason": "The 32-bit program jumped to an empty address and BCD ended it instead of letting the game handle the error itself; from build 623 the game sees the error as on Windows."
  },
  {
   "all": [
@@ -1484,6 +1587,39 @@ enum AutoTuneBuiltInRules {
   ],
   "priority": 20,
   "reason": "A reservation of 4 GB or more found no hole; the game probes with a double-size reservation and keeps half, so the line gives it that half."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "[mmap-place] ml1027 NO GAP FITS"
+    ]
+   }
+  ],
+  "any": [
+   {
+    "has": [
+     "kernel-pick reserve failed",
+     "for size=0x4000000000"
+    ]
+   },
+   {
+    "has": [
+     "kernel-pick reserve failed",
+     "for size=0x4003ffffff"
+    ]
+   }
+  ],
+  "evidence": [
+   "digimon-story-time-stranger-256gib-2026-10-28 (BGCT5V, build 622)",
+   "FINAL FANTASY TACTICS X4WZ5E (round 620, tur620/A.md 2.8)"
+  ],
+  "id": "reserve-256gib-no-gap",
+  "lines": [],
+  "maxStage": 2,
+  "noFix": true,
+  "priority": 2,
+  "reason": "The game's memory allocator reserves 256 GB of address space in one piece, and this device's address map has no gap that large (at most 32 GB): the game stops at start. This is not a setting."
  },
  {
   "all": [
@@ -2620,6 +2756,11 @@ enum AutoTuneBuiltInRules {
     "has": [
      "[WineProc] stopping wineserver"
     ]
+   },
+   {
+    "has": [
+     "[WineProc] madeira-bcd: the main process exited but"
+    ]
    }
   ],
   "priority": 1,
@@ -3515,6 +3656,70 @@ enum AutoTuneBuiltInRules {
   "all": [
    {
     "has": [
+     "UnhandledExceptionHandler caught: Unable to load DLL"
+    ]
+   }
+  ],
+  "any": [
+   {
+    "has": [
+     "err:module:import_dll Library qwave.dll",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library qwave.DLL",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library QWAVE.dll",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library QWAVE.DLL",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library Qwave.dll",
+     "not found"
+    ]
+   },
+   {
+    "has": [
+     "err:module:import_dll Library Qwave.DLL",
+     "not found"
+    ]
+   }
+  ],
+  "evidence": [
+   "bloons-td-6-qwave-2026-10-28 (4EJFKD, build 622, exit 1 after 16 s)"
+  ],
+  "id": "qwave-dll-optin",
+  "lines": [
+   "env.MADEIRA_OPTIN_DLLS = qwave"
+  ],
+  "noRetry": true,
+  "none": [
+   {
+    "has": [
+     "MADEIRA_OPTIN_DLLS: qwave.dll -> qwave-optin.dll"
+    ]
+   }
+  ],
+  "priority": 10,
+  "reason": "The game's Discord plugin imports qwave.dll (Windows' quality-of-service library), which BCD does not ship for every game, and the game ends when the plugin cannot load; the line gives this game Wine's qwave.dll."
+ },
+ {
+  "all": [
+   {
+    "has": [
      "err:module:import_dll Library msi.dll (which is needed by",
      "EABackgroundService.exe"
     ]
@@ -3773,6 +3978,39 @@ enum AutoTuneBuiltInRules {
   ],
   "priority": 20,
   "reason": "The game's launcher looks in the registry for the install folder that Steam's install script writes on Windows, and BCD Dock never wrote it; the line has BCD write the script's missing registry values before the start.",
+  "session": "dock"
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "[msgbox-origin] box",
+     "Cannot find essential information in the registry"
+    ]
+   },
+   {
+    "has": [
+     "[dock-script-registry] app=",
+     "scripts="
+    ]
+   }
+  ],
+  "evidence": [
+   "far-cry-3-install-script-registry-present-2026-10-28 (Send Log KNYQ40, build 622)"
+  ],
+  "id": "install-script-registry-present-box",
+  "lines": [],
+  "noFix": true,
+  "none": [
+   {
+    "has": [
+     "[dock-script-registry] app=",
+     " values=0 "
+    ]
+   }
+  ],
+  "priority": 5,
+  "reason": "The game's updater says it cannot find essential information in the registry, although BCD has put every registry value it could read from the game's Steam install script there already. No BCD setting is known to change this; the log lists what BCD checked, for the next report.",
   "session": "dock"
  },
  {
@@ -4097,6 +4335,61 @@ enum AutoTuneBuiltInRules {
   "noFix": true,
   "priority": 3,
   "reason": "The game stopped with its own message \"Disable Mandatory ASLR\" before it opened a window. It is a check in the game's start-up; BCD does not know yet what it looks at, and no setting changes it."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "GetPackagesByPackageFamily (L\"Microsoft.VCLibs.140.00_8wekyb3d8bbwe\""
+    ]
+   },
+   {
+    "has": [
+     "detach-wait: presents=0 running=1 elapsed=30s"
+    ]
+   }
+  ],
+  "evidence": [
+   "forza-horizon-4-start-wait-2026-10-28 (Send Log D9NHGJ, build 622, iPad17,1, 941 s with presents=0; RVXHV6 started directly without Valve's client, 58VNDB: the same place, ForzaHorizon4.exe+0x304d8a0)"
+  ],
+  "id": "forza-horizon-4-start-wait",
+  "lines": [],
+  "noFix": true,
+  "priority": 3,
+  "reason": "Forza Horizon 4 reaches its own start-up code and then waits there for something that never happens (no frame is drawn, one thread loops). It is the same on every start; no setting changes it and waiting longer does not help. BCD does not know yet what the game waits for."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "[guest-bytes] ml631 #1 RIP=",
+     "RX from -32, 64 of 64 bytes: 7a 02 80 9a e0 03 08 2a",
+     "88 1e 00 12 1f 11 00 71 a0 00 00 54 1f 21 00 71 e1 02 00 54 56 03 00 f9 02 00 00 14 56 03 00 b9"
+    ]
+   },
+   {
+    "has": [
+     "[fexlock] STUCK write-wait"
+    ]
+   }
+  ],
+  "evidence": [
+   "mono-backpatch-lock-leak-2026-10-28 (Send Logs 9DEZ8A Kindergarten, 997BBV Mycopunk, XYPY9J Skate Story, build 622)",
+   "tools/patch-fex-ios-mono-bp-unlocked-miss.py; tests/host/check-fex-mono-bp-unlocked-miss.py"
+  ],
+  "id": "mono-backpatch-lock-leak",
+  "lines": [
+   "env.MADEIRA_MONO_BP_UNLOCKED_MISS = 1"
+  ],
+  "none": [
+   {
+    "has": [
+     "[mono-bp] RW miss"
+    ]
+   }
+  ],
+  "priority": 6,
+  "reason": "A thread of the game waited for a BCD lock it had left held after an access violation in BCD's write helper for Mono. The line lets the helper release the lock before that write; the access violation itself is not changed."
  },
  {
   "all": [
@@ -5895,6 +6188,12 @@ enum AutoTuneBuiltInRules {
    {
     "has": [
      "[win-name] #",
+     "Failed to create SDL Window"
+    ]
+   },
+   {
+    "has": [
+     "[win-name] #",
      "Could not find appropriate pixel format"
     ]
    },
@@ -5902,6 +6201,17 @@ enum AutoTuneBuiltInRules {
     "has": [
      "[msgbox-origin] box",
      "Could not find appropriate pixel format"
+    ]
+   },
+   {
+    "has": [
+     "Your video card driver does not support any of the supported OpenGL versions",
+     "[win-name] #"
+    ]
+   },
+   {
+    "has": [
+     "Unhandled page fault on read access to C00000BB at address"
     ]
    }
   ],
@@ -5911,6 +6221,8 @@ enum AutoTuneBuiltInRules {
    "geometry-dash-opengl-2026-10-23 (Send Log 1H4EFS, build 592)",
    "cry-of-fear-opengl-2026-10-23 (Send Log RT4TB5, build 592)",
    "mewgenics-opengl-pixel-format-2026-10-26 (Send Logs 0CBF7Q, W4AJG1, Y6RAEH, build 600)",
+   "half-life-sdl-window-2026-10-28 (Send Log N09SP1, build 622)",
+   "doom-3-bfg-opengl-stub-status-2026-10-28 (HVZ6P1, build 622: a read of 0xC00000BB, STATUS_NOT_SUPPORTED)",
    "docs/OPENGL.md"
   ],
   "id": "opengl-only-no-context",
@@ -6340,6 +6652,173 @@ enum AutoTuneBuiltInRules {
   ],
   "priority": 8,
   "reason": "This 32-bit Direct3D 8 game ran on Wine's Direct3D 8, which needs OpenGL, and the phone has none. The line gives it Direct3D 8 on Direct3D 9 (d3d8to9, drawing through DXMT and Metal)."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "Fatal error. System.AccessViolationException"
+    ]
+   },
+   {
+    "has": [
+     "at Godot.Constructors..cctor()"
+    ]
+   }
+  ],
+  "any": [
+   {
+    "has": [
+     "Session log: logs/SlayTheSpire2.exe-"
+    ]
+   },
+   {
+    "has": [
+     "[session-log] Steam game SlayTheSpire2.exe:"
+    ]
+   },
+   {
+    "has": [
+     "library launch SlayTheSpire2.exe:"
+    ]
+   }
+  ],
+  "evidence": [
+   "slay-the-spire-2-gpr-store-straddle-2026-10-28 (1WF6J7, build 622; D1A9QX and KRFN07 end in the same method)",
+   "tests/host/check-gpr-store-straddle.py (build 623)"
+  ],
+  "fixedIn": 623,
+  "id": "slay-spire-2-gpr-store-straddle",
+  "lines": [],
+  "priority": 1,
+  "reason": "The game's .NET runtime wrote a few bytes of its generated code into the wrong memory page and the game then read a wrong address; from this build BCD stores such a write page by page."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "[vdcfg] QueryDisplayConfig",
+     "-> 0, 0 paths 0 modes"
+    ]
+   },
+   {
+    "has": [
+     "[av-args]",
+     "NULL-class fault addr=0x10"
+    ]
+   }
+  ],
+  "any": [
+   {
+    "has": [
+     "library launch sora_1st.exe:"
+    ]
+   },
+   {
+    "has": [
+     "Session log: logs/sora_1st.exe-"
+    ]
+   }
+  ],
+  "evidence": [
+   "trails-in-the-sky-1st-chapter-library-2026-10-28 (M5G99X, build 622)",
+   "rule vdcfg-virtual-path (PBP9YD, build 579: kept)",
+   "tests/host/check-vdcfg-path.py (build 579)"
+  ],
+  "id": "vdcfg-virtual-path-library",
+  "lines": [
+   "env.MADEIRA_VDCFG_PATH = 1"
+  ],
+  "noRetry": true,
+  "none": [
+   {
+    "has": [
+     "[vdcfg] QueryDisplayConfig",
+     "-> 0, 1 paths 2 modes"
+    ]
+   }
+  ],
+  "priority": 20,
+  "reason": "The game builds its fullscreen window from the display paths and BCD answered with none, so it made a one-pixel window and then used a screen it never created; the line lists the virtual monitor's path as Windows does.",
+  "session": "library"
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "[device] gpu=",
+     "bc=0"
+    ]
+   },
+   {
+    "has": [
+     "[bc-decode] ml679"
+    ]
+   }
+  ],
+  "any": [
+   {
+    "has": [
+     "library launch TheForest.exe:"
+    ]
+   },
+   {
+    "has": [
+     "Session log: logs/TheForest.exe-"
+    ]
+   },
+   {
+    "has": [
+     "[session-log] Steam game TheForest.exe:"
+    ]
+   }
+  ],
+  "evidence": [
+   "the-forest-bc-decode-memory-kill-2026-10-28 (PRM25K, build 622, iPhone15,3)",
+   "NBXX78 (build 580, iPhone15,2: the swap tier reverted)",
+   "No Rest for the Wicked and God of War lists (the same line)"
+  ],
+  "id": "the-forest-bc-decode-memory-kill",
+  "lines": [
+   "dxmt = d3d11.mipClampBC=1"
+  ],
+  "memoryMinPct": 85,
+  "noRetry": true,
+  "none": [
+   {
+    "has": [
+     "[device] address-map=",
+     "increased-memory=0"
+    ]
+   }
+  ],
+  "outcomes": [
+   "killed"
+  ],
+  "priority": 49,
+  "reason": "The Forest needs more memory than iOS gives an app on this phone: the phone's GPU cannot read the game's compressed textures, so they are expanded to four to eight times their size. The line drops the largest level of each texture, which is the biggest saving a setting can make."
+ },
+ {
+  "all": [
+   {
+    "has": [
+     "FFRS-Win64-Shipping.exe"
+    ]
+   },
+   {
+    "has": [
+     "Unhandled exception code c0000005 flags 0 addr 0x151f280f9"
+    ]
+   }
+  ],
+  "evidence": [
+   "ffrs-demo-protected-code-2026-10-28 (STD9KZ, H7WGNX, build 622; the same instruction in 1K4NC2, FVGKKQ, YVQ9XG, 3W6HJQ, A9YKAH)"
+  ],
+  "id": "ffrs-protected-code-wild-read",
+  "lines": [],
+  "noFix": true,
+  "priority": 2,
+  "reason": "The game stopped inside its copy-protection layer, reading an address that does not exist, at the same place in every session. The log does not show why; no setting is known to change it, and BCD does not work on a game's copy protection."
  },
  {
   "all": [

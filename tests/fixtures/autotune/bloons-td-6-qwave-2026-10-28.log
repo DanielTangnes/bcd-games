@@ -1,0 +1,176 @@
+[20:11:53.399] [INFO] Checking entitlements...
+[20:11:53.400] [INFO] [build] v0.1.622 (622)
+[20:11:53.400] [INFO] [device] model=iPad16,8 idiom=pad os=iPadOS Version 27.0 (Build 24A437) ram=11862MB available=12268MB cores=8
+[20:11:53.400] [INFO] [device] address-map=[0x102620000,0x8000000000) 512GB increased-memory=1 extended-va=1
+[20:11:53.424] [INFO] [device] gpu="Apple M4 GPU" family=apple9 argument-buffers=tier2 mesh=1 bc=1 atomics64=1 cpu-lse=1 cpu-lrcpc=1 direct3d=ok x64=ok
+[20:11:55.657] [INFO] Requesting JIT with Built-in StikJIT...
+[20:11:57.833] [INFO] [epic-launch] start app=77..b2 signed-in=1 ovt=0 deployment=0 host=1 tree=1 services=0 desktop=0 arguments=epic
+[20:11:57.842] [INFO] [bcd] library launch BloonsTD6.exe: avx=0 wine-vcrt=0 nvidia=0 game-config=1 metalfx=off
+[20:11:57.864] [INFO] Running full Wine sequence...
+[20:11:57.865] [INFO] [device] launch: cs-flags=0x32003005 get-task-allow=1 cs-debugged=1 debugger-attached=1 traced=1 address-map=[0x102620000,0x8000000000) 512GB available=12256MB low-power=0 thermal=nominal
+[20:11:57.871] [INFO] Allocating 896MB JIT pool (BRK will suspend process)...
+[20:11:57.871] [INFO] Allocating 896MB JIT pool via debugger...
+[20:11:57.871] [INFO] [jit-pool] path: debugger (attached at the pool request; it makes every region)
+[20:11:57.872] [INFO] [jit-debugger] attached=1 at the pool request
+[20:11:57.874] [ERR] ml1036: no hole fits a 896MB pool — SHRINKING to 592MB (the alternative is a pool in the guest window or on top of 0x140000000, both of which are fatal)
+[20:11:58.593] [INFO] RX pool at 0x148000000
+[20:11:58.609] [INFO] Detaching debugger...
+[phase] wine-start             t+  0.788s rev=ml526
+[WineProc] MADEIRA_WINTYPES=1: wintypes.dll -> wintypes-optin.dll (Wine's wintypes.dll for this game; system32 + sysx64)
+[shell-dir] user folders for madeira, mobile: 0 created (Start Menu included)
+[cage] holdback reserved 0x7200000000+0x1ffff0000 rev=ml433
+[iOS env] INCLUDED: SteamAppId=356400
+ml992: os_proc_available_memory=11649 MB + phys_footprint=638 MB = 12288 MB (hw.memsize says 11862 MB)
+ml985: preferred base 0x140000000+0xa6000 REFUSED status=0xc0000018 image_flags=0x4 charact=0x22 map_addr=0 info_base=0x140000000 | STAGE=fixed-map err=3 at 0x140000000+0xa8000 rev=ajan5-motor
+[wow-rwx] ml1279 MADEIRA_WOW_RWX_PLAIN=(unset) -> 32-bit guest RWX memory is plain read/write in a window once Wine Mono is mapped there
+[copy-verify] WindowsPlayer.exe: OK, 4 .text pages executable (copy @0x148004000)
+[copy-verify] ntdll.dll: OK, 30 .text pages executable (copy @0x1480ac000)
+0024:err:seh:init_syscall_frame page0: trying debugger (BRK #0xf00d, x16=3)...
+[nls-getptr] type=11 id=1252 peb=0x71ffff0000
+[nls-getptr] type=11 id=437 peb=0x71ffff0000
+[copy-verify] libarm64ecfex.dll: OK, 131 .text pages executable (copy @0x1481e6000)
+[copy-verify] ucrtbase.dll: OK, 34 .text pages executable (copy @0x148600000)
+[copy-verify] kernel32.dll: OK, 10 .text pages executable (copy @0x148734000)
+[footprint] rev=ml358 phys=651 MB (peak 651) internal=650 MB compressed=0 MB external=72 MB reusable=7 MB (cycle=1)
+[copy-verify] kernelbase.dll: OK, 28 .text pages executable (copy @0x1487fc000)
+[nls-getptr] type=11 id=20127 peb=0x71ffff0000
+D 24 Load module BloonsTD6.exe (bloonstd6.exe-829839cfafcbcf04): 11D290000
+D 24 Load module ntdll.dll (ntdll.dll-391ab96a83e82f14): 71FFCD0000
+[nls-getptr] type=11 id=1252 peb=0x71ffff0000
+[nls-getptr] type=11 id=437 peb=0x71ffff0000
+D 24 Load module UnityPlayer.dll (unityplayer.dll-5537b47eff2768bc): 71FBF20000
+D 24 Load module USER32.dll (user32.dll-7d4349728057d260): 71FBD00000
+D 24 Load module gdi32.dll (gdi32.dll-c5970f8a59a953f3): 71FBC10000
+D 24 Load module advapi32.dll (advapi32.dll-e40c14e1190b1df2): 71FBB60000
+[copy-verify] shcore.dll: OK, 3 .text pages executable (copy @0x14ba88000)
+[copy-verify] setupapi.dll: OK, 14 .text pages executable (copy @0x14bb0c000)
+[copy-verify] cfgmgr32.dll: OK, 4 .text pages executable (copy @0x14bbf0000)
+[copy-verify] shell32.dll: OK, 34 .text pages executable (copy @0x14bc74000)
+[copy-verify] opengl32.dll: OK, 38 .text pages executable (copy @0x14c5f8000)
+[copy-verify] winemetal.dll: OK, 2 .text pages executable (copy @0x14d592000)
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+0024:err:module:load_dll [dll-missing] rev=ml336 #1 L"Kerberos.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #2 L"MSV1_0.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[unixlib] opengl32 (GL-absent stub table) (module 0x71fa760000) -> 64-bit table (0x1053f0758)
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+ml985: map_image_view size=0x5bb8000 base=0x6ffff4aa0000 info_base=0x180000000 map_addr=0x6ffff4aa0000 flags=0x4 charact=0x2022 limits=0x10000..0x73fffeffff
+[xp-names] m10693698 "wine-x18-exc"
+[free-delay] #1 release of 0x702b6b0000+0x5c0000 held for 2000 ms (1 in flight)
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #1 handle=0000000000000158 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=000000012418FA00 flags=00100003
+0024:err:module:load_dll [dll-missing] rev=ml336 #3 L"AMDUnityPlugin.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #4 L"NVUnityPlugin.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:seh:ios_exc_dump_str [exc] ml812   OutputDebugStringW: "..............."
+[win-name] #5 hwnd=0x10036 class='' text="Default IME" rev=ml853
+0024:err:seh:call_seh_handlers [exc] ml811 code=e06d7363 addr=0000000148814110 flags=1 nparams=4 tid=0024 hit=1
+0024:err:seh:call_seh_handlers [exc] ml811 code=e06d7363 addr=0000000148814110 flags=1 nparams=4 tid=0024 hit=2
+[vdcfg] QueryDisplayConfig flags=0x2 -> 0, 0 paths 0 modes
+[vdcfg] QueryDisplayConfig flags=0x4 -> 0, 0 paths 0 modes
+[vdcfg] QueryDisplayConfig flags=0x2 -> 0, 0 paths 0 modes
+[vdcfg] QueryDisplayConfig flags=0x2 -> 0, 0 paths 0 modes
+[win-name] #9 hwnd=0x2002e class='' text="BloonsTD6-Epic" rev=ml853
+[nls-getptr] type=11 id=10000 peb=0x71ffff0000
+D 70 Load module mpr.dll (mpr.dll-09cefd52a3669014): 71F0700000
+[free-delay] #2 release of 0x71b1820000+0x190000 held for 2000 ms (2 in flight)
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #2 handle=0000000000000320 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=000000012EF8FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #3 handle=0000000000000158 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=000000012418FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #4 handle=00000000000002E8 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=000000012438FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #5 handle=00000000000002C0 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=000000012458FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #6 handle=00000000000002C8 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=000000012478FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #7 handle=00000000000002B8 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=000000012498FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #8 handle=00000000000002D0 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=0000000124B8FA00 flags=00100003
+[footprint] rev=ml358 phys=1647 MB (peak 1647) internal=1534 MB compressed=0 MB external=145 MB reusable=7 MB (cycle=2)
+[20:12:02.207] [INFO] Game is presenting (#1, splash) — early detach in 20s
+[footprint] rev=ml1060 fast phys=1765 MB compressed=0 MB
+[launch-view] dismissed reason=present logs=0
+[footprint] rev=ml1060 fast phys=1808 MB compressed=0 MB
+[footprint] rev=ml1060 fast phys=1846 MB compressed=0 MB
+[free-delay] #3 release of 0x71d46d0000+0x310000 held for 2000 ms (2 in flight)
+[footprint] rev=ml1060 fast phys=1876 MB compressed=2 MB
+[hwinput] keyboard focus: program (program cursor)
+[footprint] rev=ml358 phys=1857 MB (peak 1857) internal=1662 MB compressed=2 MB external=149 MB reusable=1 MB (cycle=3)
+[free-delay] #4 release of 0x702b490000+0x110000 held for 2000 ms (1 in flight)
+[footprint] rev=ml358 phys=1888 MB (peak 1888) internal=1650 MB compressed=41 MB external=150 MB reusable=1 MB (cycle=4)
+2026-10-28T20:12:00.836 LogEOSAnalytics (Info): Start Session (User: ...)
+2026-10-28T20:12:00.876 LogEOSRTC (Info): [Core] Initializing LibRTC...
+D AC Load module schannel.dll (schannel.dll-b6824dedbc2abf6e): 71F0630000
+[free-delay] #5 release of 0x71d70d0000+0x410000 held for 2000 ms (2 in flight)
+[free-delay] #6 release of 0x71dcf00000+0x610000 held for 2000 ms (3 in flight)
+[free-delay] #7 release of 0x702b6b0000+0x210000 held for 2000 ms (3 in flight)
+[free-delay] #8 release of 0x71df120000+0xc10000 held for 2000 ms (4 in flight)
+[footprint] rev=ml1060 fast phys=1965 MB compressed=41 MB
+[footprint] rev=ml1060 fast phys=2033 MB compressed=41 MB
+[footprint] rev=ml358 phys=2088 MB (peak 2088) internal=1918 MB compressed=74 MB external=151 MB reusable=1 MB (cycle=5)
+[va-scan] FAILED window=0x7025000000..0x73ffff0000 size=0x1ffff000 align=0x10000 bottom-up tries=60 skips=60 | seen=0x7025002000..0x73ffff0000 views=347 maxgap=0x1ffff0000 tailgap=0x0 stop=gaps-exhausted(bottom-up) | firstfail=0x7200000000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[footprint] rev=ml1060 fast phys=2455 MB compressed=135 MB
+0024:err:seh:call_seh_handlers [exc] ml811 code=e06d7363 addr=0000000148814110 flags=1 nparams=4 tid=0024 hit=3
+0024:err:seh:call_seh_handlers [exc] ml811 code=e06d7363 addr=0000000148814110 flags=1 nparams=4 tid=0024 hit=4
+[footprint] rev=ml1060 fast phys=2567 MB compressed=146 MB
+[footprint] rev=ml1060 fast phys=2596 MB compressed=147 MB
+[va-scan] FAILED window=0x7025000000..0x73ffff0000 size=0x10ca000 align=0x10000 bottom-up tries=64 skips=64 | seen=0x7025002000..0x73ffff0000 views=344 maxgap=0x1ffff0000 tailgap=0x0 stop=gaps-exhausted(bottom-up) | firstfail=0x7200000000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[va-scan] FAILED window=0x7025000000..0x73ffff0000 size=0x1000000 align=0x10000 bottom-up tries=64 skips=64 | seen=0x7025002000..0x73ffff0000 views=347 maxgap=0x1ffff0000 tailgap=0x0 stop=gaps-exhausted(bottom-up) | firstfail=0x7200000000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[va-scan] FAILED window=0x7025000000..0x73ffff0000 size=0x1000000 align=0x10000 bottom-up tries=64 skips=64 | seen=0x7025002000..0x73ffff0000 views=349 maxgap=0x1ffff0000 tailgap=0x0 stop=gaps-exhausted(bottom-up) | firstfail=0x7200000000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[footprint] rev=ml358 phys=2677 MB (peak 2677) internal=2355 MB compressed=149 MB external=151 MB reusable=1 MB (cycle=6)
+[va-scan] FAILED window=0x7025000000..0x73ffff0000 size=0x1000000 align=0x10000 bottom-up tries=64 skips=64 | seen=0x7025002000..0x73ffff0000 views=352 maxgap=0x1ffff0000 tailgap=0x0 stop=gaps-exhausted(bottom-up) | firstfail=0x7200000000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[footprint] rev=ml1060 fast phys=2702 MB compressed=149 MB
+[va-scan] FAILED window=0x7025000000..0x73ffff0000 size=0x1000000 align=0x10000 bottom-up tries=64 skips=64 | seen=0x7025002000..0x73ffff0000 views=354 maxgap=0x1ffff0000 tailgap=0x0 stop=gaps-exhausted(bottom-up) | firstfail=0x7200000000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[footprint] rev=ml1060 fast phys=2722 MB compressed=149 MB
+D 24 Load module discord_partner_sdk.dll (discord_partner_sdk.dll-c54af60929eb23f9): 17F3F0000
+0024:err:module:load_dll [dll-missing] rev=ml336 #5 L"qwave.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:import_dll Library qwave.dll (which is needed by L"C:\\Program Files\\Epic Games\\BloonsTD6\\BloonsTD6_Data\\Plugins\\x86_64\\discord_partner_sdk.dll") not found
+D 24 Load module avrt.dll (avrt.dll-cbf6d88ff1151c3b): 71F0370000
+D 24 Load module propsys.dll (propsys.dll-2e9532b8b98aeb4c): 71F02D0000
+0024:err:module:load_dll [dll-missing] rev=ml336 #6 L"discord_partner_sdk.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0024:err:module:load_dll [dll-missing] rev=ml336 #7 L"discord_partner_sdk.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+[va-scan] FAILED window=0x7025000000..0x73ffff0000 size=0x800000 align=0x10000 bottom-up tries=64 skips=64 | seen=0x7025002000..0x73ffff0000 views=358 maxgap=0x1ffff0000 tailgap=0x0 stop=gaps-exhausted(bottom-up) | firstfail=0x7200000000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[va-scan] FAILED window=0x7025000000..0x73ffff0000 size=0x800000 align=0x10000 bottom-up tries=64 skips=64 | seen=0x7025002000..0x73ffff0000 views=358 maxgap=0x1ffff0000 tailgap=0x0 stop=gaps-exhausted(bottom-up) | firstfail=0x7200000000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[va-scan] FAILED window=0x7025000000..0x73ffff0000 size=0x800000 align=0x10000 bottom-up tries=64 skips=64 | seen=0x7025002000..0x73ffff0000 views=361 maxgap=0x1ffff0000 tailgap=0x0 stop=gaps-exhausted(bottom-up) | firstfail=0x7200000000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #22 handle=00000000000002C8 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=000000012478FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #23 handle=0000000000000418 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=000000012988FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #24 handle=00000000000002B8 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=000000012498FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #25 handle=0000000000000420 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=0000000129A8FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #26 handle=00000000000002D0 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=0000000124B8FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #27 handle=00000000000002D8 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=0000000124D8FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #28 handle=00000000000002DC status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=0000000124F8FA00 flags=00100003
+0024:err:seh:NtGetContextThread [ec-getctx] ml715 #29 handle=0000000000000438 status=00000000 native_pc=000000024C251AE8 is_ec=0 -> returned rip=000000024C251AE8 rsp=000000012C88FA00 flags=00100003
+D 44 Load module discord_partner_sdk.dll (discord_partner_sdk.dll-c54af60929eb23f9): 17E7E0000
+0044:err:module:load_dll [dll-missing] rev=ml336 #8 L"qwave.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0044:err:module:import_dll Library qwave.dll (which is needed by L"C:\\Program Files\\Epic Games\\BloonsTD6\\BloonsTD6_Data\\Plugins\\x86_64\\discord_partner_sdk.dll") not found
+0044:err:module:load_dll [dll-missing] rev=ml336 #9 L"discord_partner_sdk.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+0044:err:module:load_dll [dll-missing] rev=ml336 #10 L"discord_partner_sdk.dll" status=c0000135 -- if the webhelper dies right after this, it is the delay-load Chromium kills the process over
+UnhandledExceptionHandler caught: Unable to load DLL 'discord_partner_sdk'. Tried the load the following dynamic libraries: Unable to load dynamic library 'discord_partner_sdk' because of 'C:\build\output\unity\unity\External\il2cpp\builds\external\baselib\Source\WinApi\Baselib_DynamicLibrary_WinApi.inl.h(36):Baselib_DynamicLibrary_OpenUtf16: Failed to open the requested dynamic library (0x06000000) - Module not found.  (WinError:0000007e)
+[footprint] rev=ml1060 fast phys=2840 MB compressed=141 MB
+[va-scan] FAILED window=0x7025000000..0x73ffff0000 size=0x800000 align=0x10000 bottom-up tries=64 skips=64 | seen=0x7025002000..0x73ffff0000 views=357 maxgap=0x1ffff0000 tailgap=0x0 stop=gaps-exhausted(bottom-up) | firstfail=0x7200000000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[va-scan] FAILED window=0x7025000000..0x73ffff0000 size=0x800000 align=0x10000 bottom-up tries=64 skips=64 | seen=0x7025002000..0x73ffff0000 views=358 maxgap=0x1ffff0000 tailgap=0x0 stop=gaps-exhausted(bottom-up) | firstfail=0x7200000000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[va-scan] FAILED window=0x7025000000..0x73ffff0000 size=0x800000 align=0x10000 bottom-up tries=64 skips=64 | seen=0x7025002000..0x73ffff0000 views=359 maxgap=0x1ffff0000 tailgap=0x0 stop=gaps-exhausted(bottom-up) | firstfail=0x7200000000 errno=17(File exists)   --> relaxing ceiling, retrying unclamped
+[footprint] rev=ml358 phys=2755 MB (peak 2755) internal=2495 MB compressed=141 MB external=152 MB reusable=1 MB (cycle=7)
+0024:err:process:NtTerminateProcess NtTerminateProcess(handle=0xffffffffffffffff, exit_code=0x1) syscalls=0 unix_calls=14355
+[unwind] term ml661 begin rip=71fe454ba0 rsp=702580ff38 window=[702580ff38..702600ff38) max=32
+[unwind] term ml661 #00 pc=71fe454ba0 rsp=702580ff38  kernelbase.dll+0x84ba0
+[unwind] term ml662 #00 nv: rbx=1 rbp=702580ffd0 rsi=0 rdi=0 r12=0 r13=0 r14=0 r15=0
+[unwind] term ml662   rbp=702580ffd0: 00000000 00000000 20a37548 01000000 d8ed1048 01000000 00000000 00000000
+[unwind] term ml661 #01 pc=71fc72033e rsp=702580ff40  UnityPlayer.dll+0x80033e
+[unwind] term ml662 #01 nv: rbx=a rbp=702580ffd0 rsi=0 rdi=0 r12=0 r13=0 r14=0 r15=0
+[unwind] term ml662   global @+0x2b -> 11d2a8ad8 = 0x00000002 (2)
+[unwind] term ml662   global @+0x48 -> 11d29e2d8 = 0x00000000 (0)
+[unwind] term ml662   global @+0x4f -> 11d29e2a0 = 0x00000000 (0)
+[unwind] term ml662   global @+0x69 -> 11d29e298 = 0x00000000 (0)
+[unwind] term ml661 #03 pc=1487659cc rsp=702580ffb0  <no module — STOP>
+[unwind] term ml661 end
+[Wine ntdll/server] process_exit_wrapper(1)
+[WineProc] Wine exited with code 1 (caught by longjmp)
+[WineProc] stopping wineserver...
+[20:12:13.867] [INFO] [session] length=16s play=9s frames=519 avg=56.8 low1=35.4 worst=276ms stalls=0/0s peak=2846MB limit=12287MB thermal=nominal lpm=0 api=D3D11/D3D12/OpenGL/64 res=1152x800 cap=60 game=Bloons TD 6
+[frontend] returned to library
+[20:12:14.006] [INFO] [bcd-host] no report
+[footprint] rev=ml358 phys=2106 MB (peak 2755) internal=1960 MB compressed=133 MB external=154 MB reusable=1 MB (cycle=8)
+[20:12:15.604] [INFO] Detaching debugger...
+[footprint] rev=ml358 phys=2120 MB (peak 2755) internal=1973 MB compressed=133 MB external=154 MB reusable=1 MB (cycle=9)
+[footprint] rev=ml358 phys=2100 MB (peak 2755) internal=1953 MB compressed=133 MB external=153 MB reusable=1 MB (cycle=10)
+[thread-sample] ml876 b0 "wine-x18-exc" teb=0x0 cpu=0% wait pc=libsystem_kernel.dylib`mach_msg2_trap+0x8 lr=libsystem_kernel.dylib`mach_msg2_internal+0x4c sp=0x16e099040 NATIVE (unresolved: OffsetToBlockTail implausible) sp-cand=[ ]
+[footprint] rev=ml358 phys=2100 MB (peak 2755) internal=1953 MB compressed=133 MB external=153 MB reusable=1 MB (cycle=11)
+[hwinput] keyboard focus: elsewhere (responder)
+[footprint] rev=ml358 phys=2105 MB (peak 2755) internal=1958 MB compressed=133 MB external=177 MB reusable=1 MB (cycle=12)
